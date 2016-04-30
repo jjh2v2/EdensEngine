@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\Core">
+      <UniqueIdentifier>{1330a927-fab2-4083-9356-608e00d0bdab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Threading">
+      <UniqueIdentifier>{5d33066d-39e0-4857-bced-a83d9fd99984}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Containers">
+      <UniqueIdentifier>{b32793b4-a1e5-46a7-933a-4e7bfe376b33}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Platform">
+      <UniqueIdentifier>{3acf3f5c-1b2e-41d7-82ad-492924af5641}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Animation">
+      <UniqueIdentifier>{01f06167-bf4f-4253-8412-add382601853}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Vector">
+      <UniqueIdentifier>{a585ef7a-d063-43f4-ba49-aa40e1d755f7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Intrinsic">
+      <UniqueIdentifier>{0f7725f4-1ec4-4bf7-855d-c469c627d7a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Misc">
+      <UniqueIdentifier>{ef211ab9-bd3f-4a7a-b894-3fdca077cda9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Core\Threading\Job.h">
+      <Filter>Source Files\Core\Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Threading\ThreadPool.h">
+      <Filter>Source Files\Core\Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Threading\ThreadPoolManager.h">
+      <Filter>Source Files\Core\Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Containers\DynamicArray.h">
+      <Filter>Source Files\Core\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Containers\List.h">
+      <Filter>Source Files\Core\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Containers\Pair.h">
+      <Filter>Source Files\Core\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Platform\PlatformCore.h">
+      <Filter>Source Files\Core\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EdenEngineWindow.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EdenEngine.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Animation\AnimatedValue.h">
+      <Filter>Source Files\Core\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Animation\AnimatedValueKey.h">
+      <Filter>Source Files\Core\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Vector\Vector2.h">
+      <Filter>Source Files\Core\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Vector\Vector3.h">
+      <Filter>Source Files\Core\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Vector\Vector4.h">
+      <Filter>Source Files\Core\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Intrinsic\Intrinsics.h">
+      <Filter>Source Files\Core\Intrinsic</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Misc\Axis.h">
+      <Filter>Source Files\Core\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Misc\Box.h">
+      <Filter>Source Files\Core\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Misc\Color.h">
+      <Filter>Source Files\Core\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Misc\Ray.h">
+      <Filter>Source Files\Core\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\Misc\Rect.h">
+      <Filter>Source Files\Core\Misc</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Core\Threading\Job.cpp">
+      <Filter>Source Files\Core\Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Core\Threading\ThreadPool.cpp">
+      <Filter>Source Files\Core\Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Core\Threading\ThreadPoolManager.cpp">
+      <Filter>Source Files\Core\Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="src\EdenEngine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\EdenEngineWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Core\Animation\AnimatedValue.cpp">
+      <Filter>Source Files\Core\Animation</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
