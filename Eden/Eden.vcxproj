@@ -72,6 +72,10 @@
     <IncludePath>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.10150.0\ucrt;data\Dependencies\FBXSDK\2015\include;data\Dependencies\Assimp\include;(IncludePath);$(WindowsSDK_IncludePath);$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Program Files %28x86%29\Windows Kits\10\Lib\10.0.10150;data\Dependencies\HBAO\lib\lib86;data\Dependencies\FBXSDK\2015\lib\x86\release;data\Dependencies\Assimp\lib;$(LibraryPath);$(DXSDK_DIR)Lib\x86</LibraryPath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.10150.0\ucrt;data\Dependencies\FBXSDK\2015\include;data\Dependencies\Assimp\include;(IncludePath);$(WindowsSDK_IncludePath);data\Dependencies\DirectX\Include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files %28x86%29\Windows Kits\10\Lib\10.0.10150;data\Dependencies\HBAO\lib\lib64;data\Dependencies\FBXSDK\2015\lib\x64\release;data\Dependencies\Assimp\lib;$(LibraryPath);data\Dependencies\DirectX\Lib\x64</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -89,9 +93,11 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>..\Eden\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>libfbxsdk.lib;GFSDK_SSAO.win64.lib;assimp.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -128,6 +134,8 @@
     <ClInclude Include="src\Core\Containers\DynamicArray.h" />
     <ClInclude Include="src\Core\Containers\List.h" />
     <ClInclude Include="src\Core\Containers\Pair.h" />
+    <ClInclude Include="src\Core\CPU\CPUTracker.h" />
+    <ClInclude Include="src\Core\CPU\GameTimer.h" />
     <ClInclude Include="src\Core\Intrinsic\Intrinsics.h" />
     <ClInclude Include="src\Core\Misc\Axis.h" />
     <ClInclude Include="src\Core\Misc\Box.h" />
@@ -143,6 +151,8 @@
     <ClInclude Include="src\Core\Vector\Vector4.h" />
     <ClInclude Include="src\EdenEngine.h" />
     <ClInclude Include="src\EdenEngineWindow.h" />
+    <ClInclude Include="src\Util\Math\MathHelper.h" />
+    <ClInclude Include="src\Util\Math\RandomGen.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Core\Animation\AnimatedValue.cpp" />

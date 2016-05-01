@@ -1,5 +1,6 @@
 #pragma once
 #include "EdenEngineWindow.h"
+#include "Core/CPU/GameTimer.h"
 
 class EdenEngine
 {
@@ -13,4 +14,5 @@ private:
 	bool Render();
 
 	EdenEngineWindow *mEngineWindow;
+	GameTimer *mGameTimer;
 };

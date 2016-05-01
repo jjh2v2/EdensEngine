@@ -37,6 +37,15 @@
     <Filter Include="Source Files\Core\Misc">
       <UniqueIdentifier>{ef211ab9-bd3f-4a7a-b894-3fdca077cda9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Util">
+      <UniqueIdentifier>{50e3487a-801b-44a2-87da-3ba9fc6da0cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Util\Math">
+      <UniqueIdentifier>{2a0c15ce-39e0-423c-a295-b8cae93bc984}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\CPU">
+      <UniqueIdentifier>{2a4e121b-142b-4cc3-a051-5ae9fd35fd53}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -98,6 +107,18 @@
     </ClInclude>
     <ClInclude Include="src\Core\Misc\Rect.h">
       <Filter>Source Files\Core\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Util\Math\MathHelper.h">
+      <Filter>Source Files\Util\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Util\Math\RandomGen.h">
+      <Filter>Source Files\Util\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\CPU\CPUTracker.h">
+      <Filter>Source Files\Core\CPU</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\CPU\GameTimer.h">
+      <Filter>Source Files\Core\CPU</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

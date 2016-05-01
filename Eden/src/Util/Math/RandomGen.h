@@ -1,8 +1,8 @@
 #pragma once
 #include <random>
-#include "Core/Vector4.h"
-#include "Core/Vector3.h"
-#include "Core/Vector2.h"
+#include "Core/Vector/Vector4.h"
+#include "Core/Vector/Vector3.h"
+#include "Core/Vector/Vector2.h"
 
 class RandomGen
 {

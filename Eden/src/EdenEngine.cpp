@@ -3,10 +3,14 @@
 EdenEngine::EdenEngine()
 {
 	mEngineWindow = new EdenEngineWindow(1920, 1080, false);
+	mGameTimer = new GameTimer();
 }
 
 EdenEngine::~EdenEngine()
 {
+	delete mGameTimer;
+	mGameTimer = NULL;
+
 	delete mEngineWindow;
 	mEngineWindow = NULL;
 }
@@ -16,10 +20,9 @@ void EdenEngine::Run()
 	bool shouldExit = false;
 	while (!shouldExit)
 	{
-		//mGameTimer->Frame();
-
-		//float frameTime = mGameTimer->GetTime();
-		//int FPS = mGameTimer->GetFPS();
+		mGameTimer->Frame();
+		float frameTime = mGameTimer->GetTime();
+		int FPS = mGameTimer->GetFPS();
 
 		shouldExit = mEngineWindow->ShouldQuit() || !Update(0.0167f) || !Render();
 	}
