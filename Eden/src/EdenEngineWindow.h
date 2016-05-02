@@ -2,6 +2,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include "Core/Platform/PlatformCore.h"
+#include "Core/Misc/Rect.h"
 
 class EdenEngineWindow
 {
@@ -10,16 +11,15 @@ public:
 	~EdenEngineWindow();
 
 	bool ShouldQuit();
-	LRESULT CALLBACK MessageHandler(HWND, UINT, WPARAM, LPARAM);
+	bool DidScreenChange();
+	HWND GetWindowHandle() { return mWindowHandle; }
 
 private:
 	LPCSTR mApplicationName;
 	HINSTANCE mModuleHandle;
 	HWND mWindowHandle;
-
-	int32 mScreenWidth;
-	int32 mScreenHeight;
 	bool  mIsFullScreen;
+	Rect<int32> mScreenRect;
 };
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);

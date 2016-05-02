@@ -4,6 +4,8 @@ EdenEngine::EdenEngine()
 {
 	mEngineWindow = new EdenEngineWindow(1920, 1080, false);
 	mGameTimer = new GameTimer();
+	testDXManager = new Direct3DManager();
+	testDXManager->CreateWindowDependentResources(Vector2(1920, 1080), mEngineWindow->GetWindowHandle());
 }
 
 EdenEngine::~EdenEngine()
@@ -24,8 +26,18 @@ void EdenEngine::Run()
 		float frameTime = mGameTimer->GetTime();
 		int FPS = mGameTimer->GetFPS();
 
+		if (mEngineWindow->DidScreenChange())
+		{
+			OnScreenChanged();
+		}
+
 		shouldExit = mEngineWindow->ShouldQuit() || !Update(0.0167f) || !Render();
 	}
+}
+
+void EdenEngine::OnScreenChanged()
+{
+
 }
 
 bool EdenEngine::Update(float delta)

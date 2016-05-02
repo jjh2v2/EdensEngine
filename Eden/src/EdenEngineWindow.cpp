@@ -2,8 +2,6 @@
 
 EdenEngineWindow::EdenEngineWindow(int32 screenWidth, int32 screenHeight, bool fullScreen)
 {
-	mScreenWidth = screenWidth;
-	mScreenHeight = screenHeight;
 	mIsFullScreen = fullScreen;
 	mApplicationName = "Eden";
 
@@ -24,33 +22,33 @@ EdenEngineWindow::EdenEngineWindow(int32 screenWidth, int32 screenHeight, bool f
 	wc.cbSize = sizeof(WNDCLASSEX);
 	RegisterClassEx(&wc);
 
-	mScreenWidth = GetSystemMetrics(SM_CXSCREEN);
-	mScreenHeight = GetSystemMetrics(SM_CYSCREEN);
+	mScreenRect.X = 0;
+	mScreenRect.Y = 0;
+	mScreenRect.Width = GetSystemMetrics(SM_CXSCREEN);
+	mScreenRect.Height = GetSystemMetrics(SM_CYSCREEN);
 
-	int32 windowPosX = 0;
-	int32 windowPosY = 0;
 	if (mIsFullScreen)
 	{
 		DEVMODE dmScreenSettings;
 		memset(&dmScreenSettings, 0, sizeof(dmScreenSettings));
 		dmScreenSettings.dmSize = sizeof(dmScreenSettings);
-		dmScreenSettings.dmPelsWidth = (unsigned long)mScreenWidth;
-		dmScreenSettings.dmPelsHeight = (unsigned long)mScreenHeight;
+		dmScreenSettings.dmPelsWidth = (unsigned long)mScreenRect.Width;
+		dmScreenSettings.dmPelsHeight = (unsigned long)mScreenRect.Height;
 		dmScreenSettings.dmBitsPerPel = 32;
 		dmScreenSettings.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
 		ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN);
 	}
 	else
 	{
-		mScreenWidth = 1920;
-		mScreenHeight = 1080;
-		windowPosX = (GetSystemMetrics(SM_CXSCREEN) - mScreenWidth) / 2;
-		windowPosY = (GetSystemMetrics(SM_CYSCREEN) - mScreenHeight) / 2;
+		mScreenRect.Width = 1920;
+		mScreenRect.Height = 1080;
+		mScreenRect.X = (GetSystemMetrics(SM_CXSCREEN) - mScreenRect.Width) / 2;
+		mScreenRect.Y = (GetSystemMetrics(SM_CYSCREEN) - mScreenRect.Height) / 2;
 	}
 
 	mWindowHandle = CreateWindowEx(WS_EX_APPWINDOW, mApplicationName, mApplicationName,
-		WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_OVERLAPPED,
-		windowPosX, windowPosY, mScreenWidth, mScreenHeight, NULL, NULL, mModuleHandle, NULL);
+		WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_OVERLAPPED | WS_SIZEBOX,
+		mScreenRect.X, mScreenRect.Y, mScreenRect.Width, mScreenRect.Height, NULL, NULL, mModuleHandle, NULL);
 
 	ShowWindow(mWindowHandle, SW_SHOW);
 	SetForegroundWindow(mWindowHandle);
@@ -72,6 +70,29 @@ EdenEngineWindow::~EdenEngineWindow()
 
 	UnregisterClass(mApplicationName, mModuleHandle);
 	mModuleHandle = NULL;
+}
+
+bool EdenEngineWindow::DidScreenChange()
+{
+	Rect<int32> currentScreenRect;
+	RECT windowsScreenRect;
+
+	BOOL getWindowResult = GetWindowRect(mWindowHandle, &windowsScreenRect);
+	if (getWindowResult == TRUE)
+	{
+		currentScreenRect.X = windowsScreenRect.left;
+		currentScreenRect.Y = windowsScreenRect.top;
+		currentScreenRect.Width = windowsScreenRect.right - mScreenRect.X;
+		currentScreenRect.Height = windowsScreenRect.bottom - mScreenRect.Y;
+	}
+
+	if (!mScreenRect.IsEqualTo(currentScreenRect))
+	{
+		mScreenRect = currentScreenRect;
+		return true;
+	}
+
+	return false;
 }
 
 bool EdenEngineWindow::ShouldQuit()

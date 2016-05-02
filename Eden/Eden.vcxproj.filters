@@ -46,6 +46,15 @@
     <Filter Include="Source Files\Core\CPU">
       <UniqueIdentifier>{2a4e121b-142b-4cc3-a051-5ae9fd35fd53}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render">
+      <UniqueIdentifier>{db5297e9-52e9-4572-ab93-a4df15eb500c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\DirectX">
+      <UniqueIdentifier>{e96563c4-d57b-4585-a804-682f40cec89c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\Display">
+      <UniqueIdentifier>{8304104a-0982-402c-b7dd-95087daae6ca}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -120,6 +129,15 @@
     <ClInclude Include="src\Core\CPU\GameTimer.h">
       <Filter>Source Files\Core\CPU</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\DirectX\D3D12Helper.h">
+      <Filter>Source Files\Render\DirectX</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\DirectX\Direct3DManager.h">
+      <Filter>Source Files\Render\DirectX</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\Display\DisplayOrientation.h">
+      <Filter>Source Files\Render\Display</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -142,6 +160,9 @@
     </ClCompile>
     <ClCompile Include="src\Core\Animation\AnimatedValue.cpp">
       <Filter>Source Files\Core\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\DirectX\Direct3DManager.cpp">
+      <Filter>Source Files\Render\DirectX</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
