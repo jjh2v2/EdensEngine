@@ -1,7 +1,8 @@
 #pragma once
 #include "EdenEngineWindow.h"
 #include "Core/CPU/GameTimer.h"
-#include "Render/DirectX/Direct3DManager.h"
+#include "Render/Graphics/GraphicsManager.h"
+#include "Render/Renderer/DeferredRenderer.h"
 
 class EdenEngine
 {
@@ -15,7 +16,8 @@ private:
 	bool Render();
 	void OnScreenChanged();
 
-	Direct3DManager *testDXManager;
+	GraphicsManager *mGraphicsManager;
+	DeferredRenderer *mDeferredRenderer;
 
 	EdenEngineWindow *mEngineWindow;
 	GameTimer *mGameTimer;

@@ -13,6 +13,7 @@ public:
 	bool ShouldQuit();
 	bool DidScreenChange();
 	HWND GetWindowHandle() { return mWindowHandle; }
+	Vector2 GetWindowDimensions();
 
 private:
 	LPCSTR mApplicationName;

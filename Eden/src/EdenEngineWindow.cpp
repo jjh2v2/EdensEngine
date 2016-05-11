@@ -114,6 +114,12 @@ bool EdenEngineWindow::ShouldQuit()
 	return false;
 }
 
+Vector2 EdenEngineWindow::GetWindowDimensions()
+{
+	return Vector2((float)mScreenRect.Width - (float)mScreenRect.X,
+		(float)mScreenRect.Height - (float)mScreenRect.Y);
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 {
 	switch (umessage)
@@ -136,3 +142,4 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 		}
 	}
 }
+

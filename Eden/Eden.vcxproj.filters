@@ -55,6 +55,12 @@
     <Filter Include="Source Files\Render\Display">
       <UniqueIdentifier>{8304104a-0982-402c-b7dd-95087daae6ca}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render\Renderer">
+      <UniqueIdentifier>{533ea6cb-191a-426e-abbb-3c8d70eb572b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\Graphics">
+      <UniqueIdentifier>{a4c750e2-b010-47f0-b174-9860b5164131}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -138,6 +144,12 @@
     <ClInclude Include="src\Render\Display\DisplayOrientation.h">
       <Filter>Source Files\Render\Display</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\Renderer\DeferredRenderer.h">
+      <Filter>Source Files\Render\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\Graphics\GraphicsManager.h">
+      <Filter>Source Files\Render\Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -163,6 +175,12 @@
     </ClCompile>
     <ClCompile Include="src\Render\DirectX\Direct3DManager.cpp">
       <Filter>Source Files\Render\DirectX</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Renderer\DeferredRenderer.cpp">
+      <Filter>Source Files\Render\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Graphics\GraphicsManager.cpp">
+      <Filter>Source Files\Render\Graphics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

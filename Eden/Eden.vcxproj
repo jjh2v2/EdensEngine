@@ -154,6 +154,8 @@
     <ClInclude Include="src\Render\DirectX\D3D12Helper.h" />
     <ClInclude Include="src\Render\DirectX\Direct3DManager.h" />
     <ClInclude Include="src\Render\Display\DisplayOrientation.h" />
+    <ClInclude Include="src\Render\Graphics\GraphicsManager.h" />
+    <ClInclude Include="src\Render\Renderer\DeferredRenderer.h" />
     <ClInclude Include="src\Util\Math\MathHelper.h" />
     <ClInclude Include="src\Util\Math\RandomGen.h" />
   </ItemGroup>
@@ -166,6 +168,8 @@
     <ClCompile Include="src\EdenEngineWindow.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Render\DirectX\Direct3DManager.cpp" />
+    <ClCompile Include="src\Render\Graphics\GraphicsManager.cpp" />
+    <ClCompile Include="src\Render\Renderer\DeferredRenderer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
