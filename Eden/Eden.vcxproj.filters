@@ -61,6 +61,9 @@
     <Filter Include="Source Files\Render\Graphics">
       <UniqueIdentifier>{a4c750e2-b010-47f0-b174-9860b5164131}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Input">
+      <UniqueIdentifier>{3aaf9760-8d2b-42dc-8bf0-a04b8ca085e2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -150,6 +153,9 @@
     <ClInclude Include="src\Render\Graphics\GraphicsManager.h">
       <Filter>Source Files\Render\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="src\Input\InputManager.h">
+      <Filter>Source Files\Input</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -181,6 +187,9 @@
     </ClCompile>
     <ClCompile Include="src\Render\Graphics\GraphicsManager.cpp">
       <Filter>Source Files\Render\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Input\InputManager.cpp">
+      <Filter>Source Files\Input</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

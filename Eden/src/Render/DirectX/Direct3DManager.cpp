@@ -15,12 +15,12 @@ Direct3DManager::Direct3DManager()
 	mNativeOrientation = DisplayOrientation_Landscape;
 	mCurrentOrientation = DisplayOrientation_Landscape;
 	mUseVsync = false;
-	mCommandAllocator = NULL;
 
 	for (uint32 bufferIndex = 0; bufferIndex < mBufferCount; bufferIndex++)
 	{
 		mFenceValues.Add(0);
 		mBackBufferTargets.Add(NULL);
+		mCommandAllocators.Add(NULL);
 	}
 
 	InitializeDeviceResources();
@@ -36,8 +36,11 @@ Direct3DManager::~Direct3DManager()
 	mFence->Release();
 	mFence = NULL;
 	
-	mCommandAllocator->Release();
-	mCommandAllocator = NULL;
+	for (UINT bufferIndex = 0; bufferIndex < mBufferCount; bufferIndex++)
+	{
+		mCommandAllocators[bufferIndex]->Release();
+		mCommandAllocators[bufferIndex] = NULL;
+	}
 
 	mCommandQueue->Release();
 	mCommandQueue = NULL;
@@ -84,7 +87,10 @@ void Direct3DManager::InitializeDeviceResources()
 
 	ThrowIfHRESULTFailed(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
 
-	ThrowIfHRESULTFailed(mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mCommandAllocator)));
+	for (UINT bufferIndex = 0; bufferIndex < mBufferCount; bufferIndex++)
+	{
+		ThrowIfHRESULTFailed(mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mCommandAllocators[bufferIndex])));
+	}
 
 	// Create synchronization objects.
 	ThrowIfHRESULTFailed(mDevice->CreateFence(mFenceValues[mCurrentBuffer], D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));

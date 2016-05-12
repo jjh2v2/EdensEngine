@@ -12,7 +12,8 @@ public:
 
 	bool ShouldQuit();
 	bool DidScreenChange();
-	HWND GetWindowHandle() { return mWindowHandle; }
+	HWND GetEngineWindowHandle() { return mWindowHandle; }
+	HINSTANCE GetEngineModuleHandle() { return mModuleHandle; }
 	Vector2 GetWindowDimensions();
 
 private:

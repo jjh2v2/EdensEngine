@@ -151,6 +151,7 @@
     <ClInclude Include="src\Core\Vector\Vector4.h" />
     <ClInclude Include="src\EdenEngine.h" />
     <ClInclude Include="src\EdenEngineWindow.h" />
+    <ClInclude Include="src\Input\InputManager.h" />
     <ClInclude Include="src\Render\DirectX\D3D12Helper.h" />
     <ClInclude Include="src\Render\DirectX\Direct3DManager.h" />
     <ClInclude Include="src\Render\Display\DisplayOrientation.h" />
@@ -166,6 +167,7 @@
     <ClCompile Include="src\Core\Threading\ThreadPoolManager.cpp" />
     <ClCompile Include="src\EdenEngine.cpp" />
     <ClCompile Include="src\EdenEngineWindow.cpp" />
+    <ClCompile Include="src\Input\InputManager.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Render\DirectX\Direct3DManager.cpp" />
     <ClCompile Include="src\Render\Graphics\GraphicsManager.cpp" />

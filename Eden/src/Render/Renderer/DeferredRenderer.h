@@ -8,6 +8,8 @@ public:
 	DeferredRenderer(GraphicsManager *graphicsManager);
 	~DeferredRenderer();
 
+	void Render();
+
 private:
 	GraphicsManager *mGraphicsManager;
 

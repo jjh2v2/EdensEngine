@@ -23,10 +23,15 @@ public:
 	IDXGISwapChain3*			GetSwapChain() { return mSwapChain; }
 	ID3D12Resource*				GetBackBufferTarget() { return mBackBufferTargets[mCurrentBuffer]; }
 	ID3D12CommandQueue*			GetCommandQueue() { return mCommandQueue; }
-	ID3D12CommandAllocator*		GetCommandAllocator() { return mCommandAllocator; }
+	ID3D12CommandAllocator*		GetCommandAllocator() { return mCommandAllocators[mCurrentBuffer]; }
 	D3D12_VIEWPORT				GetScreenViewport() { return mScreenViewport; }
 
 	void ThrowIfHRESULTFailed(HRESULT hr);
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView() const
+	{
+		return CD3DX12_CPU_DESCRIPTOR_HANDLE(mRTVHeap->GetCPUDescriptorHandleForHeapStart(), mCurrentBuffer, mRTVDescriptorSize);
+	}
 
 private:
 	void InitializeDeviceResources();
@@ -46,7 +51,7 @@ private:
 	ID3D12DescriptorHeap *mRTVHeap;
 	uint32 mRTVDescriptorSize;
 	ID3D12CommandQueue *mCommandQueue;
-	ID3D12CommandAllocator* mCommandAllocator;
+	DynamicArray<ID3D12CommandAllocator*> mCommandAllocators;
 	D3D12_VIEWPORT	mScreenViewport;
 	bool mDeviceRemoved;
 	bool mUseVsync;

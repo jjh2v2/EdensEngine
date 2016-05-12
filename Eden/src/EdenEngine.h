@@ -3,6 +3,7 @@
 #include "Core/CPU/GameTimer.h"
 #include "Render/Graphics/GraphicsManager.h"
 #include "Render/Renderer/DeferredRenderer.h"
+#include "Input/InputManager.h"
 
 class EdenEngine
 {
@@ -18,6 +19,7 @@ private:
 
 	GraphicsManager *mGraphicsManager;
 	DeferredRenderer *mDeferredRenderer;
+	InputManager *mInputManager;
 
 	EdenEngineWindow *mEngineWindow;
 	GameTimer *mGameTimer;
