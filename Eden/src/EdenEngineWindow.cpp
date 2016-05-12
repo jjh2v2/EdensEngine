@@ -82,14 +82,15 @@ bool EdenEngineWindow::DidScreenChange()
 	{
 		currentScreenRect.X = windowsScreenRect.left;
 		currentScreenRect.Y = windowsScreenRect.top;
-		currentScreenRect.Width = windowsScreenRect.right - mScreenRect.X;
-		currentScreenRect.Height = windowsScreenRect.bottom - mScreenRect.Y;
+		currentScreenRect.Width = windowsScreenRect.right - windowsScreenRect.left;
+		currentScreenRect.Height = windowsScreenRect.bottom - windowsScreenRect.top;
 	}
 
 	if (!mScreenRect.IsEqualTo(currentScreenRect))
 	{
+		bool areWidthAndHeightDifferent = (mScreenRect.Width != currentScreenRect.Width) || (mScreenRect.Height != currentScreenRect.Height);
 		mScreenRect = currentScreenRect;
-		return true;
+		return areWidthAndHeightDifferent;
 	}
 
 	return false;
@@ -116,8 +117,8 @@ bool EdenEngineWindow::ShouldQuit()
 
 Vector2 EdenEngineWindow::GetWindowDimensions()
 {
-	return Vector2((float)mScreenRect.Width - (float)mScreenRect.X,
-		(float)mScreenRect.Height - (float)mScreenRect.Y);
+	return Vector2((float)mScreenRect.Width,
+		(float)mScreenRect.Height);
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
