@@ -270,6 +270,8 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 
 	// Set the 3D rendering viewport to target the entire window.
 	mScreenViewport = { 0.0f, 0.0f, mOutputSize.X, mOutputSize.Y, 0.0f, 1.0f };
+
+	WaitForGPU();
 }
 
 void Direct3DManager::ReleaseSwapChainDependentResources()

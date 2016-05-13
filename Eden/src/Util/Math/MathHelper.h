@@ -56,6 +56,16 @@ public:
 		return length == 0 ? D3DXVECTOR3(0,0,0) : D3DXVECTOR3(vector3.x/length, vector3.y/length, vector3.y/length);
 	}
 
+	static size_t MaxSize(size_t a, size_t b)
+	{
+		return a > b ? a : b;
+	}
+
+	static size_t MinSize(size_t a, size_t b)
+	{
+		return a < b ? a : b;
+	}
+
 	static float Max(float a, float b)
 	{
 		return a > b ? a : b;

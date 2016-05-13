@@ -129,6 +129,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\Asset\DDS\DDSInfo.h" />
+    <ClInclude Include="src\Asset\DDS\DDSLoader.h" />
+    <ClInclude Include="src\Asset\Manifest\ManifestLoader.h" />
     <ClInclude Include="src\Core\Animation\AnimatedValue.h" />
     <ClInclude Include="src\Core\Animation\AnimatedValueKey.h" />
     <ClInclude Include="src\Core\Containers\DynamicArray.h" />
@@ -157,10 +160,14 @@
     <ClInclude Include="src\Render\Display\DisplayOrientation.h" />
     <ClInclude Include="src\Render\Graphics\GraphicsManager.h" />
     <ClInclude Include="src\Render\Renderer\DeferredRenderer.h" />
+    <ClInclude Include="src\Render\Texture\Texture.h" />
+    <ClInclude Include="src\Render\Texture\TextureManager.h" />
     <ClInclude Include="src\Util\Math\MathHelper.h" />
     <ClInclude Include="src\Util\Math\RandomGen.h" />
+    <ClInclude Include="src\Util\String\StringConverter.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Asset\DDS\DDSLoader.cpp" />
     <ClCompile Include="src\Core\Animation\AnimatedValue.cpp" />
     <ClCompile Include="src\Core\Threading\Job.cpp" />
     <ClCompile Include="src\Core\Threading\ThreadPool.cpp" />
@@ -172,6 +179,8 @@
     <ClCompile Include="src\Render\DirectX\Direct3DManager.cpp" />
     <ClCompile Include="src\Render\Graphics\GraphicsManager.cpp" />
     <ClCompile Include="src\Render\Renderer\DeferredRenderer.cpp" />
+    <ClCompile Include="src\Render\Texture\Texture.cpp" />
+    <ClCompile Include="src\Render\Texture\TextureManager.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

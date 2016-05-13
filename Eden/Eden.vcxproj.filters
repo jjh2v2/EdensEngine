@@ -64,6 +64,21 @@
     <Filter Include="Source Files\Input">
       <UniqueIdentifier>{3aaf9760-8d2b-42dc-8bf0-a04b8ca085e2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render\Texture">
+      <UniqueIdentifier>{34028ab2-3155-494e-bca6-399583fc0712}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Asset">
+      <UniqueIdentifier>{5129f5ae-8298-4e8f-9c50-57f26f8e0d6b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Util\String">
+      <UniqueIdentifier>{de1da612-2138-4c4b-a8e9-6db02ff0122b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Asset\Manifest">
+      <UniqueIdentifier>{a59892b9-346f-4d37-8f0b-8b972acc7d41}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Asset\DDS">
+      <UniqueIdentifier>{f7d12ad3-6192-467c-9e47-b5b870b11271}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -156,6 +171,24 @@
     <ClInclude Include="src\Input\InputManager.h">
       <Filter>Source Files\Input</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\Texture\Texture.h">
+      <Filter>Source Files\Render\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\Texture\TextureManager.h">
+      <Filter>Source Files\Render\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Util\String\StringConverter.h">
+      <Filter>Source Files\Util\String</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Asset\DDS\DDSLoader.h">
+      <Filter>Source Files\Asset\DDS</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Asset\Manifest\ManifestLoader.h">
+      <Filter>Source Files\Asset\Manifest</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Asset\DDS\DDSInfo.h">
+      <Filter>Source Files\Asset\DDS</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -190,6 +223,15 @@
     </ClCompile>
     <ClCompile Include="src\Input\InputManager.cpp">
       <Filter>Source Files\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Texture\Texture.cpp">
+      <Filter>Source Files\Render\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Texture\TextureManager.cpp">
+      <Filter>Source Files\Render\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Asset\DDS\DDSLoader.cpp">
+      <Filter>Source Files\Asset\DDS</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
