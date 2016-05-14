@@ -2,6 +2,33 @@
 #include "Render/Texture/Texture.h"
 #include <map>
 #include "Asset/Manifest/ManifestLoader.h"
+
+struct TextureLookup
+{
+	std::string TextureFilePath;
+	Texture *TextureRef;
+};
+
+class TextureManager
+{
+public:
+	TextureManager(ID3D12Device *device);
+	~TextureManager();
+
+	void LoadAllTextures();
+	Texture *LoadTexture(WCHAR *filePath);
+
+private:
+	ID3D12Device *mDevice;
+
+	std::map<std::string, TextureLookup> mTextureLookup;
+	DynamicArray<Texture*> mTextures;
+	ManifestLoader mManifestLoader;
+
+	Texture *mWhiteTexture;
+};
+
+/*
 #include "Asset/DDS/DDSLoader.h"
 #include "Util/String/StringConverter.h"
 #include "Core/Containers/DynamicArray.h"
@@ -33,4 +60,4 @@ private:
 	DDSLoader mDDSLoader;
 
 	Texture *mWhiteTexture;
-};
+};*/

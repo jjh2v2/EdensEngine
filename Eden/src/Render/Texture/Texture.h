@@ -1,6 +1,6 @@
 #pragma once
-#include <d3d11.h>
-#include <d3dx11tex.h>
+#include "Core/Vector/Vector3.h"
+#include "Core/Platform/PlatformCore.h"
 
 class Texture
 {
@@ -8,24 +8,28 @@ public:
 	Texture();
 	~Texture();
 
-	bool Initialize(ID3D11Device* device, WCHAR* filename);
-	bool Initialize(ID3D11Device* device, WCHAR* filename, ID3DX11ThreadPump *threadPump, ID3D11ShaderResourceView *asyncTempView);
-	bool Initialize(ID3D11Device* device, WCHAR* filename, D3DX11_IMAGE_LOAD_INFO* info);
+	void SetTextureResource(ID3D12Resource *resource) { mTextureResource = resource; }
+	ID3D12Resource *GetTextureResource() { return mTextureResource; }
 
-	ID3D11ShaderResourceView* GetTexture();
-
-	void SetResource(ID3D11ShaderResourceView* texture)
-	{
-		mTexture = texture;
-	}
-
-	HRESULT GetAsyncResult()
-	{
-		return mAsyncLoadResult;
-	}
+	void SetFormat(DXGI_FORMAT format) { mFormat = format; }
+	DXGI_FORMAT GetFormat() { return mFormat; }
+	void SetDimensions(Vector3 dimensions) { mDimensions = dimensions; }
+	Vector3 GetDimensions() { return mDimensions; }
+	void SetMipCount(uint32 mipCount) { mMipCount = mipCount; }
+	uint32 GetMipCount() { return mMipCount; }
+	void SetArraySize(uint32 arraySize) { mArraySize = arraySize; }
+	uint32 GetArraySize() { return mArraySize; }
+	void SetIsCubeMap(bool isCubeMap) { mIsCubeMap = isCubeMap; }
+	bool GetIsCubeMap() { return mIsCubeMap; }
 
 private:
-	ID3D11ShaderResourceView* mTexture;
-	ID3D11ShaderResourceView* mAsyncTempView;
-	HRESULT mAsyncLoadResult;
+	ID3D12Resource* mTextureResource;
+	D3D12_CPU_DESCRIPTOR_HANDLE mCPUHandle;
+	D3D12_GPU_DESCRIPTOR_HANDLE mGPUHandle;
+
+	DXGI_FORMAT mFormat;
+	Vector3		mDimensions;
+	uint32		mMipCount;
+	uint32		mArraySize;
+	bool		mIsCubeMap;
 };

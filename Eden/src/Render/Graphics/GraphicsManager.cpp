@@ -14,5 +14,5 @@ GraphicsManager::~GraphicsManager()
 void GraphicsManager::InitializeGraphicsResources()
 {
 	mTextureManager = new TextureManager();
-	mTextureManager->LoadAllTextures();
+	//mTextureManager->LoadAllTextures();
 }

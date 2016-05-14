@@ -7,7 +7,7 @@ EdenEngine::EdenEngine()
 
 	mGraphicsManager = new GraphicsManager();
 	mGraphicsManager->GetDirect3DManager()->CreateWindowDependentResources(Vector2(1920, 1080), mEngineWindow->GetEngineWindowHandle());
-
+	mGraphicsManager->InitializeGraphicsResources();
 	mDeferredRenderer = new DeferredRenderer(mGraphicsManager);
 
 	//TDA: change input manager when screen size changes, and get rid of the initialize function by moving the throw if failed to a common function

@@ -129,9 +129,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\Asset\DDS\DDSInfo.h" />
-    <ClInclude Include="src\Asset\DDS\DDSLoader.h" />
     <ClInclude Include="src\Asset\Manifest\ManifestLoader.h" />
+    <ClInclude Include="src\Asset\Texture\BC.h" />
+    <ClInclude Include="src\Asset\Texture\BCDirectCompute.h" />
+    <ClInclude Include="src\Asset\Texture\DDS.h" />
+    <ClInclude Include="src\Asset\Texture\DirectXTex.h" />
+    <ClInclude Include="src\Asset\Texture\DirectXTexP.h" />
+    <ClInclude Include="src\Asset\Texture\Filters.h" />
+    <ClInclude Include="src\Asset\Texture\scoped.h" />
     <ClInclude Include="src\Core\Animation\AnimatedValue.h" />
     <ClInclude Include="src\Core\Animation\AnimatedValueKey.h" />
     <ClInclude Include="src\Core\Containers\DynamicArray.h" />
@@ -167,7 +172,25 @@
     <ClInclude Include="src\Util\String\StringConverter.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Asset\DDS\DDSLoader.cpp" />
+    <ClCompile Include="src\Asset\Texture\BC.cpp" />
+    <ClCompile Include="src\Asset\Texture\BC4BC5.cpp" />
+    <ClCompile Include="src\Asset\Texture\BC6HBC7.cpp" />
+    <ClCompile Include="src\Asset\Texture\BCDirectCompute.cpp" />
+    <ClCompile Include="src\Asset\Texture\DirectXTexCompress.cpp" />
+    <ClCompile Include="src\Asset\Texture\DirectXTexCompressGPU.cpp" />
+    <ClCompile Include="src\Asset\Texture\DirectXTexConvert.cpp" />
+    <ClCompile Include="src\Asset\Texture\DirectXTexD3D11.cpp" />
+    <ClCompile Include="src\Asset\Texture\DirectXTexDDS.cpp" />
+    <ClCompile Include="src\Asset\Texture\DirectXTexFlipRotate.cpp" />
+    <ClCompile Include="src\Asset\Texture\DirectXTexImage.cpp" />
+    <ClCompile Include="src\Asset\Texture\DirectXTexMipmaps.cpp" />
+    <ClCompile Include="src\Asset\Texture\DirectXTexMisc.cpp" />
+    <ClCompile Include="src\Asset\Texture\DirectXTexNormalMaps.cpp" />
+    <ClCompile Include="src\Asset\Texture\DirectXTexPMAlpha.cpp" />
+    <ClCompile Include="src\Asset\Texture\DirectXTexResize.cpp" />
+    <ClCompile Include="src\Asset\Texture\DirectXTexTGA.cpp" />
+    <ClCompile Include="src\Asset\Texture\DirectXTexUtil.cpp" />
+    <ClCompile Include="src\Asset\Texture\DirectXTexWIC.cpp" />
     <ClCompile Include="src\Core\Animation\AnimatedValue.cpp" />
     <ClCompile Include="src\Core\Threading\Job.cpp" />
     <ClCompile Include="src\Core\Threading\ThreadPool.cpp" />
@@ -181,6 +204,16 @@
     <ClCompile Include="src\Render\Renderer\DeferredRenderer.cpp" />
     <ClCompile Include="src\Render\Texture\Texture.cpp" />
     <ClCompile Include="src\Render\Texture\TextureManager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\Asset\Texture\DirectXTex.inl" />
+    <None Include="src\Asset\Texture\Shaders\Compiled\BC6HEncode_EncodeBlockCS.inc" />
+    <None Include="src\Asset\Texture\Shaders\Compiled\BC6HEncode_TryModeG10CS.inc" />
+    <None Include="src\Asset\Texture\Shaders\Compiled\BC6HEncode_TryModeLE10CS.inc" />
+    <None Include="src\Asset\Texture\Shaders\Compiled\BC7Encode_EncodeBlockCS.inc" />
+    <None Include="src\Asset\Texture\Shaders\Compiled\BC7Encode_TryMode02CS.inc" />
+    <None Include="src\Asset\Texture\Shaders\Compiled\BC7Encode_TryMode137CS.inc" />
+    <None Include="src\Asset\Texture\Shaders\Compiled\BC7Encode_TryMode456CS.inc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
