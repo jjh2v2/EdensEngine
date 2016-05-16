@@ -2,6 +2,7 @@
 #include "Render/Texture/Texture.h"
 #include <map>
 #include "Asset/Manifest/ManifestLoader.h"
+#include "Render/DirectX/Direct3DManager.h"
 
 struct TextureLookup
 {
@@ -12,14 +13,14 @@ struct TextureLookup
 class TextureManager
 {
 public:
-	TextureManager(ID3D12Device *device);
+	TextureManager(Direct3DManager *direct3DManager);
 	~TextureManager();
 
 	void LoadAllTextures();
 	Texture *LoadTexture(WCHAR *filePath);
 
 private:
-	ID3D12Device *mDevice;
+	Direct3DManager *mDirect3DManager;
 
 	std::map<std::string, TextureLookup> mTextureLookup;
 	DynamicArray<Texture*> mTextures;

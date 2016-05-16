@@ -33,6 +33,10 @@ public:
 		return CD3DX12_CPU_DESCRIPTOR_HANDLE(mRTVHeap->GetCPUDescriptorHandleForHeapStart(), mCurrentBuffer, mRTVDescriptorSize);
 	}
 
+	D3D12_HEAP_PROPERTIES GetDefaultHeapProperties()  { return mDefaultHeapProperties; }
+	D3D12_HEAP_PROPERTIES GetUploadHeapProperties()   { return mUploadHeapProperties; }
+	D3D12_HEAP_PROPERTIES GetReadbackHeapProperties() { return mReadbackHeapProperties; }
+
 private:
 	void InitializeDeviceResources();
 	void ReleaseSwapChainDependentResources();
@@ -64,4 +68,8 @@ private:
 	Vector2	mOutputSize;
 	DisplayOrientation mNativeOrientation;
 	DisplayOrientation mCurrentOrientation;
+
+	D3D12_HEAP_PROPERTIES mDefaultHeapProperties;
+	D3D12_HEAP_PROPERTIES mUploadHeapProperties;
+	D3D12_HEAP_PROPERTIES mReadbackHeapProperties;
 };

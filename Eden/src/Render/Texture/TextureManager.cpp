@@ -1,9 +1,9 @@
 #include "Render/Texture/TextureManager.h"
 #include "Asset/Texture/DirectXTex.h"
 
-TextureManager::TextureManager(ID3D12Device *device)
+TextureManager::TextureManager(Direct3DManager *direct3DManager)
 {
-	mDevice = device;
+	mDirect3DManager = direct3DManager;
 	//DirectX::ScratchImage image;
 	//const WCHAR* filePath = L"../Eden/data/Textures/Character/Mage/MageDiffuseFire.dds";
 
@@ -73,8 +73,10 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 	textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	textureDesc.Alignment = 0;
 	
-	mDevice->CreateCommittedResource(DX12::GetDefaultHeapProps(), D3D12_HEAP_FLAG_NONE, &textureDesc,
-		D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&texture.Resource)));
+	D3D12_HEAP_PROPERTIES defaultProperties = mDirect3DManager->GetDefaultHeapProperties();
+	ID3D12Resource *newTextureResource = newTexture->GetTextureResource();
+	mDirect3DManager->GetDevice()->CreateCommittedResource(&defaultProperties, D3D12_HEAP_FLAG_NONE, &textureDesc,
+		D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&newTextureResource));
 
 	return newTexture;
 }

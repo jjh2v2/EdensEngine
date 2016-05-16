@@ -85,6 +85,9 @@
     <Filter Include="Source Files\Asset\Texture\Shaders\Compiled">
       <UniqueIdentifier>{c6914200-a7a3-4ffc-aa80-0ced34f67d24}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render\DirectX\Heap">
+      <UniqueIdentifier>{558a91ad-1683-4f9f-9a8c-97d97565f4af}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -210,6 +213,12 @@
     <ClInclude Include="src\Asset\Texture\scoped.h">
       <Filter>Source Files\Asset\Texture</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\DirectX\Heap\DescriptorHeap.h">
+      <Filter>Source Files\Render\DirectX\Heap</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\DirectX\Heap\DescriptorHeapHandle.h">
+      <Filter>Source Files\Render\DirectX\Heap</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -307,6 +316,9 @@
     </ClCompile>
     <ClCompile Include="src\Asset\Texture\DirectXTexWIC.cpp">
       <Filter>Source Files\Asset\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\DirectX\Heap\DescriptorHeap.cpp">
+      <Filter>Source Files\Render\DirectX\Heap</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
