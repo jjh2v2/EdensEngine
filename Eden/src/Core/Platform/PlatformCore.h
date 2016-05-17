@@ -19,3 +19,18 @@ typedef uint16_t	uint16;
 typedef uint32_t	uint32;
 typedef uint64_t	uint64;
 
+namespace Direct3DUtils
+{
+	void ThrowIfHRESULTFailed(HRESULT hr)
+	{
+		if (FAILED(hr))
+		{
+			throw std::runtime_error("Device operation failed.");
+		}
+	}
+
+	void ThrowRuntimeError(char *errorMessage)
+	{
+		throw std::runtime_error(errorMessage);
+	}
+};

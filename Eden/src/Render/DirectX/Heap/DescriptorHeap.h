@@ -6,7 +6,7 @@
 class DescriptorHeap
 {
 public:
-	DescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, uint32 numDescriptors, bool shaderVisible);
+	DescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, uint32 numDescriptors, bool isReferencedByShader);
 	~DescriptorHeap();
 
 	DescriptorHeapHandle GetNewHeapHandle();
@@ -18,12 +18,11 @@ private:
 	D3D12_CPU_DESCRIPTOR_HANDLE mDescriptorHeapCPUStart;
 	D3D12_GPU_DESCRIPTOR_HANDLE mDescriptorHeapGPUStart;
 
-	DynamicArray<uint32> mPresetDescriptors;
 	DynamicArray<uint32> mFreeDescriptors;
 
 	uint32 mCurrentDescriptorIndex;
 	uint32 mMaxDescriptors;
 
 	uint32 mDescriptorSize;
-	bool   mIsShaderVisible;
+	bool   mIsReferencedByShader;
 };

@@ -26,8 +26,6 @@ public:
 	ID3D12CommandAllocator*		GetCommandAllocator() { return mCommandAllocators[mCurrentBuffer]; }
 	D3D12_VIEWPORT				GetScreenViewport() { return mScreenViewport; }
 
-	void ThrowIfHRESULTFailed(HRESULT hr);
-
 	CD3DX12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView() const
 	{
 		return CD3DX12_CPU_DESCRIPTOR_HANDLE(mRTVHeap->GetCPUDescriptorHandleForHeapStart(), mCurrentBuffer, mRTVDescriptorSize);

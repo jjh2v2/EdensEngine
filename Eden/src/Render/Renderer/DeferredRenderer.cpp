@@ -25,8 +25,8 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 
 		ID3DBlob *pSignature;
 		ID3DBlob *pError;
-		direct3DManager->ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&descRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &pSignature, &pError));
-		direct3DManager->ThrowIfHRESULTFailed(direct3DManager->GetDevice()->CreateRootSignature(0, pSignature->GetBufferPointer(), pSignature->GetBufferSize(), IID_PPV_ARGS(&mRootSignature)));
+		Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&descRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &pSignature, &pError));
+		Direct3DUtils::ThrowIfHRESULTFailed(direct3DManager->GetDevice()->CreateRootSignature(0, pSignature->GetBufferPointer(), pSignature->GetBufferSize(), IID_PPV_ARGS(&mRootSignature)));
 
 		pSignature->Release();
 		pSignature = NULL;
@@ -61,10 +61,10 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 		state.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 		state.SampleDesc.Count = 1;
 
-		direct3DManager->ThrowIfHRESULTFailed(direct3DManager->GetDevice()->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&mPipelineState)));*/
+		Direct3DUtils::ThrowIfHRESULTFailed(direct3DManager->GetDevice()->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&mPipelineState)));*/
 	}
 
-	direct3DManager->ThrowIfHRESULTFailed(direct3DManager->GetDevice()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, direct3DManager->GetCommandAllocator(), NULL, IID_PPV_ARGS(&mCommandList)));
+	Direct3DUtils::ThrowIfHRESULTFailed(direct3DManager->GetDevice()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, direct3DManager->GetCommandAllocator(), NULL, IID_PPV_ARGS(&mCommandList)));
 	mCommandList->Close();
 	direct3DManager->WaitForGPU();
 
@@ -82,10 +82,10 @@ DeferredRenderer::~DeferredRenderer()
 void DeferredRenderer::Render()
 {
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
-	direct3DManager->ThrowIfHRESULTFailed(direct3DManager->GetCommandAllocator()->Reset());
+	Direct3DUtils::ThrowIfHRESULTFailed(direct3DManager->GetCommandAllocator()->Reset());
 
 	// The command list can be reset anytime after ExecuteCommandList() is called.
-	direct3DManager->ThrowIfHRESULTFailed(mCommandList->Reset(direct3DManager->GetCommandAllocator(), NULL));
+	Direct3DUtils::ThrowIfHRESULTFailed(mCommandList->Reset(direct3DManager->GetCommandAllocator(), NULL));
 
 	D3D12_VIEWPORT viewport = direct3DManager->GetScreenViewport();
 	mCommandList->RSSetViewports(1, &viewport);
@@ -105,7 +105,7 @@ void DeferredRenderer::Render()
 		CD3DX12_RESOURCE_BARRIER::Transition(direct3DManager->GetBackBufferTarget(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	mCommandList->ResourceBarrier(1, &presentResourceBarrier);
 
-	direct3DManager->ThrowIfHRESULTFailed(mCommandList->Close());
+	Direct3DUtils::ThrowIfHRESULTFailed(mCommandList->Close());
 
 	ID3D12CommandList* ppCommandLists[] = { mCommandList };
 	direct3DManager->GetCommandQueue()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);

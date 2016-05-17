@@ -69,10 +69,10 @@ void Direct3DManager::InitializeDeviceResources()
 }
 #endif
 
-	ThrowIfHRESULTFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mDXGIFactory)));
+	Direct3DUtils::ThrowIfHRESULTFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mDXGIFactory)));
 
 	// Create the Direct3D 12 API device object
-	ThrowIfHRESULTFailed(D3D12CreateDevice(
+	Direct3DUtils::ThrowIfHRESULTFailed(D3D12CreateDevice(
 		nullptr,						// Specify nullptr to use the default adapter.
 		D3D_FEATURE_LEVEL_11_0,			// Minimum feature level this app can support.
 		IID_PPV_ARGS(&mDevice)		// Returns the Direct3D device created.
@@ -85,15 +85,15 @@ void Direct3DManager::InitializeDeviceResources()
 	queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 	queueDesc.NodeMask = 0;
 
-	ThrowIfHRESULTFailed(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
+	Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
 
 	for (UINT bufferIndex = 0; bufferIndex < mBufferCount; bufferIndex++)
 	{
-		ThrowIfHRESULTFailed(mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mCommandAllocators[bufferIndex])));
+		Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mCommandAllocators[bufferIndex])));
 	}
 
 	// Create synchronization objects.
-	ThrowIfHRESULTFailed(mDevice->CreateFence(mFenceValues[mCurrentBuffer], D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
+	Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateFence(mFenceValues[mCurrentBuffer], D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
 	mFenceValues[mCurrentBuffer]++;
 
 	mFenceEvent = CreateEventEx(nullptr, FALSE, FALSE, EVENT_ALL_ACCESS);
@@ -133,7 +133,7 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 		}
 		else
 		{
-			ThrowIfHRESULTFailed(hr);
+			Direct3DUtils::ThrowIfHRESULTFailed(hr);
 		}
 	}
 	else
@@ -143,11 +143,11 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 		IDXGIOutput* adapterOutput = NULL;
 		uint32 numDisplayModes = 0;
 
-		ThrowIfHRESULTFailed(mDXGIFactory->EnumAdapters(0, &adapter));
-		ThrowIfHRESULTFailed(adapter->EnumOutputs(0, &adapterOutput));
-		ThrowIfHRESULTFailed(adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &numDisplayModes, NULL));
+		Direct3DUtils::ThrowIfHRESULTFailed(mDXGIFactory->EnumAdapters(0, &adapter));
+		Direct3DUtils::ThrowIfHRESULTFailed(adapter->EnumOutputs(0, &adapterOutput));
+		Direct3DUtils::ThrowIfHRESULTFailed(adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &numDisplayModes, NULL));
 		DXGI_MODE_DESC *displayModeList = new DXGI_MODE_DESC[numDisplayModes];
-		ThrowIfHRESULTFailed(adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &numDisplayModes, displayModeList));
+		Direct3DUtils::ThrowIfHRESULTFailed(adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &numDisplayModes, displayModeList));
 		
 		uint32 numerator = 0;
 		uint32 denominator = 0;
@@ -224,7 +224,7 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 
 
 		IDXGISwapChain1 *swapChain = NULL;
-		ThrowIfHRESULTFailed(
+		Direct3DUtils::ThrowIfHRESULTFailed(
 			mDXGIFactory->CreateSwapChainForHwnd(
 				mCommandQueue,
 				windowHandle,
@@ -235,7 +235,7 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 				)
 			);
 		
-		ThrowIfHRESULTFailed(swapChain->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&mSwapChain));
+		Direct3DUtils::ThrowIfHRESULTFailed(swapChain->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&mSwapChain));
 	}
 
 	// Set the proper orientation for the swap chain, and generate
@@ -264,7 +264,7 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 		throw ref new FailureException();
 	}*/
 
-	ThrowIfHRESULTFailed(mSwapChain->SetRotation(displayRotation));
+	Direct3DUtils::ThrowIfHRESULTFailed(mSwapChain->SetRotation(displayRotation));
 
 	BuildSwapChainDependentResources();
 
@@ -317,7 +317,7 @@ void Direct3DManager::BuildSwapChainDependentResources()
 	desc.NumDescriptors = mBufferCount;
 	desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	ThrowIfHRESULTFailed(mDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&mRTVHeap)));
+	Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&mRTVHeap)));
 	mRTVHeap->SetName(L"Backbuffer Descriptor Heap");
 
 	// All pending GPU work was already finished. Update the tracked fence values
@@ -333,7 +333,7 @@ void Direct3DManager::BuildSwapChainDependentResources()
 	for (uint32 bufferIndex = 0; bufferIndex < mBufferCount; bufferIndex++)
 	{
 		//TDA: we need a descriptor here, especially to use an SRGB target
-		ThrowIfHRESULTFailed(mSwapChain->GetBuffer(bufferIndex, IID_PPV_ARGS(&mBackBufferTargets[bufferIndex])));
+		Direct3DUtils::ThrowIfHRESULTFailed(mSwapChain->GetBuffer(bufferIndex, IID_PPV_ARGS(&mBackBufferTargets[bufferIndex])));
 		mDevice->CreateRenderTargetView(mBackBufferTargets[bufferIndex], nullptr, rtvDescriptor);
 		rtvDescriptor.Offset(mRTVDescriptorSize);
 
@@ -346,10 +346,10 @@ void Direct3DManager::BuildSwapChainDependentResources()
 void Direct3DManager::WaitForGPU()
 {
 	// Schedule a Signal command in the queue.
-	ThrowIfHRESULTFailed(mCommandQueue->Signal(mFence, mFenceValues[mCurrentBuffer]));
+	Direct3DUtils::ThrowIfHRESULTFailed(mCommandQueue->Signal(mFence, mFenceValues[mCurrentBuffer]));
 
 	// Wait until the fence has been crossed.
-	ThrowIfHRESULTFailed(mFence->SetEventOnCompletion(mFenceValues[mCurrentBuffer], mFenceEvent));
+	Direct3DUtils::ThrowIfHRESULTFailed(mFence->SetEventOnCompletion(mFenceValues[mCurrentBuffer], mFenceEvent));
 	WaitForSingleObjectEx(mFenceEvent, INFINITE, FALSE);
 
 	// Increment the fence value for the current frame.
@@ -372,7 +372,7 @@ void Direct3DManager::Present()
 	}
 	else
 	{
-		ThrowIfHRESULTFailed(hr);
+		Direct3DUtils::ThrowIfHRESULTFailed(hr);
 		MoveToNextFrame();
 	}
 }
@@ -381,7 +381,7 @@ void Direct3DManager::MoveToNextFrame()
 {
 	// Schedule a Signal command in the queue.
 	const UINT64 currentFenceValue = mFenceValues[mCurrentBuffer];
-	ThrowIfHRESULTFailed(mCommandQueue->Signal(mFence, currentFenceValue));
+	Direct3DUtils::ThrowIfHRESULTFailed(mCommandQueue->Signal(mFence, currentFenceValue));
 
 	// Advance the frame index.
 	mCurrentBuffer = (mCurrentBuffer + 1) % mBufferCount;
@@ -389,7 +389,7 @@ void Direct3DManager::MoveToNextFrame()
 	// Check to see if the next frame is ready to start.
 	if (mFence->GetCompletedValue() < mFenceValues[mCurrentBuffer])
 	{
-		ThrowIfHRESULTFailed(mFence->SetEventOnCompletion(mFenceValues[mCurrentBuffer], mFenceEvent));
+		Direct3DUtils::ThrowIfHRESULTFailed(mFence->SetEventOnCompletion(mFenceValues[mCurrentBuffer], mFenceEvent));
 		WaitForSingleObjectEx(mFenceEvent, INFINITE, FALSE);
 	}
 
@@ -449,13 +449,4 @@ DXGI_MODE_ROTATION Direct3DManager::ComputeDisplayRotation()
 	}
 
 	return rotation;
-}
-
-void Direct3DManager::ThrowIfHRESULTFailed(HRESULT hr)
-{
-	if (FAILED(hr))
-	{
-		// Set a breakpoint on this line to catch Win32 API errors.
-		throw std::runtime_error("Device operation failed.");
-	}
 }
