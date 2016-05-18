@@ -8,11 +8,12 @@ GraphicsManager::GraphicsManager()
 
 GraphicsManager::~GraphicsManager()
 {
+	delete mTextureManager;
 	delete mDirect3DManager;
 }
 
 void GraphicsManager::InitializeGraphicsResources()
 {
-	mTextureManager = new TextureManager();
+	mTextureManager = new TextureManager(mDirect3DManager);
 	//mTextureManager->LoadAllTextures();
 }

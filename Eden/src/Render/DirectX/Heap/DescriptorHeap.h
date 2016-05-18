@@ -9,6 +9,7 @@ public:
 	DescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, uint32 numDescriptors, bool isReferencedByShader);
 	~DescriptorHeap();
 
+	void Reset();
 	DescriptorHeapHandle GetNewHeapHandle();
 	void FreeHeapHandle(DescriptorHeapHandle handle);
 
@@ -22,7 +23,6 @@ private:
 
 	uint32 mCurrentDescriptorIndex;
 	uint32 mMaxDescriptors;
-
 	uint32 mDescriptorSize;
 	bool   mIsReferencedByShader;
 };

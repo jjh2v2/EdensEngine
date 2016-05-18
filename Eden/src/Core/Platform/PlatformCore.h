@@ -6,11 +6,12 @@
 #include <dxgi1_4.h>
 #include <assert.h>
 
-#define NUM_DEFAULT_WORKER_THREADS 8
-#define DEFAULT_BUFFERING_COUNT 2
-
-bool  ForceAllTexturesToSRGB = false;
-char* TextureManifestFileLocation = "../Eden/data/Manifests/TextureManifest.emf";
+#define NUM_DEFAULT_WORKER_THREADS			8
+#define DEFAULT_BUFFERING_COUNT				2
+#define RTV_DESCRIPTOR_HEAP_SIZE			64
+#define SRV_DESCRIPTOR_HEAP_SIZE			1024
+#define DSV_DESCRIPTOR_HEAP_SIZE			32
+#define SAMPLER_DESCRIPTOR_HEAP_SIZE		64
 
 typedef int16_t		int16;
 typedef int32_t		int32;
@@ -19,18 +20,16 @@ typedef uint16_t	uint16;
 typedef uint32_t	uint32;
 typedef uint64_t	uint64;
 
-namespace Direct3DUtils
+class ApplicationSpecification
 {
-	void ThrowIfHRESULTFailed(HRESULT hr)
-	{
-		if (FAILED(hr))
-		{
-			throw std::runtime_error("Device operation failed.");
-		}
-	}
+public:
+	static bool  ForceAllTexturesToSRGB;
+	static char* TextureManifestFileLocation;
+};
 
-	void ThrowRuntimeError(char *errorMessage)
-	{
-		throw std::runtime_error(errorMessage);
-	}
+class Direct3DUtils
+{
+public:
+	static void ThrowIfHRESULTFailed(HRESULT hr);
+	static void ThrowRuntimeError(char *errorMessage);
 };

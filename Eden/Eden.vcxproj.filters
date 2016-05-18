@@ -88,6 +88,9 @@
     <Filter Include="Source Files\Render\DirectX\Heap">
       <UniqueIdentifier>{558a91ad-1683-4f9f-9a8c-97d97565f4af}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render\DirectX\Resources">
+      <UniqueIdentifier>{f1e4f5dd-dbd5-4694-8884-1c511d9388a8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -219,6 +222,12 @@
     <ClInclude Include="src\Render\DirectX\Heap\DescriptorHeapHandle.h">
       <Filter>Source Files\Render\DirectX\Heap</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\DirectX\Resources\Direct3DResources.h">
+      <Filter>Source Files\Render\DirectX\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\DirectX\Heap\Direct3DHeapManager.h">
+      <Filter>Source Files\Render\DirectX\Heap</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -319,6 +328,15 @@
     </ClCompile>
     <ClCompile Include="src\Render\DirectX\Heap\DescriptorHeap.cpp">
       <Filter>Source Files\Render\DirectX\Heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\DirectX\Resources\Direct3DResources.cpp">
+      <Filter>Source Files\Render\DirectX\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\DirectX\Heap\Direct3DHeapManager.cpp">
+      <Filter>Source Files\Render\DirectX\Heap</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Core\Platform\PlatformCore.cpp">
+      <Filter>Source Files\Core\Platform</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

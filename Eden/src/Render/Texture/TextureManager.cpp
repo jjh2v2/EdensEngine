@@ -21,7 +21,7 @@ TextureManager::~TextureManager()
 
 void TextureManager::LoadAllTextures()
 {
-	mManifestLoader.LoadManifest(TextureManifestFileLocation);
+	mManifestLoader.LoadManifest(ApplicationSpecification::TextureManifestFileLocation);
 
 	DynamicArray<std::string> &fileNames = mManifestLoader.GetFileNames();
 	for (uint32 i = 0; i < fileNames.CurrentSize(); i++)
@@ -49,13 +49,13 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 	DXGI_FORMAT textureFormat = textureMetaData.format;
 	bool is3DTexture = textureMetaData.dimension == DirectX::TEX_DIMENSION_TEXTURE3D;
 
-	newTexture->SetDimensions(Vector3(textureMetaData.width, textureMetaData.height, textureMetaData.depth));
-	newTexture->SetMipCount(textureMetaData.mipLevels);
-	newTexture->SetArraySize(textureMetaData.arraySize);
+	newTexture->SetDimensions(Vector3((float)textureMetaData.width, (float)textureMetaData.height, (float)textureMetaData.depth));
+	newTexture->SetMipCount((uint32)textureMetaData.mipLevels);
+	newTexture->SetArraySize((uint32)textureMetaData.arraySize);
 	newTexture->SetFormat(textureMetaData.format);
 	newTexture->SetIsCubeMap(textureMetaData.IsCubemap());
 
-	if (ForceAllTexturesToSRGB)
+	if (ApplicationSpecification::ForceAllTexturesToSRGB)
 	{
 		textureFormat = DirectX::MakeSRGB(textureFormat);
 	}

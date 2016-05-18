@@ -164,6 +164,8 @@
     <ClInclude Include="src\Render\DirectX\Direct3DManager.h" />
     <ClInclude Include="src\Render\DirectX\Heap\DescriptorHeap.h" />
     <ClInclude Include="src\Render\DirectX\Heap\DescriptorHeapHandle.h" />
+    <ClInclude Include="src\Render\DirectX\Heap\Direct3DHeapManager.h" />
+    <ClInclude Include="src\Render\DirectX\Resources\Direct3DResources.h" />
     <ClInclude Include="src\Render\Display\DisplayOrientation.h" />
     <ClInclude Include="src\Render\Graphics\GraphicsManager.h" />
     <ClInclude Include="src\Render\Renderer\DeferredRenderer.h" />
@@ -194,6 +196,7 @@
     <ClCompile Include="src\Asset\Texture\DirectXTexUtil.cpp" />
     <ClCompile Include="src\Asset\Texture\DirectXTexWIC.cpp" />
     <ClCompile Include="src\Core\Animation\AnimatedValue.cpp" />
+    <ClCompile Include="src\Core\Platform\PlatformCore.cpp" />
     <ClCompile Include="src\Core\Threading\Job.cpp" />
     <ClCompile Include="src\Core\Threading\ThreadPool.cpp" />
     <ClCompile Include="src\Core\Threading\ThreadPoolManager.cpp" />
@@ -203,6 +206,8 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Render\DirectX\Direct3DManager.cpp" />
     <ClCompile Include="src\Render\DirectX\Heap\DescriptorHeap.cpp" />
+    <ClCompile Include="src\Render\DirectX\Heap\Direct3DHeapManager.cpp" />
+    <ClCompile Include="src\Render\DirectX\Resources\Direct3DResources.cpp" />
     <ClCompile Include="src\Render\Graphics\GraphicsManager.cpp" />
     <ClCompile Include="src\Render\Renderer\DeferredRenderer.cpp" />
     <ClCompile Include="src\Render\Texture\Texture.cpp" />

@@ -8,6 +8,8 @@
 #include "Core/Containers/DynamicArray.h"
 #include "Core/Vector/Vector2.h"
 #include "Render/Display/DisplayOrientation.h"
+#include "Render/DirectX/Resources/Direct3DResources.h"
+#include "Render/DirectX/Heap/Direct3DHeapManager.h"
 
 class Direct3DManager
 {
@@ -19,16 +21,16 @@ public:
 	void WaitForGPU();
 	void Present();
 	
-	ID3D12Device*				GetDevice() { return mDevice; }
-	IDXGISwapChain3*			GetSwapChain() { return mSwapChain; }
-	ID3D12Resource*				GetBackBufferTarget() { return mBackBufferTargets[mCurrentBuffer]; }
-	ID3D12CommandQueue*			GetCommandQueue() { return mCommandQueue; }
-	ID3D12CommandAllocator*		GetCommandAllocator() { return mCommandAllocators[mCurrentBuffer]; }
-	D3D12_VIEWPORT				GetScreenViewport() { return mScreenViewport; }
+	ID3D12Device*				GetDevice() { return mDirect3DResources.Device; }
+	IDXGISwapChain3*			GetSwapChain() { return mDirect3DResources.SwapChain; }
+	ID3D12Resource*				GetBackBufferTarget() { return mDirect3DResources.BackBufferTargets[mDirect3DResources.CurrentBuffer]; }
+	ID3D12CommandQueue*			GetCommandQueue() { return mDirect3DResources.CommandQueue; }
+	ID3D12CommandAllocator*		GetCommandAllocator() { return mDirect3DResources.CommandAllocators[mDirect3DResources.CurrentBuffer]; }
+	D3D12_VIEWPORT				GetScreenViewport() { return mDirect3DResources.ScreenViewport; }
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView() const
 	{
-		return CD3DX12_CPU_DESCRIPTOR_HANDLE(mRTVHeap->GetCPUDescriptorHandleForHeapStart(), mCurrentBuffer, mRTVDescriptorSize);
+		return CD3DX12_CPU_DESCRIPTOR_HANDLE(mDirect3DResources.RTVHeap->GetCPUDescriptorHandleForHeapStart(), mDirect3DResources.CurrentBuffer, mDirect3DResources.RTVDescriptorSize);
 	}
 
 	D3D12_HEAP_PROPERTIES GetDefaultHeapProperties()  { return mDefaultHeapProperties; }
@@ -44,24 +46,12 @@ private:
 
 	DXGI_MODE_ROTATION ComputeDisplayRotation();
 
-	uint32 mBufferCount;
-	uint32 mCurrentBuffer;
-	ID3D12Device *mDevice;
-	IDXGIFactory4 *mDXGIFactory;
-	IDXGISwapChain3	*mSwapChain;
-	DynamicArray<ID3D12Resource*> mBackBufferTargets;
-	ID3D12DescriptorHeap *mRTVHeap;
-	uint32 mRTVDescriptorSize;
-	ID3D12CommandQueue *mCommandQueue;
-	DynamicArray<ID3D12CommandAllocator*> mCommandAllocators;
-	D3D12_VIEWPORT	mScreenViewport;
+	Direct3DResources mDirect3DResources;
+	Direct3DHeapManager *mHeapManager;
+
 	bool mDeviceRemoved;
 	bool mUseVsync;
 	bool mIsFullScreen;
-
-	ID3D12Fence* mFence;
-	DynamicArray<uint64> mFenceValues;
-	HANDLE mFenceEvent;
 
 	Vector2	mOutputSize;
 	DisplayOrientation mNativeOrientation;
