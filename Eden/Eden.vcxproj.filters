@@ -91,6 +91,9 @@
     <Filter Include="Source Files\Render\DirectX\Resources">
       <UniqueIdentifier>{f1e4f5dd-dbd5-4694-8884-1c511d9388a8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render\DirectX\Upload">
+      <UniqueIdentifier>{83f510cf-e083-46ed-b293-6bbb0e1c8151}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -228,6 +231,9 @@
     <ClInclude Include="src\Render\DirectX\Heap\Direct3DHeapManager.h">
       <Filter>Source Files\Render\DirectX\Heap</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\DirectX\Upload\Direct3DUploadManager.h">
+      <Filter>Source Files\Render\DirectX\Upload</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -337,6 +343,9 @@
     </ClCompile>
     <ClCompile Include="src\Core\Platform\PlatformCore.cpp">
       <Filter>Source Files\Core\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\DirectX\Upload\Direct3DUploadManager.cpp">
+      <Filter>Source Files\Render\DirectX\Upload</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

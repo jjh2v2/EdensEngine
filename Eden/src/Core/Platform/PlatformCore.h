@@ -14,9 +14,13 @@
 #define SAMPLER_DESCRIPTOR_HEAP_SIZE		64
 #define MAX_TEXTURE_SUBRESOURCE_COUNT		512
 
+#define UPLOAD_TEXTURE_BUFFER_SIZE			1024 * 1024 * 32
+
+typedef int8_t      int8;
 typedef int16_t		int16;
 typedef int32_t		int32;
 typedef int64_t		int64;
+typedef uint8_t     uint8;
 typedef uint16_t	uint16;
 typedef uint32_t	uint32;
 typedef uint64_t	uint64;
