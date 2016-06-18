@@ -37,6 +37,8 @@ public:
 	D3D12_HEAP_PROPERTIES GetUploadHeapProperties()   { return mUploadHeapProperties; }
 	D3D12_HEAP_PROPERTIES GetReadbackHeapProperties() { return mReadbackHeapProperties; }
 
+	Direct3DHeapManager *GetHeapManager() { return mHeapManager; }
+
 private:
 	void InitializeDeviceResources();
 	void ReleaseSwapChainDependentResources();

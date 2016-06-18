@@ -1,12 +1,16 @@
 #pragma once
 #include "Core/Vector/Vector3.h"
 #include "Core/Platform/PlatformCore.h"
+#include "Render/DirectX/Heap/DescriptorHeapHandle.h"
 
 class Texture
 {
 public:
 	Texture();
 	~Texture();
+
+	void SetDescriptorHeapHandle(DescriptorHeapHandle handle) { mDescriptorHandle = handle; }
+	DescriptorHeapHandle GetDescriptorHeapHandle() { return mDescriptorHandle; }
 
 	void SetTextureResource(ID3D12Resource *resource) { mTextureResource = resource; }
 	ID3D12Resource *GetTextureResource() { return mTextureResource; }
@@ -24,8 +28,7 @@ public:
 
 private:
 	ID3D12Resource* mTextureResource;
-	D3D12_CPU_DESCRIPTOR_HANDLE mCPUHandle;
-	D3D12_GPU_DESCRIPTOR_HANDLE mGPUHandle;
+	DescriptorHeapHandle mDescriptorHandle;
 
 	DXGI_FORMAT mFormat;
 	Vector3		mDimensions;

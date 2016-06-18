@@ -6,6 +6,7 @@ DescriptorHeap::DescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE 
 	mMaxDescriptors = numDescriptors;
 	mIsReferencedByShader = isReferencedByShader;
 	mCurrentDescriptorIndex = 0;
+	mActiveHandleCount = 0;
 
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc;
 	heapDesc.NumDescriptors = uint32(numDescriptors);
@@ -25,6 +26,11 @@ DescriptorHeap::DescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE 
 
 DescriptorHeap::~DescriptorHeap()
 {
+	if (mActiveHandleCount != 0)
+	{
+		Direct3DUtils::ThrowRuntimeError("There were active handles when the descriptor heap was destroyed. Look for leaks.");
+	}
+
 	mFreeDescriptors.Clear();
 	
 	mDescriptorHeap->Release();
@@ -62,13 +68,20 @@ DescriptorHeapHandle DescriptorHeap::GetNewHeapHandle()
 	}
 
 	newHandle.SetHeapIndex(newHandleID);
-	
+	mActiveHandleCount++;
+
 	return newHandle;
 }
 
 void DescriptorHeap::FreeHeapHandle(DescriptorHeapHandle handle)
 {
 	mFreeDescriptors.Add(handle.GetHeapIndex());
+
+	if (mActiveHandleCount == 0)
+	{
+		Direct3DUtils::ThrowRuntimeError("Freeing heap handles when there should be none left");
+	}
+	mActiveHandleCount--;
 }
 
 void DescriptorHeap::Reset()

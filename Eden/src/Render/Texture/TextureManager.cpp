@@ -74,9 +74,38 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 	textureDesc.Alignment = 0;
 	
 	D3D12_HEAP_PROPERTIES defaultProperties = mDirect3DManager->GetDefaultHeapProperties();
-	ID3D12Resource *newTextureResource = newTexture->GetTextureResource();
+	ID3D12Resource *newTextureResource = NULL;
 	mDirect3DManager->GetDevice()->CreateCommittedResource(&defaultProperties, D3D12_HEAP_FLAG_NONE, &textureDesc,
 		D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&newTextureResource));
+
+	newTexture->SetTextureResource(newTextureResource);
+	newTexture->SetDescriptorHeapHandle(mDirect3DManager->GetHeapManager()->GetNewSRVDescriptorHeapHandle());
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc = {};
+	if (textureMetaData.IsCubemap())
+	{
+		Application::Assert(textureMetaData.arraySize == 6);
+
+		shaderResourceViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+		shaderResourceViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		shaderResourceViewDesc.TextureCube.MostDetailedMip = 0;
+		shaderResourceViewDesc.TextureCube.MipLevels = uint32(textureMetaData.mipLevels);
+		shaderResourceViewDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+	}
+
+	mDirect3DManager->GetDevice()->CreateShaderResourceView(newTextureResource, &shaderResourceViewDesc, newTexture->GetDescriptorHeapHandle().GetCPUHandle());
+
+	const uint64 numSubResources = textureMetaData.mipLevels * textureMetaData.arraySize;
+	uint64 textureMemorySize = 0;
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT layouts[MAX_TEXTURE_SUBRESOURCE_COUNT];
+	UINT numRows[MAX_TEXTURE_SUBRESOURCE_COUNT];
+	UINT64 rowSizesInBytes[MAX_TEXTURE_SUBRESOURCE_COUNT];
+
+	mDirect3DManager->GetDevice()->GetCopyableFootprints(&textureDesc, 0, uint32(numSubResources), 0, layouts, numRows, rowSizesInBytes, &textureMemorySize);
+
+	
+	UploadContext uploadContext = DX12::ResourceUploadBegin(textureMemSize);
+	uint8* uploadMem = reinterpret_cast<uint8*>(uploadContext.CPUAddress);
 
 	return newTexture;
 }

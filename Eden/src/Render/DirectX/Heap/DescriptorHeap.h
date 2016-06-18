@@ -25,4 +25,6 @@ private:
 	uint32 mMaxDescriptors;
 	uint32 mDescriptorSize;
 	bool   mIsReferencedByShader;
+
+	uint32 mActiveHandleCount;
 };

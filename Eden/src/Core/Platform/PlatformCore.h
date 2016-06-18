@@ -12,6 +12,7 @@
 #define SRV_DESCRIPTOR_HEAP_SIZE			1024
 #define DSV_DESCRIPTOR_HEAP_SIZE			32
 #define SAMPLER_DESCRIPTOR_HEAP_SIZE		64
+#define MAX_TEXTURE_SUBRESOURCE_COUNT		512
 
 typedef int16_t		int16;
 typedef int32_t		int32;
@@ -32,4 +33,10 @@ class Direct3DUtils
 public:
 	static void ThrowIfHRESULTFailed(HRESULT hr);
 	static void ThrowRuntimeError(char *errorMessage);
+};
+
+class Application
+{
+public:
+	static void Assert(bool param);
 };
