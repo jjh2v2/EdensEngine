@@ -103,9 +103,50 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 
 	mDirect3DManager->GetDevice()->GetCopyableFootprints(&textureDesc, 0, uint32(numSubResources), 0, layouts, numRows, rowSizesInBytes, &textureMemorySize);
 
-	
 	UploadContext uploadContext = DX12::ResourceUploadBegin(textureMemSize);
 	uint8* uploadMem = reinterpret_cast<uint8*>(uploadContext.CPUAddress);
+
+	for (uint64 arrayIdx = 0; arrayIdx < textureMetaData.arraySize; ++arrayIdx)
+	{
+		for (uint64 mipIdx = 0; mipIdx < textureMetaData.mipLevels; ++mipIdx)
+		{
+			const uint64 subResourceIdx = mipIdx + (arrayIdx * textureMetaData.mipLevels);
+
+			const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& subResourceLayout = layouts[subResourceIdx];
+			const uint64 subResourceHeight = numRows[subResourceIdx];
+			const uint64 subResourcePitch = subResourceLayout.Footprint.RowPitch;
+			const uint64 subResourceDepth = subResourceLayout.Footprint.Depth;
+			uint8* dstSubResourceMem = reinterpret_cast<uint8*>(uploadMem) + subResourceLayout.Offset;
+
+			for (uint64 z = 0; z < subResourceDepth; ++z)
+			{
+				const DirectX::Image* subImage = imageData.GetImage(mipIdx, arrayIdx, z);
+				Application::Assert(subImage != NULL);
+				const uint8* srcSubResourceMem = subImage->pixels;
+
+				for (uint64 y = 0; y < subResourceHeight; ++y)
+				{
+					memcpy(dstSubResourceMem, srcSubResourceMem, Min(subResourcePitch, subImage->rowPitch));
+					dstSubResourceMem += subResourcePitch;
+					srcSubResourceMem += subImage->rowPitch;
+				}
+			}
+		}
+	}
+
+	for (uint64 subResourceIdx = 0; subResourceIdx < numSubResources; ++subResourceIdx)
+	{
+		D3D12_TEXTURE_COPY_LOCATION dst = {};
+		dst.pResource = texture.Resource;
+		dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+		dst.SubresourceIndex = uint32(subResourceIdx);
+		D3D12_TEXTURE_COPY_LOCATION src = {};
+		src.pResource = uploadContext.Resource;
+		src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+		src.PlacedFootprint = Layouts[subResourceIdx];
+		src.PlacedFootprint.Offset += uploadContext.ResourceOffset;
+		uploadContext.CmdList->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
+	}
 
 	return newTexture;
 }
