@@ -14,7 +14,8 @@
 #define SAMPLER_DESCRIPTOR_HEAP_SIZE		64
 #define MAX_TEXTURE_SUBRESOURCE_COUNT		512
 
-#define UPLOAD_TEXTURE_BUFFER_SIZE			1024 * 1024 * 32
+#define UPLOAD_BUFFER_SIZE					1024 * 1024 * 32
+#define MAX_GPU_UPLOADS						16
 
 typedef int8_t      int8;
 typedef int16_t		int16;
@@ -43,4 +44,5 @@ class Application
 {
 public:
 	static void Assert(bool param);
+	static uint64 Align(uint64 size, uint64 alignment);
 };
