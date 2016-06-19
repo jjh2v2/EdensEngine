@@ -1,11 +1,9 @@
 #include "Render/DirectX/Upload/Direct3DUploadManager.h"
 #include "Render/DirectX/D3D12Helper.h"
 
-Direct3DUploadManager::Direct3DUploadManager(Direct3DManager *direct3DManager)
+Direct3DUploadManager::Direct3DUploadManager(ID3D12Device *device, D3D12_HEAP_PROPERTIES &heapProperties)
 {
-	ID3D12Device *device = direct3DManager->GetDevice();
-
-	for (uint32 i = 0; i < MAX_TEXTURE_UPLOADS; i++)
+	for (uint32 i = 0; i < MAX_GPU_UPLOADS; i++)
 	{
 		//allocator can only be on one active command list at a time
 		Direct3DUtils::ThrowIfHRESULTFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COPY, IID_PPV_ARGS(&mUploads[i].CommandAllocator)));
@@ -36,7 +34,7 @@ Direct3DUploadManager::Direct3DUploadManager(Direct3DManager *direct3DManager)
 	uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 	uploadBufferDesc.Alignment = 0;
 
-	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateCommittedResource(&direct3DManager->GetUploadHeapProperties(), D3D12_HEAP_FLAG_NONE, &uploadBufferDesc,
+	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &uploadBufferDesc,
 		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mUploadBuffer)));
 
 	D3D12_RANGE readRange = {};
@@ -50,7 +48,23 @@ Direct3DUploadManager::Direct3DUploadManager(Direct3DManager *direct3DManager)
 
 Direct3DUploadManager::~Direct3DUploadManager()
 {
+	mUploadBuffer->Release();
+	mUploadBuffer = NULL;
 
+	mFence->Release();
+	mFence = NULL;
+
+	mCommandQueue->Release();
+	mCommandQueue = NULL;
+
+	mCommandList->Release();
+	mCommandList = NULL;
+
+	for (uint32 i = 0; i < MAX_GPU_UPLOADS; i++)
+	{
+		mUploads[i].CommandAllocator->Release();
+		mUploads[i].CommandAllocator = NULL;
+	}
 }
 
 

@@ -1,6 +1,5 @@
 #pragma once
 #include "Core/Platform/PlatformCore.h"
-#include "Render/DirectX/Direct3DManager.h"
 #include "Core/Containers/DynamicArray.h"
 
 struct Direct3DUpload
@@ -36,7 +35,7 @@ struct Direct3DUploadInfo
 class Direct3DUploadManager
 {
 public:
-	Direct3DUploadManager(Direct3DManager *direct3DManager);
+	Direct3DUploadManager(ID3D12Device *device, D3D12_HEAP_PROPERTIES &heapProperties);
 	~Direct3DUploadManager();
 
 	void ClearFinishedUploads(uint64 flushCount);

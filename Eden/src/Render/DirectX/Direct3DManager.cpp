@@ -7,13 +7,18 @@ Direct3DManager::Direct3DManager()
 	mCurrentOrientation = DisplayOrientation_Landscape;
 	mUseVsync = false;
 	mHeapManager = NULL;
+	mUploadManager = NULL;
 
 	InitializeDeviceResources();
 }
 
 Direct3DManager::~Direct3DManager()
 {
+	WaitForGPU();
+
 	delete mHeapManager;
+
+	delete mUploadManager;
 
 	ReleaseSwapChainDependentResources();
 
@@ -277,6 +282,8 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 	mReadbackHeapProperties.VisibleNodeMask = 0;
 
 	mHeapManager = new Direct3DHeapManager(mDirect3DResources.Device);
+
+	mUploadManager = new Direct3DUploadManager(mDirect3DResources.Device, mUploadHeapProperties);
 
 	WaitForGPU();
 }

@@ -103,8 +103,8 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 
 	mDirect3DManager->GetDevice()->GetCopyableFootprints(&textureDesc, 0, uint32(numSubResources), 0, layouts, numRows, rowSizesInBytes, &textureMemorySize);
 
-	UploadContext uploadContext = DX12::ResourceUploadBegin(textureMemSize);
-	uint8* uploadMem = reinterpret_cast<uint8*>(uploadContext.CPUAddress);
+	Direct3DUploadInfo uploadInfo = mDirect3DManager->GetUploadManager()->GetUploadInfoForBuffer(textureMemorySize);
+	uint8* uploadMem = reinterpret_cast<uint8*>(uploadInfo.CPUAddress);
 
 	for (uint64 arrayIdx = 0; arrayIdx < textureMetaData.arraySize; ++arrayIdx)
 	{
@@ -137,16 +137,27 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 	for (uint64 subResourceIdx = 0; subResourceIdx < numSubResources; ++subResourceIdx)
 	{
 		D3D12_TEXTURE_COPY_LOCATION dst = {};
-		dst.pResource = texture.Resource;
+		dst.pResource = newTextureResource;
 		dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
 		dst.SubresourceIndex = uint32(subResourceIdx);
 		D3D12_TEXTURE_COPY_LOCATION src = {};
-		src.pResource = uploadContext.Resource;
+		src.pResource = uploadInfo.Resource;
 		src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-		src.PlacedFootprint = Layouts[subResourceIdx];
-		src.PlacedFootprint.Offset += uploadContext.ResourceOffset;
-		uploadContext.CmdList->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
+		src.PlacedFootprint = layouts[subResourceIdx];
+		src.PlacedFootprint.Offset += uploadInfo.ResourceOffset;
+		uploadInfo.CommandList->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
 	}
+
+	mDirect3DManager->GetUploadManager()->ResourceUploadEnd(uploadInfo);
+
+	D3D12_RESOURCE_BARRIER barrier = {};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = newTextureResource;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	mDirect3DManager->get->ResourceBarrier(1, &barrier);
 
 	return newTexture;
 }
