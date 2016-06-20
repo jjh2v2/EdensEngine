@@ -14,6 +14,7 @@ struct Direct3DResources
 		RTVHeap = NULL;
 		RTVDescriptorSize = 0;
 		CommandQueue = NULL;
+		CommandList = NULL;
 		Fence = NULL;
 		FenceEvent = NULL;
 
@@ -35,6 +36,7 @@ struct Direct3DResources
 	uint32 RTVDescriptorSize;
 	ID3D12CommandQueue *CommandQueue;
 	DynamicArray<ID3D12CommandAllocator*> CommandAllocators;
+	ID3D12GraphicsCommandList *CommandList;
 	D3D12_VIEWPORT ScreenViewport;
 	ID3D12Fence* Fence;
 	DynamicArray<uint64> FenceValues;

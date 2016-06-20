@@ -185,8 +185,8 @@ Direct3DUploadInfo Direct3DUploadManager::GetUploadInfoForBuffer(uint64 size)
 	Direct3DUpload &submission = mUploads[submissionIdx];
 	//Assert_(submission.Size == size);
 
-	Application::Assert(submission.CommandAllocator->Reset());
-	Application::Assert(mCommandList->Reset(submission.CommandAllocator, NULL));
+	Direct3DUtils::ThrowIfHRESULTFailed(submission.CommandAllocator->Reset());
+	Direct3DUtils::ThrowIfHRESULTFailed(mCommandList->Reset(submission.CommandAllocator, NULL));
 
 	Direct3DUploadInfo uploadInfo;
 	uploadInfo.CommandList = mCommandList;
@@ -200,7 +200,7 @@ Direct3DUploadInfo Direct3DUploadManager::GetUploadInfoForBuffer(uint64 size)
 void Direct3DUploadManager::ResourceUploadEnd(Direct3DUploadInfo& context)
 {
 	// Finish off and execute the command list
-	Application::Assert(mCommandList->Close());
+	Direct3DUtils::ThrowIfHRESULTFailed(mCommandList->Close());
 	ID3D12CommandList* cmdLists[1] = { mCommandList };
 	mCommandQueue->ExecuteCommandLists(1, cmdLists);
 

@@ -28,6 +28,9 @@ Direct3DManager::~Direct3DManager()
 	mDirect3DResources.Fence->Release();
 	mDirect3DResources.Fence = NULL;
 	
+	mDirect3DResources.CommandList->Release();
+	mDirect3DResources.CommandList = NULL;
+
 	for (UINT bufferIndex = 0; bufferIndex < mDirect3DResources.BufferCount; bufferIndex++)
 	{
 		mDirect3DResources.CommandAllocators[bufferIndex]->Release();
@@ -83,6 +86,9 @@ void Direct3DManager::InitializeDeviceResources()
 	{
 		Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mDirect3DResources.CommandAllocators[bufferIndex])));
 	}
+
+	Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mDirect3DResources.CommandAllocators[mDirect3DResources.CurrentBuffer], NULL, IID_PPV_ARGS(&mDirect3DResources.CommandList)));
+	mDirect3DResources.CommandList->Close();
 
 	// Create synchronization objects.
 	Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.Device->CreateFence(mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer], D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mDirect3DResources.Fence)));

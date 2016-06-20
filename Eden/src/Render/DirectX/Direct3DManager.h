@@ -22,11 +22,12 @@ public:
 	void WaitForGPU();
 	void Present();
 	
-	ID3D12Device*				GetDevice() { return mDirect3DResources.Device; }
-	IDXGISwapChain3*			GetSwapChain() { return mDirect3DResources.SwapChain; }
-	ID3D12Resource*				GetBackBufferTarget() { return mDirect3DResources.BackBufferTargets[mDirect3DResources.CurrentBuffer]; }
-	ID3D12CommandQueue*			GetCommandQueue() { return mDirect3DResources.CommandQueue; }
-	ID3D12CommandAllocator*		GetCommandAllocator() { return mDirect3DResources.CommandAllocators[mDirect3DResources.CurrentBuffer]; }
+	ID3D12Device				*GetDevice() { return mDirect3DResources.Device; }
+	IDXGISwapChain3 			*GetSwapChain() { return mDirect3DResources.SwapChain; }
+	ID3D12Resource  			*GetBackBufferTarget() { return mDirect3DResources.BackBufferTargets[mDirect3DResources.CurrentBuffer]; }
+	ID3D12CommandQueue			*GetCommandQueue() { return mDirect3DResources.CommandQueue; }
+	ID3D12CommandAllocator		*GetCommandAllocator() { return mDirect3DResources.CommandAllocators[mDirect3DResources.CurrentBuffer]; }
+	ID3D12GraphicsCommandList   *GetCommandList() { return mDirect3DResources.CommandList; }
 
 	D3D12_VIEWPORT				GetScreenViewport() { return mDirect3DResources.ScreenViewport; }
 

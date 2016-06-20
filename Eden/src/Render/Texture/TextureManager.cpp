@@ -1,5 +1,6 @@
 #include "Render/Texture/TextureManager.h"
 #include "Asset/Texture/DirectXTex.h"
+#include "Util/String/StringConverter.h"
 
 TextureManager::TextureManager(Direct3DManager *direct3DManager)
 {
@@ -16,7 +17,15 @@ TextureManager::TextureManager(Direct3DManager *direct3DManager)
 
 TextureManager::~TextureManager()
 {
-	
+	for (uint32 i = 0; i < mTextures.CurrentSize(); i++)
+	{
+		mDirect3DManager->GetHeapManager()->FreeSRVDescriptorHeapHandle(mTextures[i]->GetDescriptorHeapHandle());
+		mTextures[i]->GetTextureResource()->Release();
+		mTextures[i]->SetTextureResource(NULL);
+		delete mTextures[i];
+	}
+
+	mTextures.Clear();
 }
 
 void TextureManager::LoadAllTextures()
@@ -35,6 +44,14 @@ void TextureManager::LoadAllTextures()
 		textureLookup.TextureRef = NULL;
 		mTextureLookup.insert(std::pair<std::string, TextureLookup>(justFileName, textureLookup));
 	}
+
+	WCHAR *convertedString = StringConverter::StringToWCHAR(mTextureLookup["MageDiffuseFire"].TextureFilePath);
+
+	Texture *texture = LoadTexture(convertedString);
+	mTextureLookup["MageDiffuseFire"].TextureRef = texture;
+	mTextures.Add(texture);
+
+	delete[] convertedString;
 }
 
 Texture *TextureManager::LoadTexture(WCHAR *filePath)
@@ -126,7 +143,7 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 
 				for (uint64 y = 0; y < subResourceHeight; ++y)
 				{
-					memcpy(dstSubResourceMem, srcSubResourceMem, Min(subResourcePitch, subImage->rowPitch));
+					memcpy(dstSubResourceMem, srcSubResourceMem, MathHelper::Min(subResourcePitch, subImage->rowPitch));
 					dstSubResourceMem += subResourcePitch;
 					srcSubResourceMem += subImage->rowPitch;
 				}
@@ -157,7 +174,7 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	mDirect3DManager->get->ResourceBarrier(1, &barrier);
+	mDirect3DManager->GetCommandList()->ResourceBarrier(1, &barrier);
 
 	return newTexture;
 }

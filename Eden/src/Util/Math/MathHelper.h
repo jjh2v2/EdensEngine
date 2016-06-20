@@ -2,6 +2,7 @@
 #include <d3d11.h>
 #include <d3dx10math.h>
 #include <random>
+#include "Core/Platform/PlatformCore.h"
 
 static thread_local std::mt19937 gRandomGeneratorEngine;
 
@@ -82,6 +83,11 @@ public:
 	}
 
 	static int Min(int a, int b)
+	{
+		return a < b ? a : b;
+	}
+
+	static uint64 Min(uint64 a, uint64 b)
 	{
 		return a < b ? a : b;
 	}

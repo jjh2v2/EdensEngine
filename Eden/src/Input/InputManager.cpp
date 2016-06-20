@@ -150,6 +150,7 @@ bool InputManager::ReadMouse()
 {
 	HRESULT result;
 
+	//TDA: mouse can be null here somehow
 	result = mMouse->GetDeviceState(sizeof(DIMOUSESTATE), (LPVOID)&mMouseState);
 	if(FAILED(result))
 	{

@@ -15,5 +15,5 @@ GraphicsManager::~GraphicsManager()
 void GraphicsManager::InitializeGraphicsResources()
 {
 	mTextureManager = new TextureManager(mDirect3DManager);
-	//mTextureManager->LoadAllTextures();
+	mTextureManager->LoadAllTextures();
 }
