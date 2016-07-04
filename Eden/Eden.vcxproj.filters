@@ -94,6 +94,9 @@
     <Filter Include="Source Files\Render\DirectX\Upload">
       <UniqueIdentifier>{83f510cf-e083-46ed-b293-6bbb0e1c8151}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render\Shader">
+      <UniqueIdentifier>{05ed4514-9f7b-495b-8838-850b1409c63b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -234,6 +237,9 @@
     <ClInclude Include="src\Render\DirectX\Upload\Direct3DUploadManager.h">
       <Filter>Source Files\Render\DirectX\Upload</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\Shader\Shader.h">
+      <Filter>Source Files\Render\Shader</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -346,6 +352,9 @@
     </ClCompile>
     <ClCompile Include="src\Render\DirectX\Upload\Direct3DUploadManager.cpp">
       <Filter>Source Files\Render\DirectX\Upload</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Shader\Shader.cpp">
+      <Filter>Source Files\Render\Shader</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

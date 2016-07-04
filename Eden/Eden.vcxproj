@@ -170,6 +170,7 @@
     <ClInclude Include="src\Render\Display\DisplayOrientation.h" />
     <ClInclude Include="src\Render\Graphics\GraphicsManager.h" />
     <ClInclude Include="src\Render\Renderer\DeferredRenderer.h" />
+    <ClInclude Include="src\Render\Shader\Shader.h" />
     <ClInclude Include="src\Render\Texture\Texture.h" />
     <ClInclude Include="src\Render\Texture\TextureManager.h" />
     <ClInclude Include="src\Util\Math\MathHelper.h" />
@@ -212,6 +213,7 @@
     <ClCompile Include="src\Render\DirectX\Upload\Direct3DUploadManager.cpp" />
     <ClCompile Include="src\Render\Graphics\GraphicsManager.cpp" />
     <ClCompile Include="src\Render\Renderer\DeferredRenderer.cpp" />
+    <ClCompile Include="src\Render\Shader\Shader.cpp" />
     <ClCompile Include="src\Render\Texture\Texture.cpp" />
     <ClCompile Include="src\Render\Texture\TextureManager.cpp" />
   </ItemGroup>
