@@ -5,6 +5,7 @@
 #include <d3d11.h>
 #include <dxgi1_4.h>
 #include <assert.h>
+#include <d3dcompiler.h>
 
 #define NUM_DEFAULT_WORKER_THREADS			8
 #define DEFAULT_BUFFERING_COUNT				2
@@ -31,6 +32,7 @@ class ApplicationSpecification
 public:
 	static bool  ForceAllTexturesToSRGB;
 	static char* TextureManifestFileLocation;
+	static bool  RebuildAllShaders;
 };
 
 class Direct3DUtils
@@ -38,6 +40,7 @@ class Direct3DUtils
 public:
 	static void ThrowIfHRESULTFailed(HRESULT hr);
 	static void ThrowRuntimeError(char *errorMessage);
+	static void OutputShaderCompileError(ID3DBlob *shaderErrorBlob);
 };
 
 class Application
