@@ -173,6 +173,7 @@
     <ClInclude Include="src\Render\Shader\Shader.h" />
     <ClInclude Include="src\Render\Texture\Texture.h" />
     <ClInclude Include="src\Render\Texture\TextureManager.h" />
+    <ClInclude Include="src\Util\File\FileUtil.h" />
     <ClInclude Include="src\Util\Math\MathHelper.h" />
     <ClInclude Include="src\Util\Math\RandomGen.h" />
     <ClInclude Include="src\Util\String\StringConverter.h" />
