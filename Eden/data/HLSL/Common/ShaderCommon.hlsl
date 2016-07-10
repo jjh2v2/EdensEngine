@@ -25,13 +25,13 @@ struct GBufferPixelOutput
 	float4 material : SV_Target2;
 };
 
-cbuffer PerFrameBuffer
+cbuffer PerFrameBuffer(b0)
 {
 	matrix pfViewMatrix;
     matrix pfProjectionMatrix;
 };
 
-cbuffer PerObjectBuffer
+cbuffer PerObjectBuffer(b1)
 {
 	matrix 	poWorldMatrix;
     float4 	poDiffuseColor;
@@ -41,20 +41,20 @@ cbuffer PerObjectBuffer
 	float 	poMaterialIntensity;
 };
 
-Texture2D DiffuseTexture;
-SamplerState DiffuseSampler;
+Texture2D DiffuseTexture(t0);
+SamplerState DiffuseSampler(s0);
 
 #ifdef USE_NORMAL_MAP
-	Texture2D NormalMap;
-	SamplerState NormalMapSampler;
+	Texture2D NormalMap(t1);
+	SamplerState NormalMapSampler(s1);
 #endif
 
 #ifdef USE_ROUGHMETAL_MAP
-	Texture2D RoughMetalMap;
-	SamplerState RoughMetalMapSampler;
+	Texture2D RoughMetalMap(t2);
+	SamplerState RoughMetalMapSampler(s2);
 #endif
 
 #ifdef USE_DEPTH_MAP
-	Texture2D DepthMap;
-	SamplerState DepthMapSampler;
+	Texture2D DepthMap(t3);
+	SamplerState DepthMapSampler(s3);
 #endif

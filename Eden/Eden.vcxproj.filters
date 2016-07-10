@@ -246,6 +246,15 @@
     <ClInclude Include="src\Util\File\FileUtil.h">
       <Filter>Source Files\Util\File</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\Shader\ShaderManager.h">
+      <Filter>Source Files\Render\Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\Shader\ShaderTechnique.h">
+      <Filter>Source Files\Render\Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\Shader\ShaderPipelineDefinition.h">
+      <Filter>Source Files\Render\Shader</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -360,6 +369,12 @@
       <Filter>Source Files\Render\DirectX\Upload</Filter>
     </ClCompile>
     <ClCompile Include="src\Render\Shader\Shader.cpp">
+      <Filter>Source Files\Render\Shader</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Shader\ShaderManager.cpp">
+      <Filter>Source Files\Render\Shader</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Shader\ShaderTechnique.cpp">
       <Filter>Source Files\Render\Shader</Filter>
     </ClCompile>
   </ItemGroup>

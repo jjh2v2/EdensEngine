@@ -2,11 +2,14 @@
 #include "Util/File/FileUtil.h"
 #include <fstream>
 
-Shader::Shader()
+Shader::Shader(ID3D12Device* device, ShaderPipelineDefinition &initData)
 {
 	mHasPixelShader = false;
 	mUsesTessellation = false;
 	mRootSignature = NULL;
+	mPipelineState = NULL;
+
+	Initialize(device, initData);
 }
 
 Shader::~Shader()
@@ -19,7 +22,7 @@ Shader::~Shader()
 }
 
 
-void Shader::OutputShaderByteCodeToFile(const std::string &shaderOutputName, void* data, unsigned int dataLength)
+void Shader::OutputShaderByteCodeToFile(const std::string &shaderOutputName, void* data, uint32 dataLength)
 {
 	std::ofstream outputFile(shaderOutputName, std::ios::binary);
 
@@ -30,7 +33,7 @@ void Shader::OutputShaderByteCodeToFile(const std::string &shaderOutputName, voi
 }
 
 
-void Shader::ReadShaderByteCodeFromFile(const std::string &shaderOutputName, void*& data, unsigned int &dataLength)
+void Shader::ReadShaderByteCodeFromFile(const std::string &shaderOutputName, void*& data, uint32 &dataLength)
 {
 	std::ifstream inputFile(shaderOutputName, std::ios::binary);
 
@@ -72,7 +75,7 @@ ID3DBlob *Shader::GetShaderCode(const std::string &compiledShaderFileLocation, W
 			shaderData.BytecodeLength = compiledShader->GetBufferSize();
 			ID3DBlob* compressedShader;
 			Direct3DUtils::ThrowIfHRESULTFailed(D3DCompressShaders(1, &shaderData, D3D_COMPRESS_SHADER_KEEP_ALL_PARTS, &compressedShader));
-			OutputShaderByteCodeToFile(compiledShaderFileLocation, compressedShader->GetBufferPointer(), compressedShader->GetBufferSize());
+			OutputShaderByteCodeToFile(compiledShaderFileLocation, compressedShader->GetBufferPointer(), (uint32)compressedShader->GetBufferSize());
 			compressedShader->Release();
 			compressedShader = NULL;
 		}
@@ -95,7 +98,7 @@ ID3DBlob *Shader::GetShaderCode(const std::string &compiledShaderFileLocation, W
 	return compiledShader;
 }
 
-bool Shader::Initialize(ID3D12Device* device, ShaderInitializationData &initData)
+bool Shader::Initialize(ID3D12Device* device, ShaderPipelineDefinition &initData)
 {
 	ID3DBlob* vertexShader = NULL;
 	ID3DBlob* pixelShader = NULL;
@@ -178,9 +181,14 @@ bool Shader::Initialize(ID3D12Device* device, ShaderInitializationData &initData
 	mUsesTessellation = initData.UsesTessellation;
 	mHasPixelShader = initData.HasPixelShader;
 	
+	ID3DBlob* rootSignature;
+	ID3DBlob* rootSignatureError;
+	Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&initData.RootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &rootSignature, &rootSignatureError));
+	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, rootSignature->GetBufferPointer(), rootSignature->GetBufferSize(), IID_PPV_ARGS(&mRootSignature)));
+
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineStateDesc = {};
 	pipelineStateDesc.InputLayout = inputLayoutDesc;
-	pipelineStateDesc.pRootSignature = mRootSignature;	//still need to construct this
+	pipelineStateDesc.pRootSignature = mRootSignature;
 	pipelineStateDesc.VS = CD3DX12_SHADER_BYTECODE(vertexShader);
 	if (mHasPixelShader)
 	{
