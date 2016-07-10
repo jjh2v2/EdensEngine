@@ -1,4 +1,4 @@
-#include "Render/Shader/ShaderPipelineDefinition.h"
+#include "Render/Shader/Shader.h"
 #include "Core/Containers/DynamicArray.h"
 #include <map>
 
@@ -11,11 +11,12 @@ enum class ShaderTechniqueFlag : uint64
 class ShaderTechnique
 {
 public:
-	ShaderTechnique();
+	ShaderTechnique(ShaderPipelineDefinition pipelineDefinition);
 	~ShaderTechnique();
 
-	void AddAndCompilePermutation(uint64 flags);
+	void AddAndCompilePermutation(ShaderPipelinePermutation permutation);
 
 private:
-	std::map<uint64, ShaderPipelineDefinition*> mShaderPipelineMap;
+	std::map<ShaderPipelinePermutation, Shader*> mShaderPipelineMap;
+	ShaderPipelineDefinition mBaseShaderPipeline;
 };
