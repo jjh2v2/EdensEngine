@@ -62,6 +62,37 @@ struct ShaderPipelineRenderState
 	CD3DX12_BLEND_DESC BlendDesc;
 };
 
+enum ShaderDepthStencilState
+{
+	Disabled = 0,
+	EnabledLessEqual,
+	EnabledGreaterEqual,
+	EnabledWriteLessEqual,
+	EnabledWriteGreaterEqual,
+	MaxDepthStencilStates
+};
+
+enum ShaderRasterState
+{
+	BackFaceCull = 0,
+	BackFaceCullNoClip,
+	FrontFaceCull,
+	NoCull,
+	WireFrame,
+	MaxRasterStates
+};
+
+enum ShaderBlendState
+{
+	Disabled = 0,
+	Additive,
+	AlphaBlend,
+	Multiply,
+	Multiply2X,
+	Subtract,
+	MaxBlendStates
+};
+
 struct ShaderPipelinePermutation
 {
 	ShaderPipelinePermutation()
@@ -85,6 +116,8 @@ struct ShaderPipelinePermutation
 		return (RenderStateID == permutation.RenderStateID) && (TargetStateID == permutation.TargetStateID) && (ShaderDefines == permutation.ShaderDefines);
 	}
 
+
+	//we can swap these out for render states
 	uint32 RenderStateID;
 	uint32 TargetStateID;
 	uint64 ShaderDefines;

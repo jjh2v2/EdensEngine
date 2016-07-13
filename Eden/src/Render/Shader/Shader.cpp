@@ -2,14 +2,15 @@
 #include "Util/File/FileUtil.h"
 #include <fstream>
 
-Shader::Shader(ID3D12Device* device, ShaderPipelineDefinition &initData)
+Shader::Shader(ID3D12Device* device, ShaderPipelineDefinition &initData, ShaderPipelineRenderState &renderState,
+	ShaderPipelineTargetState &targetState, const D3D_SHADER_MACRO *defines)
 {
 	mHasPixelShader = false;
 	mUsesTessellation = false;
 	mRootSignature = NULL;
 	mPipelineState = NULL;
 
-	Initialize(device, initData);
+	Initialize(device, initData, renderState, targetState, defines);
 }
 
 Shader::~Shader()
@@ -98,7 +99,8 @@ ID3DBlob *Shader::GetShaderCode(const std::string &compiledShaderFileLocation, W
 	return compiledShader;
 }
 
-bool Shader::Initialize(ID3D12Device* device, ShaderPipelineDefinition &initData)
+bool Shader::Initialize(ID3D12Device* device, ShaderPipelineDefinition &initData, ShaderPipelineRenderState &renderState,
+	ShaderPipelineTargetState &targetState, const D3D_SHADER_MACRO *defines)
 {
 	ID3DBlob* vertexShader = NULL;
 	ID3DBlob* pixelShader = NULL;
@@ -162,20 +164,20 @@ bool Shader::Initialize(ID3D12Device* device, ShaderPipelineDefinition &initData
 	UINT shaderFlags = D3DCOMPILE_WARNINGS_ARE_ERRORS;
 
 	std::string vertexShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.VSEntry + ".ecs";
-	vertexShader = GetShaderCode(vertexShaderCompiledLocation, initData.VSFilePath, initData.VSEntry, "vs_5_0", shaderFlags, initData.Defines);
+	vertexShader = GetShaderCode(vertexShaderCompiledLocation, initData.VSFilePath, initData.VSEntry, "vs_5_0", shaderFlags, defines);
 	
 	if (initData.HasPixelShader)
 	{
 		std::string pixelShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.PSEntry + ".ecs";
-		pixelShader = GetShaderCode(pixelShaderCompiledLocation, initData.PSFilePath, initData.PSEntry, "ps_5_0", shaderFlags, initData.Defines);
+		pixelShader = GetShaderCode(pixelShaderCompiledLocation, initData.PSFilePath, initData.PSEntry, "ps_5_0", shaderFlags, defines);
 	}
 
 	if (initData.UsesTessellation)
 	{
 		std::string hullShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.HSEntry + ".ecs";
 		std::string domainShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.DSEntry + ".ecs";
-		hullShader = GetShaderCode(hullShaderCompiledLocation, initData.HSFilePath, initData.HSEntry, "hs_5_0", shaderFlags, initData.Defines);
-		domainShader = GetShaderCode(domainShaderCompiledLocation, initData.DSFilePath, initData.DSEntry, "ds_5_0", shaderFlags, initData.Defines);
+		hullShader = GetShaderCode(hullShaderCompiledLocation, initData.HSFilePath, initData.HSEntry, "hs_5_0", shaderFlags, defines);
+		domainShader = GetShaderCode(domainShaderCompiledLocation, initData.DSFilePath, initData.DSEntry, "ds_5_0", shaderFlags, defines);
 	}
 
 	mUsesTessellation = initData.UsesTessellation;
@@ -199,19 +201,19 @@ bool Shader::Initialize(ID3D12Device* device, ShaderPipelineDefinition &initData
 		pipelineStateDesc.HS = CD3DX12_SHADER_BYTECODE(hullShader);
 		pipelineStateDesc.DS = CD3DX12_SHADER_BYTECODE(domainShader);
 	}
-	pipelineStateDesc.RasterizerState = initData.RasterDesc;
-	pipelineStateDesc.BlendState = initData.BlendDesc;
-	pipelineStateDesc.DepthStencilState = initData.DepthStencilDesc;
+	pipelineStateDesc.RasterizerState = renderState.RasterDesc;
+	pipelineStateDesc.BlendState = renderState.BlendDesc;
+	pipelineStateDesc.DepthStencilState = renderState.DepthStencilDesc;
 	pipelineStateDesc.SampleMask = UINT_MAX;
 	pipelineStateDesc.PrimitiveTopologyType = initData.Topology;
 	
-	pipelineStateDesc.NumRenderTargets = initData.NumRenderTargets;
-	for (UINT i = 0; i < initData.NumRenderTargets; i++)
+	pipelineStateDesc.NumRenderTargets = targetState.NumRenderTargets;
+	for (UINT i = 0; i < targetState.NumRenderTargets; i++)
 	{
-		pipelineStateDesc.RTVFormats[i] = initData.RenderTargetFormats[i];
+		pipelineStateDesc.RTVFormats[i] = targetState.RenderTargetFormats[i];
 	}
 
-	pipelineStateDesc.DSVFormat = initData.DepthStencilFormat;
+	pipelineStateDesc.DSVFormat = targetState.DepthStencilFormat;
 	pipelineStateDesc.SampleDesc.Count = 1;
 
 	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateGraphicsPipelineState(&pipelineStateDesc, IID_PPV_ARGS(&mPipelineState)));
