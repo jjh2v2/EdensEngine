@@ -64,33 +64,33 @@ struct ShaderPipelineRenderState
 
 enum ShaderDepthStencilState
 {
-	Disabled = 0,
-	EnabledLessEqual,
-	EnabledGreaterEqual,
-	EnabledWriteLessEqual,
-	EnabledWriteGreaterEqual,
-	MaxDepthStencilStates
+	DepthStencil_Disabled = 0,
+	DepthStencil_EnabledLessEqual,
+	DepthStencil_EnabledGreaterEqual,
+	DepthStencil_EnabledWriteLessEqual,
+	DepthStencil_EnabledWriteGreaterEqual,
+	DepthStencil_MaxDepthStencilStates
 };
 
 enum ShaderRasterState
 {
-	BackFaceCull = 0,
-	BackFaceCullNoClip,
-	FrontFaceCull,
-	NoCull,
-	WireFrame,
-	MaxRasterStates
+	Raster_BackFaceCull = 0,
+	Raster_BackFaceCullNoClip,
+	Raster_FrontFaceCull,
+	Raster_NoCull,
+	Raster_WireFrame,
+	Raster_MaxRasterStates
 };
 
 enum ShaderBlendState
 {
-	Disabled = 0,
-	Additive,
-	AlphaBlend,
-	Multiply,
-	Multiply2X,
-	Subtract,
-	MaxBlendStates
+	Blend_Disabled = 0,
+	Blend_Additive,
+	Blend_AlphaBlend,
+	Blend_Multiply,
+	Blend_Multiply2X,
+	Blend_Subtract,
+	Blend_MaxBlendStates
 };
 
 struct ShaderPipelinePermutation
