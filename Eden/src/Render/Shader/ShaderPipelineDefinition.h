@@ -38,6 +38,11 @@ enum ShaderTargetStateType
 	Target_GBuffer = 0
 };
 
+enum ShaderRenderStateType
+{
+	Render_GBuffer_Standard = 0
+};
+
 
 struct ShaderPipelineDefinition
 {
@@ -115,30 +120,29 @@ struct ShaderPipelineRenderState
 
 struct ShaderPipelinePermutation
 {
-	ShaderPipelinePermutation()
+	ShaderPipelinePermutation(ShaderRenderStateType renderType, ShaderTargetStateType targetType, uint64 defines)
 	{
-		RenderStateID = 0;
-		TargetStateID = 0;
-		ShaderDefines = 0;
+		RenderStateType = renderType;
+		TargetStateType = targetType;
+		ShaderDefines = defines;
 	}
 
 	bool operator < (const ShaderPipelinePermutation &permutation) const
 	{
-		return RenderStateID != permutation.RenderStateID ?
-			RenderStateID < permutation.RenderStateID :
-			TargetStateID != permutation.TargetStateID ?
-			TargetStateID < permutation.TargetStateID :
+		return RenderStateType != permutation.RenderStateType ?
+			RenderStateType < permutation.RenderStateType :
+			TargetStateType != permutation.TargetStateType ?
+			TargetStateType < permutation.TargetStateType :
 			ShaderDefines < permutation.ShaderDefines;
 	}
 
 	bool operator == (const ShaderPipelinePermutation &permutation) const
 	{
-		return (RenderStateID == permutation.RenderStateID) && (TargetStateID == permutation.TargetStateID) && (ShaderDefines == permutation.ShaderDefines);
+		return (RenderStateType == permutation.RenderStateType) && (TargetStateType == permutation.TargetStateType) && (ShaderDefines == permutation.ShaderDefines);
 	}
 
 
-	//we can swap these out for render states
-	uint32 RenderStateID;
-	uint32 TargetStateID;
+	ShaderRenderStateType RenderStateType;
+	ShaderTargetStateType TargetStateType;
 	uint64 ShaderDefines;
 };

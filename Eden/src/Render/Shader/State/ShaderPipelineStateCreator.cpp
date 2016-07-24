@@ -1,6 +1,13 @@
 #include "Render/Shader/State/ShaderPipelineStateCreator.h"
 #include "Render/Shader/ShaderPipelineDefinition.h"
 
+CD3DX12_DEPTH_STENCIL_DESC ShaderPipelineStateCreator::mDepthStencilDescs[];
+CD3DX12_RASTERIZER_DESC ShaderPipelineStateCreator::mRasterDescs[];
+CD3DX12_BLEND_DESC ShaderPipelineStateCreator::mBlendDescs[];
+
+std::map<ShaderRenderStateType, ShaderPipelineRenderState> ShaderPipelineStateCreator::mPipelineRenderStateMap;
+std::map<ShaderTargetStateType, ShaderPipelineTargetState> ShaderPipelineStateCreator::mPipelineTargetStateMap;
+
 ShaderPipelineStateCreator::ShaderPipelineStateCreator()
 {
 	mDepthStencilDescs[DepthStencil_Disabled] = CD3DX12_DEPTH_STENCIL_DESC{};
@@ -118,7 +125,7 @@ ShaderPipelineStateCreator::ShaderPipelineStateCreator()
 	mBlendDescs[Blend_Subtract].RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
 	mBlendDescs[Blend_Subtract].RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
-	mPipelineRenderStateMap.insert(std::pair<uint32, ShaderPipelineRenderState>(0, 
+	mPipelineRenderStateMap.insert(std::pair<ShaderRenderStateType, ShaderPipelineRenderState>(Render_GBuffer_Standard,
 		ShaderPipelineRenderState(mDepthStencilDescs[DepthStencil_WriteGreaterEqual], mRasterDescs[Raster_BackFaceCull], mBlendDescs[Blend_Disabled])));
 
 	ShaderPipelineTargetState gbufferTarget;

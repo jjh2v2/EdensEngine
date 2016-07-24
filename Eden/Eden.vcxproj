@@ -170,6 +170,7 @@
     <ClInclude Include="src\Render\Display\DisplayOrientation.h" />
     <ClInclude Include="src\Render\Graphics\GraphicsManager.h" />
     <ClInclude Include="src\Render\Renderer\DeferredRenderer.h" />
+    <ClInclude Include="src\Render\Shader\Defines\ShaderDefineMapper.h" />
     <ClInclude Include="src\Render\Shader\Shader.h" />
     <ClInclude Include="src\Render\Shader\ShaderManager.h" />
     <ClInclude Include="src\Render\Shader\ShaderPipelineDefinition.h" />
@@ -218,6 +219,7 @@
     <ClCompile Include="src\Render\DirectX\Upload\Direct3DUploadManager.cpp" />
     <ClCompile Include="src\Render\Graphics\GraphicsManager.cpp" />
     <ClCompile Include="src\Render\Renderer\DeferredRenderer.cpp" />
+    <ClCompile Include="src\Render\Shader\Defines\ShaderDefineMapper.cpp" />
     <ClCompile Include="src\Render\Shader\Shader.cpp" />
     <ClCompile Include="src\Render\Shader\ShaderManager.cpp" />
     <ClCompile Include="src\Render\Shader\ShaderTechnique.cpp" />

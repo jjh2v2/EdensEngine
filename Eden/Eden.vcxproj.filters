@@ -103,6 +103,9 @@
     <Filter Include="Source Files\Render\Shader\State">
       <UniqueIdentifier>{161167ae-7adf-4c4a-83c8-ba87767fb3d4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render\Shader\Defines">
+      <UniqueIdentifier>{9c32867b-ec69-40a2-8ba5-033ec3b074d5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -261,6 +264,9 @@
     <ClInclude Include="src\Render\Shader\State\ShaderPipelineStateCreator.h">
       <Filter>Source Files\Render\Shader\State</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\Shader\Defines\ShaderDefineMapper.h">
+      <Filter>Source Files\Render\Shader\Defines</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -385,6 +391,9 @@
     </ClCompile>
     <ClCompile Include="src\Render\Shader\State\ShaderPipelineStateCreator.cpp">
       <Filter>Source Files\Render\Shader\State</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Shader\Defines\ShaderDefineMapper.cpp">
+      <Filter>Source Files\Render\Shader\Defines</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
