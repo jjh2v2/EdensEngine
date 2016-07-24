@@ -1,4 +1,5 @@
 #include "Render/Shader/State/ShaderPipelineStateCreator.h"
+#include "Render/Shader/ShaderPipelineDefinition.h"
 
 ShaderPipelineStateCreator::ShaderPipelineStateCreator()
 {
@@ -7,25 +8,25 @@ ShaderPipelineStateCreator::ShaderPipelineStateCreator()
 	mDepthStencilDescs[DepthStencil_Disabled].DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
 	mDepthStencilDescs[DepthStencil_Disabled].DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
-	mDepthStencilDescs[DepthStencil_EnabledLessEqual] = CD3DX12_DEPTH_STENCIL_DESC{};
-	mDepthStencilDescs[DepthStencil_EnabledLessEqual].DepthEnable = true;
-	mDepthStencilDescs[DepthStencil_EnabledLessEqual].DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-	mDepthStencilDescs[DepthStencil_EnabledLessEqual].DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	mDepthStencilDescs[DepthStencil_LessEqual] = CD3DX12_DEPTH_STENCIL_DESC{};
+	mDepthStencilDescs[DepthStencil_LessEqual].DepthEnable = true;
+	mDepthStencilDescs[DepthStencil_LessEqual].DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	mDepthStencilDescs[DepthStencil_LessEqual].DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
-	mDepthStencilDescs[DepthStencil_EnabledGreaterEqual] = CD3DX12_DEPTH_STENCIL_DESC{};
-	mDepthStencilDescs[DepthStencil_EnabledGreaterEqual].DepthEnable = true;
-	mDepthStencilDescs[DepthStencil_EnabledGreaterEqual].DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-	mDepthStencilDescs[DepthStencil_EnabledGreaterEqual].DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+	mDepthStencilDescs[DepthStencil_GreaterEqual] = CD3DX12_DEPTH_STENCIL_DESC{};
+	mDepthStencilDescs[DepthStencil_GreaterEqual].DepthEnable = true;
+	mDepthStencilDescs[DepthStencil_GreaterEqual].DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	mDepthStencilDescs[DepthStencil_GreaterEqual].DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
 
-	mDepthStencilDescs[DepthStencil_EnabledWriteLessEqual] = CD3DX12_DEPTH_STENCIL_DESC{};
-	mDepthStencilDescs[DepthStencil_EnabledWriteLessEqual].DepthEnable = true;
-	mDepthStencilDescs[DepthStencil_EnabledWriteLessEqual].DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-	mDepthStencilDescs[DepthStencil_EnabledWriteLessEqual].DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	mDepthStencilDescs[DepthStencil_WriteLessEqual] = CD3DX12_DEPTH_STENCIL_DESC{};
+	mDepthStencilDescs[DepthStencil_WriteLessEqual].DepthEnable = true;
+	mDepthStencilDescs[DepthStencil_WriteLessEqual].DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	mDepthStencilDescs[DepthStencil_WriteLessEqual].DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
-	mDepthStencilDescs[DepthStencil_EnabledWriteGreaterEqual] = CD3DX12_DEPTH_STENCIL_DESC{};
-	mDepthStencilDescs[DepthStencil_EnabledWriteGreaterEqual].DepthEnable = true;
-	mDepthStencilDescs[DepthStencil_EnabledWriteGreaterEqual].DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-	mDepthStencilDescs[DepthStencil_EnabledWriteGreaterEqual].DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+	mDepthStencilDescs[DepthStencil_WriteGreaterEqual] = CD3DX12_DEPTH_STENCIL_DESC{};
+	mDepthStencilDescs[DepthStencil_WriteGreaterEqual].DepthEnable = true;
+	mDepthStencilDescs[DepthStencil_WriteGreaterEqual].DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	mDepthStencilDescs[DepthStencil_WriteGreaterEqual].DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
 
 	mRasterDescs[Raster_BackFaceCull] = CD3DX12_RASTERIZER_DESC{};
 	mRasterDescs[Raster_BackFaceCull].CullMode = D3D12_CULL_MODE_BACK;
@@ -116,6 +117,18 @@ ShaderPipelineStateCreator::ShaderPipelineStateCreator()
 	mBlendDescs[Blend_Subtract].RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
 	mBlendDescs[Blend_Subtract].RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
 	mBlendDescs[Blend_Subtract].RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+	mPipelineRenderStateMap.insert(std::pair<uint32, ShaderPipelineRenderState>(0, 
+		ShaderPipelineRenderState(mDepthStencilDescs[DepthStencil_WriteGreaterEqual], mRasterDescs[Raster_BackFaceCull], mBlendDescs[Blend_Disabled])));
+
+	ShaderPipelineTargetState gbufferTarget;
+	gbufferTarget.NumRenderTargets = 3;
+	gbufferTarget.RenderTargetFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;	//albedo
+	gbufferTarget.RenderTargetFormats[1] = DXGI_FORMAT_R16G16B16A16_FLOAT;  //normals
+	gbufferTarget.RenderTargetFormats[2] = DXGI_FORMAT_R16G16B16A16_FLOAT;  //material
+	gbufferTarget.DepthStencilFormat = DXGI_FORMAT_R32G8X24_TYPELESS;
+
+	mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_GBuffer, gbufferTarget));
 }
 
 ShaderPipelineStateCreator::~ShaderPipelineStateCreator()

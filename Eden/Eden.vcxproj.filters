@@ -100,6 +100,9 @@
     <Filter Include="Source Files\Util\File">
       <UniqueIdentifier>{99a968b4-be7b-4186-9a97-3a67cc81b24e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render\Shader\State">
+      <UniqueIdentifier>{161167ae-7adf-4c4a-83c8-ba87767fb3d4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -255,6 +258,9 @@
     <ClInclude Include="src\Render\Shader\ShaderPipelineDefinition.h">
       <Filter>Source Files\Render\Shader</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\Shader\State\ShaderPipelineStateCreator.h">
+      <Filter>Source Files\Render\Shader\State</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -376,6 +382,9 @@
     </ClCompile>
     <ClCompile Include="src\Render\Shader\ShaderTechnique.cpp">
       <Filter>Source Files\Render\Shader</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Shader\State\ShaderPipelineStateCreator.cpp">
+      <Filter>Source Files\Render\Shader\State</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
