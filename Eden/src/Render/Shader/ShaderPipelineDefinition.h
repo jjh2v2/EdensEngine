@@ -120,29 +120,25 @@ struct ShaderPipelineRenderState
 
 struct ShaderPipelinePermutation
 {
-	ShaderPipelinePermutation(ShaderRenderStateType renderType, ShaderTargetStateType targetType, uint64 defines)
+	ShaderPipelinePermutation(ShaderRenderStateType renderType, ShaderTargetStateType targetType)
 	{
 		RenderStateType = renderType;
 		TargetStateType = targetType;
-		ShaderDefines = defines;
 	}
 
 	bool operator < (const ShaderPipelinePermutation &permutation) const
 	{
 		return RenderStateType != permutation.RenderStateType ?
 			RenderStateType < permutation.RenderStateType :
-			TargetStateType != permutation.TargetStateType ?
-			TargetStateType < permutation.TargetStateType :
-			ShaderDefines < permutation.ShaderDefines;
+			TargetStateType < permutation.TargetStateType;
 	}
 
 	bool operator == (const ShaderPipelinePermutation &permutation) const
 	{
-		return (RenderStateType == permutation.RenderStateType) && (TargetStateType == permutation.TargetStateType) && (ShaderDefines == permutation.ShaderDefines);
+		return (RenderStateType == permutation.RenderStateType) && (TargetStateType == permutation.TargetStateType);
 	}
 
 
 	ShaderRenderStateType RenderStateType;
 	ShaderTargetStateType TargetStateType;
-	uint64 ShaderDefines;
 };

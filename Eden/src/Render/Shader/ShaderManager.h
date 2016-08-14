@@ -1,5 +1,5 @@
 #pragma once
-#include "Render/Shader/Shader.h"
+#include "Render/Shader/ShaderTechnique.h"
 #include "Core/Containers/DynamicArray.h"
 #include <map>
 
@@ -10,6 +10,6 @@ public:
 	~ShaderManager();
 
 private:
-	std::map<std::string, Shader*> mShaderLookup;
-	DynamicArray<Shader*> mShaders;
+	std::map<std::string, ShaderTechnique*> mShaderTechniqueLookup;
+	DynamicArray<ShaderTechnique*> mShaderTechniques;
 };
