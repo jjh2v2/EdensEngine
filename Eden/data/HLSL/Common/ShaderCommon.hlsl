@@ -25,13 +25,13 @@ struct GBufferPixelOutput
 	float4 material : SV_Target2;
 };
 
-cbuffer PerFrameBuffer(b0)
+cbuffer PerFrameBuffer(b1)
 {
 	matrix pfViewMatrix;
     matrix pfProjectionMatrix;
 };
 
-cbuffer PerObjectBuffer(b1)
+cbuffer PerObjectBuffer(b2)
 {
 	matrix 	poWorldMatrix;
     float4 	poDiffuseColor;
@@ -39,6 +39,8 @@ cbuffer PerObjectBuffer(b1)
 	float 	poRoughness;
 	float 	poMetalness;
 	float 	poMaterialIntensity;
+	bool	usesNormalMap;
+	bool	usesRoughMetalMap;
 };
 
 Texture2D DiffuseTexture(t0);

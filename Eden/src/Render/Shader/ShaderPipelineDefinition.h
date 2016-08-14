@@ -76,6 +76,7 @@ struct ShaderPipelineDefinition
 
 	D3D12_PRIMITIVE_TOPOLOGY_TYPE Topology;
 	CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
+	D3D_SHADER_MACRO *Defines;
 };
 
 struct ShaderPipelineTargetState

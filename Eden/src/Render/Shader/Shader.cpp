@@ -3,14 +3,14 @@
 #include <fstream>
 
 Shader::Shader(ID3D12Device* device, ShaderPipelineDefinition &initData, ShaderPipelineRenderState &renderState,
-	ShaderPipelineTargetState &targetState, const D3D_SHADER_MACRO *defines)
+	ShaderPipelineTargetState &targetState)
 {
 	mHasPixelShader = false;
 	mUsesTessellation = false;
 	mRootSignature = NULL;
 	mPipelineState = NULL;
 
-	Initialize(device, initData, renderState, targetState, defines);
+	Initialize(device, initData, renderState, targetState);
 }
 
 Shader::~Shader()
@@ -100,7 +100,7 @@ ID3DBlob *Shader::GetShaderCode(const std::string &compiledShaderFileLocation, W
 }
 
 bool Shader::Initialize(ID3D12Device* device, ShaderPipelineDefinition &initData, ShaderPipelineRenderState &renderState,
-	ShaderPipelineTargetState &targetState, const D3D_SHADER_MACRO *defines)
+	ShaderPipelineTargetState &targetState)
 {
 	ID3DBlob* vertexShader = NULL;
 	ID3DBlob* pixelShader = NULL;
@@ -164,20 +164,20 @@ bool Shader::Initialize(ID3D12Device* device, ShaderPipelineDefinition &initData
 	UINT shaderFlags = D3DCOMPILE_WARNINGS_ARE_ERRORS;
 
 	std::string vertexShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.VSEntry + ".ecs";
-	vertexShader = GetShaderCode(vertexShaderCompiledLocation, initData.VSFilePath, initData.VSEntry, "vs_5_0", shaderFlags, defines);
+	vertexShader = GetShaderCode(vertexShaderCompiledLocation, initData.VSFilePath, initData.VSEntry, "vs_5_0", shaderFlags, initData.Defines);
 	
 	if (initData.HasPixelShader)
 	{
 		std::string pixelShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.PSEntry + ".ecs";
-		pixelShader = GetShaderCode(pixelShaderCompiledLocation, initData.PSFilePath, initData.PSEntry, "ps_5_0", shaderFlags, defines);
+		pixelShader = GetShaderCode(pixelShaderCompiledLocation, initData.PSFilePath, initData.PSEntry, "ps_5_0", shaderFlags, initData.Defines);
 	}
 
 	if (initData.UsesTessellation)
 	{
 		std::string hullShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.HSEntry + ".ecs";
 		std::string domainShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.DSEntry + ".ecs";
-		hullShader = GetShaderCode(hullShaderCompiledLocation, initData.HSFilePath, initData.HSEntry, "hs_5_0", shaderFlags, defines);
-		domainShader = GetShaderCode(domainShaderCompiledLocation, initData.DSFilePath, initData.DSEntry, "ds_5_0", shaderFlags, defines);
+		hullShader = GetShaderCode(hullShaderCompiledLocation, initData.HSFilePath, initData.HSEntry, "hs_5_0", shaderFlags, initData.Defines);
+		domainShader = GetShaderCode(domainShaderCompiledLocation, initData.DSFilePath, initData.DSEntry, "ds_5_0", shaderFlags, initData.Defines);
 	}
 
 	mUsesTessellation = initData.UsesTessellation;
