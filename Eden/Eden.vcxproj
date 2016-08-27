@@ -173,6 +173,7 @@
     <ClInclude Include="src\Render\Shader\Shader.h" />
     <ClInclude Include="src\Render\Shader\ShaderManager.h" />
     <ClInclude Include="src\Render\Shader\ShaderPipelineDefinition.h" />
+    <ClInclude Include="src\Render\Shader\ShaderPSO.h" />
     <ClInclude Include="src\Render\Shader\ShaderTechnique.h" />
     <ClInclude Include="src\Render\Shader\State\ShaderPipelineStateCreator.h" />
     <ClInclude Include="src\Render\Texture\Texture.h" />
@@ -220,6 +221,7 @@
     <ClCompile Include="src\Render\Renderer\DeferredRenderer.cpp" />
     <ClCompile Include="src\Render\Shader\Shader.cpp" />
     <ClCompile Include="src\Render\Shader\ShaderManager.cpp" />
+    <ClCompile Include="src\Render\Shader\ShaderPSO.cpp" />
     <ClCompile Include="src\Render\Shader\ShaderTechnique.cpp" />
     <ClCompile Include="src\Render\Shader\State\ShaderPipelineStateCreator.cpp" />
     <ClCompile Include="src\Render\Texture\Texture.cpp" />

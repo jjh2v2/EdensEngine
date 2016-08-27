@@ -1,9 +1,9 @@
 #include "Render/Shader/ShaderTechnique.h"
 #include "Render/Shader/State/ShaderPipelineStateCreator.h"
 
-ShaderTechnique::ShaderTechnique(ShaderPipelineDefinition pipelineDefinition)
+ShaderTechnique::ShaderTechnique(ID3D12Device *device, ShaderPipelineDefinition &pipelineDefinition)
 {
-	mBaseShaderPipeline = pipelineDefinition;
+	mShader = new Shader(device, pipelineDefinition);
 }
 
 ShaderTechnique::~ShaderTechnique()
@@ -13,8 +13,8 @@ ShaderTechnique::~ShaderTechnique()
 
 void ShaderTechnique::AddAndCompilePermutation(ID3D12Device *device, const ShaderPipelinePermutation &permutation)
 {
-	Shader *newShader = new Shader(device, mBaseShaderPipeline, ShaderPipelineStateCreator::GetPipelineRenderState(permutation.RenderStateType),
+	ShaderPSO *newShaderPSO = new ShaderPSO(device, mShader, ShaderPipelineStateCreator::GetPipelineRenderState(permutation.RenderStateType),
 		ShaderPipelineStateCreator::GetPipelineTargetState(permutation.TargetStateType));
 
-	mShaderPipelineMap.insert(std::pair<ShaderPipelinePermutation, Shader*>(permutation, newShader));
+	mShaderPipelineMap.insert(std::pair<ShaderPipelinePermutation, ShaderPSO*>(permutation, newShaderPSO));
 }

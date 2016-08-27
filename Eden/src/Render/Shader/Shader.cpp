@@ -2,24 +2,28 @@
 #include "Util/File/FileUtil.h"
 #include <fstream>
 
-Shader::Shader(ID3D12Device* device, ShaderPipelineDefinition &initData, ShaderPipelineRenderState &renderState,
-	ShaderPipelineTargetState &targetState)
+Shader::Shader(ID3D12Device* device, ShaderPipelineDefinition &initData)
 {
 	mHasPixelShader = false;
 	mUsesTessellation = false;
-	mRootSignature = NULL;
-	mPipelineState = NULL;
+	mVertexShader = NULL;
+	mPixelShader = NULL;
+	mHullShader = NULL;
+	mDomainShader = NULL;
 
-	Initialize(device, initData, renderState, targetState);
+	Initialize(device, initData);
 }
 
 Shader::~Shader()
 {
-	if (mRootSignature)
-	{
-		mRootSignature->Release();
-		mRootSignature = NULL;
-	}
+	mVertexShader->Release();
+	mVertexShader = NULL;
+	mPixelShader->Release();
+	mPixelShader = NULL;
+	mDomainShader->Release();
+	mDomainShader = NULL;
+	mHullShader->Release();
+	mHullShader = NULL;
 }
 
 
@@ -99,124 +103,81 @@ ID3DBlob *Shader::GetShaderCode(const std::string &compiledShaderFileLocation, W
 	return compiledShader;
 }
 
-bool Shader::Initialize(ID3D12Device* device, ShaderPipelineDefinition &initData, ShaderPipelineRenderState &renderState,
-	ShaderPipelineTargetState &targetState)
+bool Shader::Initialize(ID3D12Device* device, ShaderPipelineDefinition &initData)
 {
-	ID3DBlob* vertexShader = NULL;
-	ID3DBlob* pixelShader = NULL;
-	ID3DBlob* hullShader = NULL;
-	ID3DBlob* domainShader = NULL;
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs[6];
+	mInputElementDescs[0].SemanticName = "POSITION";
+	mInputElementDescs[0].SemanticIndex = 0;
+	mInputElementDescs[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	mInputElementDescs[0].InputSlot = 0;
+	mInputElementDescs[0].AlignedByteOffset = 0;
+	mInputElementDescs[0].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+	mInputElementDescs[0].InstanceDataStepRate = 0;
 
-	inputElementDescs[0].SemanticName = "POSITION";
-	inputElementDescs[0].SemanticIndex = 0;
-	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	inputElementDescs[0].InputSlot = 0;
-	inputElementDescs[0].AlignedByteOffset = 0;
-	inputElementDescs[0].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-	inputElementDescs[0].InstanceDataStepRate = 0;
+	mInputElementDescs[1].SemanticName = "TEXCOORD";
+	mInputElementDescs[1].SemanticIndex = 0;
+	mInputElementDescs[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	mInputElementDescs[1].InputSlot = 0;
+	mInputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+	mInputElementDescs[1].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+	mInputElementDescs[1].InstanceDataStepRate = 0;
 
-	inputElementDescs[1].SemanticName = "TEXCOORD";
-	inputElementDescs[1].SemanticIndex = 0;
-	inputElementDescs[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	inputElementDescs[1].InputSlot = 0;
-	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-	inputElementDescs[1].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-	inputElementDescs[1].InstanceDataStepRate = 0;
+	mInputElementDescs[2].SemanticName = "NORMAL";
+	mInputElementDescs[2].SemanticIndex = 0;
+	mInputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	mInputElementDescs[2].InputSlot = 0;
+	mInputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+	mInputElementDescs[2].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+	mInputElementDescs[2].InstanceDataStepRate = 0;
 
-	inputElementDescs[2].SemanticName = "NORMAL";
-	inputElementDescs[2].SemanticIndex = 0;
-	inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	inputElementDescs[2].InputSlot = 0;
-	inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-	inputElementDescs[2].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-	inputElementDescs[2].InstanceDataStepRate = 0;
+	mInputElementDescs[3].SemanticName = "TANGENT";
+	mInputElementDescs[3].SemanticIndex = 0;
+	mInputElementDescs[3].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	mInputElementDescs[3].InputSlot = 0;
+	mInputElementDescs[3].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+	mInputElementDescs[3].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+	mInputElementDescs[3].InstanceDataStepRate = 0;
 
-	inputElementDescs[3].SemanticName = "TANGENT";
-	inputElementDescs[3].SemanticIndex = 0;
-	inputElementDescs[3].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	inputElementDescs[3].InputSlot = 0;
-	inputElementDescs[3].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-	inputElementDescs[3].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-	inputElementDescs[3].InstanceDataStepRate = 0;
+	mInputElementDescs[4].SemanticName = "BINORMAL";
+	mInputElementDescs[4].SemanticIndex = 0;
+	mInputElementDescs[4].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	mInputElementDescs[4].InputSlot = 0;
+	mInputElementDescs[4].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+	mInputElementDescs[4].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+	mInputElementDescs[4].InstanceDataStepRate = 0;
 
-	inputElementDescs[4].SemanticName = "BINORMAL";
-	inputElementDescs[4].SemanticIndex = 0;
-	inputElementDescs[4].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	inputElementDescs[4].InputSlot = 0;
-	inputElementDescs[4].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-	inputElementDescs[4].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-	inputElementDescs[4].InstanceDataStepRate = 0;
+	mInputElementDescs[5].SemanticName = "COLOR";
+	mInputElementDescs[5].SemanticIndex = 0;
+	mInputElementDescs[5].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	mInputElementDescs[5].InputSlot = 0;
+	mInputElementDescs[5].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+	mInputElementDescs[5].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+	mInputElementDescs[5].InstanceDataStepRate = 0;
 
-	inputElementDescs[5].SemanticName = "COLOR";
-	inputElementDescs[5].SemanticIndex = 0;
-	inputElementDescs[5].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	inputElementDescs[5].InputSlot = 0;
-	inputElementDescs[5].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-	inputElementDescs[5].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-	inputElementDescs[5].InstanceDataStepRate = 0;
-
-	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
-	inputLayoutDesc.pInputElementDescs = inputElementDescs;
-	inputLayoutDesc.NumElements = 6;
+	mInputLayoutDesc.pInputElementDescs = mInputElementDescs;
+	mInputLayoutDesc.NumElements = 6;
 
 	std::string outputLocation = "../EdensEngine/data/HLSL/Precompiled/";
 	UINT shaderFlags = D3DCOMPILE_WARNINGS_ARE_ERRORS;
 
 	std::string vertexShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.VSEntry + ".ecs";
-	vertexShader = GetShaderCode(vertexShaderCompiledLocation, initData.VSFilePath, initData.VSEntry, "vs_5_0", shaderFlags, initData.Defines);
+	mVertexShader = GetShaderCode(vertexShaderCompiledLocation, initData.VSFilePath, initData.VSEntry, "vs_5_0", shaderFlags, initData.Defines);
 	
 	if (initData.HasPixelShader)
 	{
 		std::string pixelShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.PSEntry + ".ecs";
-		pixelShader = GetShaderCode(pixelShaderCompiledLocation, initData.PSFilePath, initData.PSEntry, "ps_5_0", shaderFlags, initData.Defines);
+		mPixelShader = GetShaderCode(pixelShaderCompiledLocation, initData.PSFilePath, initData.PSEntry, "ps_5_0", shaderFlags, initData.Defines);
 	}
 
 	if (initData.UsesTessellation)
 	{
 		std::string hullShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.HSEntry + ".ecs";
 		std::string domainShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.DSEntry + ".ecs";
-		hullShader = GetShaderCode(hullShaderCompiledLocation, initData.HSFilePath, initData.HSEntry, "hs_5_0", shaderFlags, initData.Defines);
-		domainShader = GetShaderCode(domainShaderCompiledLocation, initData.DSFilePath, initData.DSEntry, "ds_5_0", shaderFlags, initData.Defines);
+		mHullShader = GetShaderCode(hullShaderCompiledLocation, initData.HSFilePath, initData.HSEntry, "hs_5_0", shaderFlags, initData.Defines);
+		mDomainShader = GetShaderCode(domainShaderCompiledLocation, initData.DSFilePath, initData.DSEntry, "ds_5_0", shaderFlags, initData.Defines);
 	}
 
 	mUsesTessellation = initData.UsesTessellation;
 	mHasPixelShader = initData.HasPixelShader;
-	
-	ID3DBlob* rootSignature;
-	ID3DBlob* rootSignatureError;
-	Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&initData.RootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &rootSignature, &rootSignatureError));
-	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, rootSignature->GetBufferPointer(), rootSignature->GetBufferSize(), IID_PPV_ARGS(&mRootSignature)));
-
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineStateDesc = {};
-	pipelineStateDesc.InputLayout = inputLayoutDesc;
-	pipelineStateDesc.pRootSignature = mRootSignature;
-	pipelineStateDesc.VS = CD3DX12_SHADER_BYTECODE(vertexShader);
-	if (mHasPixelShader)
-	{
-		pipelineStateDesc.PS = CD3DX12_SHADER_BYTECODE(pixelShader);
-	}
-	if (mUsesTessellation)
-	{
-		pipelineStateDesc.HS = CD3DX12_SHADER_BYTECODE(hullShader);
-		pipelineStateDesc.DS = CD3DX12_SHADER_BYTECODE(domainShader);
-	}
-	pipelineStateDesc.RasterizerState = renderState.RasterDesc;
-	pipelineStateDesc.BlendState = renderState.BlendDesc;
-	pipelineStateDesc.DepthStencilState = renderState.DepthStencilDesc;
-	pipelineStateDesc.SampleMask = UINT_MAX;
-	pipelineStateDesc.PrimitiveTopologyType = initData.Topology;
-	
-	pipelineStateDesc.NumRenderTargets = targetState.NumRenderTargets;
-	for (UINT i = 0; i < targetState.NumRenderTargets; i++)
-	{
-		pipelineStateDesc.RTVFormats[i] = targetState.RenderTargetFormats[i];
-	}
-
-	pipelineStateDesc.DSVFormat = targetState.DepthStencilFormat;
-	pipelineStateDesc.SampleDesc.Count = 1;
-
-	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateGraphicsPipelineState(&pipelineStateDesc, IID_PPV_ARGS(&mPipelineState)));
 
 	return true;
 }
