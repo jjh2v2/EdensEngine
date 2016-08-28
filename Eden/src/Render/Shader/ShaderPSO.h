@@ -4,10 +4,9 @@
 class ShaderPSO
 {
 public:
-	ShaderPSO(ID3D12Device* device, Shader *shader, ShaderPipelineRenderState &renderState, ShaderPipelineTargetState &targetState, CD3DX12_ROOT_SIGNATURE_DESC &rootSignatureDesc);
+	ShaderPSO(ID3D12Device* device, Shader *shader, ShaderPipelineRenderState &renderState, ShaderPipelineTargetState &targetState, ID3D12RootSignature *rootSignature);
 	~ShaderPSO();
 
 private:
-	ID3D12RootSignature *mRootSignature;
 	ID3D12PipelineState *mPipelineState;
 };

@@ -9,7 +9,7 @@ public:
 	ShaderTechnique(ID3D12Device *device, ShaderPipelineDefinition &pipelineDefinition);
 	~ShaderTechnique();
 
-	void AddAndCompilePermutation(ID3D12Device *device, const ShaderPipelinePermutation &permutation);
+	void AddAndCompilePermutation(ID3D12Device *device, const ShaderPipelinePermutation &permutation, ID3D12RootSignature *rootSignature);
 
 private:
 	Shader *mShader;

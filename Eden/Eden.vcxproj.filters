@@ -103,6 +103,9 @@
     <Filter Include="Source Files\Render\Shader\State">
       <UniqueIdentifier>{161167ae-7adf-4c4a-83c8-ba87767fb3d4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render\Shader\RootSignature">
+      <UniqueIdentifier>{6723fd7c-193e-4ec7-8c51-a6c98b673da4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -264,6 +267,9 @@
     <ClInclude Include="src\Render\Shader\ShaderPSO.h">
       <Filter>Source Files\Render\Shader</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\Shader\RootSignature\RootSignatureManager.h">
+      <Filter>Source Files\Render\Shader\RootSignature</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -391,6 +397,9 @@
     </ClCompile>
     <ClCompile Include="src\Render\Shader\ShaderPSO.cpp">
       <Filter>Source Files\Render\Shader</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Shader\RootSignature\RootSignatureManager.cpp">
+      <Filter>Source Files\Render\Shader\RootSignature</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -13,7 +13,7 @@ GBufferVertexOutput GBufferLitVertexShader(VertexInput input)
     output.normal = normalize(mul(input.normal, (float3x3)poWorldMatrix));
 	output.normal = normalize(mul(float4(output.normal, 0.0f), pfViewMatrix).xyz);
 	
-	if(usesNormalMap)
+	if(poUsesNormalMap)
 	{
 		output.tangent = mul(input.tangent, (float3x3)poWorldMatrix);
 		output.tangent = mul(output.tangent, pfViewMatrix);
@@ -33,9 +33,9 @@ GBufferPixelOutput GBufferLitPixelShader(GBufferVertexOutput input) : SV_TARGET
 	textureColor.rgb = pow(textureColor.rgb, 2.2);	//gamma correction
 	float4 material = float4(0.0,0.0,0.0,0.0);
 	
-	float3 normal = float3(0,0,0);
+	float3 normal = float3(0,0,0); //see if there's a big enough visual difference to warrant correcting interpolated normals by normalizing in the pixel shader too
 	
-	if(usesNormalMap)
+	if(poUsesNormalMap)
 	{
 		float4 bumpMap = (NormalMap.Sample(NormalMapSampler, modifiedTexCoord) * 2.0) - 1.0;
 		float3 viewSpaceBinormal = cross( input.normal.xyz, input.tangent );
@@ -50,7 +50,7 @@ GBufferPixelOutput GBufferLitPixelShader(GBufferVertexOutput input) : SV_TARGET
 	GBufferPixelOutput result;
 	result.albedo = textureColor * poDiffuseColor;
 	
-	if(usesRoughMetalMap)
+	if(poUsesRoughMetalMap)
 	{
 		float2 roughMetal = RoughMetalMap.Sample(RoughMetalMapSampler, modifiedTexCoord).rg;
 		result.material.r = max(roughMetal.r, 0.01);
