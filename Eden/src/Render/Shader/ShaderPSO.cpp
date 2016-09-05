@@ -7,8 +7,16 @@ ShaderPSO::ShaderPSO(ID3D12Device* device, Shader *shader, ShaderPipelineRenderS
 	pipelineStateDesc.pRootSignature = rootSignature;
 	pipelineStateDesc.VS = CD3DX12_SHADER_BYTECODE(shader->GetVertexShader());
 	pipelineStateDesc.PS = CD3DX12_SHADER_BYTECODE(shader->GetPixelShader());
-	pipelineStateDesc.HS = CD3DX12_SHADER_BYTECODE(shader->GetHullShader());
-	pipelineStateDesc.DS = CD3DX12_SHADER_BYTECODE(shader->GetDomainShader());
+
+	if (shader->GetHullShader())
+	{
+		pipelineStateDesc.HS = CD3DX12_SHADER_BYTECODE(shader->GetHullShader());
+	}
+	
+	if (shader->GetDomainShader())
+	{
+		pipelineStateDesc.DS = CD3DX12_SHADER_BYTECODE(shader->GetDomainShader());
+	}
 
 	pipelineStateDesc.RasterizerState = renderState.RasterDesc;
 	pipelineStateDesc.BlendState = renderState.BlendDesc;

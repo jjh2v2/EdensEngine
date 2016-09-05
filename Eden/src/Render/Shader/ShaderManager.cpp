@@ -1,8 +1,10 @@
 #include "Render/Shader/ShaderManager.h"
 #include "Util/String/StringConverter.h"
+#include "Render/Shader/State/ShaderPipelineStateCreator.h"
 
 ShaderManager::ShaderManager(ID3D12Device *device)
 {
+	ShaderPipelineStateCreator::BuildPipelineStates();
 	mRootSignatureManager = new RootSignatureManager(device);
 	LoadAllShaders(device);
 }

@@ -8,8 +8,10 @@ public:
 	ShaderPipelineStateCreator();
 	~ShaderPipelineStateCreator();
 
-	static ShaderPipelineRenderState GetPipelineRenderState(ShaderRenderStateType stateType) { return mPipelineRenderStateMap[stateType]; }
-	static ShaderPipelineTargetState GetPipelineTargetState(ShaderTargetStateType stateType) { return mPipelineTargetStateMap[stateType]; }
+	static void BuildPipelineStates();
+
+	static ShaderPipelineRenderState &GetPipelineRenderState(ShaderRenderStateType stateType) { return mPipelineRenderStateMap[stateType]; }
+	static ShaderPipelineTargetState &GetPipelineTargetState(ShaderTargetStateType stateType) { return mPipelineTargetStateMap[stateType]; }
 
 private:
 	static CD3DX12_DEPTH_STENCIL_DESC mDepthStencilDescs[DepthStencil_MaxDepthStencilStates];

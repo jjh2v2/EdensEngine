@@ -11,7 +11,7 @@ struct VertexInput
 struct GBufferVertexOutput
 {
     float4 position  	: SV_POSITION;
-    float2 texCoord0 	: TEXCOORD0;
+    float4 texCoord0 	: TEXCOORD0;
 	float3 normal    	: NORMAL;
 	float3 tangent   	: TANGENT;
     float3 binormal  	: BINORMAL;
@@ -25,13 +25,13 @@ struct GBufferPixelOutput
 	float4 material : SV_Target2;
 };
 
-cbuffer PerFrameBuffer(b0)
+cbuffer PerFrameBuffer : register(b0)
 {
 	matrix pfViewMatrix;
     matrix pfProjectionMatrix;
 };
 
-cbuffer PerObjectBuffer(b1)
+cbuffer PerObjectBuffer : register(b1)
 {
 	matrix 	poWorldMatrix;
     float4 	poDiffuseColor;
@@ -43,10 +43,19 @@ cbuffer PerObjectBuffer(b1)
 	bool	poUsesRoughMetalMap;
 };
 
-Texture2D DiffuseTexture(t0);
-SamplerState DiffuseSampler(s0);
-Texture2D NormalMap(t1);
-SamplerState NormalMapSampler(s1);
-Texture2D RoughMetalMap(t2);
-SamplerState RoughMetalMapSampler(s2);
+Texture2D DiffuseTexture : register(t0);
+SamplerState DiffuseSampler : register(s0);
+Texture2D NormalMap : register(t1);
+SamplerState NormalMapSampler : register(s1);
+Texture2D RoughMetalMap : register(t2);
+SamplerState RoughMetalMapSampler : register(s2);
+
+float2 EncodeSphereMap(float3 n)
+{
+    float oneMinusZ = 1.0f - n.z;
+    float p = sqrt(n.x * n.x + n.y * n.y + oneMinusZ * oneMinusZ);
+	p = max(p, 0.00001);
+
+    return n.xy * rcp(p) * 0.5f + 0.5f;
+}
 

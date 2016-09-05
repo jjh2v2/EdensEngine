@@ -58,7 +58,7 @@ ID3DBlob *Shader::GetShaderCode(const std::string &compiledShaderFileLocation, W
 
 	if (!FileUtil::DoesFileExist(compiledShaderFileLocation) || ApplicationSpecification::RebuildAllShaders)
 	{
-		HRESULT result = D3DCompileFromFile(shaderFilePath, defines, NULL, entryPoint, target, flags, 0, &compiledShader, &errorMessage);
+		HRESULT result = D3DCompileFromFile(shaderFilePath, defines, D3D_COMPILE_STANDARD_FILE_INCLUDE, entryPoint, target, flags, 0, &compiledShader, &errorMessage);
 
 		if (FAILED(result))
 		{
@@ -107,7 +107,7 @@ bool Shader::Initialize(ID3D12Device* device, ShaderPipelineDefinition &initData
 {
 	mInputElementDescs[0].SemanticName = "POSITION";
 	mInputElementDescs[0].SemanticIndex = 0;
-	mInputElementDescs[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	mInputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	mInputElementDescs[0].InputSlot = 0;
 	mInputElementDescs[0].AlignedByteOffset = 0;
 	mInputElementDescs[0].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
@@ -156,7 +156,7 @@ bool Shader::Initialize(ID3D12Device* device, ShaderPipelineDefinition &initData
 	mInputLayoutDesc.pInputElementDescs = mInputElementDescs;
 	mInputLayoutDesc.NumElements = 6;
 
-	std::string outputLocation = "../EdensEngine/data/HLSL/Precompiled/";
+	std::string outputLocation = "../Eden/data/HLSL/Precompiled/";
 	UINT shaderFlags = D3DCOMPILE_WARNINGS_ARE_ERRORS;
 
 	std::string vertexShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.VSEntry + ".ecs";
