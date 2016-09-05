@@ -1,0 +1,6 @@
+VertexShader
+[GBuffer/GBufferLit.hlsl]
+[GBufferLitVertexShader]
+PixelShader
+[GBuffer/GBufferLit.hlsl]
+[GBufferLitPixelShader]

@@ -1,6 +1,7 @@
 #pragma once
 #include "Render/DirectX/Direct3DManager.h"
 #include "Render/Texture/TextureManager.h"
+#include "Render/Shader/ShaderManager.h"
 
 class GraphicsManager
 {
@@ -15,4 +16,5 @@ public:
 private:
 	Direct3DManager *mDirect3DManager;
 	TextureManager *mTextureManager;
+	ShaderManager *mShaderManager;
 };

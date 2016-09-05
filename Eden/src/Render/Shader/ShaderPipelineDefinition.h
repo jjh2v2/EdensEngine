@@ -1,6 +1,7 @@
 #pragma once
 #include "Core/Platform/PlatformCore.h"
 #include "Render/DirectX/D3D12Helper.h"
+#include <string>
 
 enum ShaderDepthStencilStateType
 {
@@ -48,34 +49,25 @@ struct ShaderPipelineDefinition
 {
 	ShaderPipelineDefinition()
 	{
-		VSFilePath = NULL;
-		PSFilePath = NULL;
-		HSFilePath = NULL;
-		DSFilePath = NULL;
-		VSEntry = NULL;
-		PSEntry = NULL;
-		HSEntry = NULL;
-		DSEntry = NULL;
 		HasPixelShader = false;
 		UsesTessellation = false;
 		Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		RootSignatureDesc = CD3DX12_ROOT_SIGNATURE_DESC{};
+		Defines = NULL;
 	}
 
 	std::string ShaderOutputName;
-	WCHAR* VSFilePath;
-	WCHAR* PSFilePath;
-	WCHAR* HSFilePath;
-	WCHAR* DSFilePath;
-	LPCSTR VSEntry;
-	LPCSTR PSEntry;
-	LPCSTR HSEntry;
-	LPCSTR DSEntry;
+	WCHAR VSFilePath[256];
+	WCHAR PSFilePath[256];
+	WCHAR HSFilePath[256];
+	WCHAR DSFilePath[256];
+	std::string VSEntry;
+	std::string PSEntry;
+	std::string HSEntry;
+	std::string DSEntry;
 	bool HasPixelShader;
 	bool UsesTessellation;
 
 	D3D12_PRIMITIVE_TOPOLOGY_TYPE Topology;
-	CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
 	D3D_SHADER_MACRO *Defines;
 };
 

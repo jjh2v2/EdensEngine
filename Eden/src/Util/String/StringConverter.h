@@ -5,11 +5,21 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include "Core/Platform/PlatformCore.h"
 
 class StringConverter
 {
 public:
-	static WCHAR *StringToWCHAR(std::string &str)
+	static void StringToWCHAR(std::string &str, wchar_t *wstr, uint32 sizeOfDestination)
+	{
+		const char *cstr = str.c_str();
+		size_t wcharSize = strlen(cstr) + 1;
+		Application::Assert((uint32)wcharSize <= sizeOfDestination);
+		size_t convertedChars = 0;
+		mbstowcs_s(&convertedChars, wstr, wcharSize, cstr, _TRUNCATE);
+	}
+
+	static WCHAR *StringToWCHARAlloc(std::string &str)
 	{
 		const char *cstr = str.c_str();
 		size_t newsize = strlen(cstr) + 1;
@@ -21,7 +31,7 @@ public:
 		return wcstring;
 	}
 
-	static WCHAR *CStringToWCHAR(const char *cstr)
+	static WCHAR *CStringToWCHARAlloc(const char *cstr)
 	{
 		size_t newsize = strlen(cstr) + 1;
 

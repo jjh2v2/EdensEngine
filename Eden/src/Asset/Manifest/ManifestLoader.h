@@ -21,16 +21,15 @@ public:
 	{
 		mFileNames.Clear();
 		std::ifstream file(filename);
-		std::string directory;
 		std::string line;
 
 		if(file.is_open())
 		{
-			std::getline(file, directory);
+			std::getline(file, mDirectoryMapping);
 			while(std::getline(file, line))
 			{
 				std::string newFileName;
-				newFileName.append(directory);
+				newFileName.append(mDirectoryMapping);
 				newFileName.append(line);
 				mFileNames.Add(newFileName);
 			}
@@ -45,4 +44,5 @@ public:
 
 private:
 	DynamicArray<std::string> mFileNames;
+	std::string mDirectoryMapping;
 };
