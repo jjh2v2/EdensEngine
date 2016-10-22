@@ -23,8 +23,8 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 		CD3DX12_ROOT_SIGNATURE_DESC descRootSignature;
 		descRootSignature.Init(1, &parameter, 0, nullptr, rootSignatureFlags);
 
-		ID3DBlob *pSignature;
-		ID3DBlob *pError;
+		ID3DBlob *pSignature = NULL;
+		ID3DBlob *pError = NULL;
 		Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&descRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &pSignature, &pError));
 		Direct3DUtils::ThrowIfHRESULTFailed(direct3DManager->GetDevice()->CreateRootSignature(0, pSignature->GetBufferPointer(), pSignature->GetBufferSize(), IID_PPV_ARGS(&mRootSignature)));
 

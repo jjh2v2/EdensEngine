@@ -2,6 +2,7 @@
 #include "Render/DirectX/Direct3DManager.h"
 #include "Render/Texture/TextureManager.h"
 #include "Render/Shader/ShaderManager.h"
+#include "Render/Mesh/MeshManager.h"
 
 class GraphicsManager
 {
@@ -17,4 +18,5 @@ private:
 	Direct3DManager *mDirect3DManager;
 	TextureManager *mTextureManager;
 	ShaderManager *mShaderManager;
+	MeshManager *mMeshManager;
 };

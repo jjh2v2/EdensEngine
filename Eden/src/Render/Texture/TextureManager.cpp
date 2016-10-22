@@ -30,7 +30,7 @@ TextureManager::~TextureManager()
 
 void TextureManager::LoadAllTextures()
 {
-	//TDA: This isn't finished
+	//TDA: This isn't finished EDIT: Thanks past Alex, that's a really helpful comment.
 	mManifestLoader.LoadManifest(ApplicationSpecification::TextureManifestFileLocation);
 
 	DynamicArray<std::string> &fileNames = mManifestLoader.GetFileNames();
@@ -99,6 +99,7 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 	newTexture->SetTextureResource(newTextureResource);
 	newTexture->SetDescriptorHeapHandle(mDirect3DManager->GetHeapManager()->GetNewSRVDescriptorHeapHandle());
 
+	D3D12_SHADER_RESOURCE_VIEW_DESC *srvDescPointer = NULL;
 	D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc = {};
 	if (textureMetaData.IsCubemap())
 	{
@@ -109,9 +110,10 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 		shaderResourceViewDesc.TextureCube.MostDetailedMip = 0;
 		shaderResourceViewDesc.TextureCube.MipLevels = uint32(textureMetaData.mipLevels);
 		shaderResourceViewDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+		srvDescPointer = &shaderResourceViewDesc;
 	}
 
-	mDirect3DManager->GetDevice()->CreateShaderResourceView(newTextureResource, &shaderResourceViewDesc, newTexture->GetDescriptorHeapHandle().GetCPUHandle());
+	mDirect3DManager->GetDevice()->CreateShaderResourceView(newTextureResource, srvDescPointer, newTexture->GetDescriptorHeapHandle().GetCPUHandle());
 
 	const uint64 numSubResources = textureMetaData.mipLevels * textureMetaData.arraySize;
 	uint64 textureMemorySize = 0;

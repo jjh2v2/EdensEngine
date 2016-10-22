@@ -3,7 +3,7 @@
 //TDA: Serialize root signatures to files
 RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 {
-	//D3D notes say that performance is best if rangers are ordered from most frequent to least frequently changed
+	//D3D notes say that performance is best if ranges are ordered from most frequent to least frequently changed
 
 	//GBuffer
 	CD3DX12_DESCRIPTOR_RANGE ranges[4];

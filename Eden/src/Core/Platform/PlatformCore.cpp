@@ -4,7 +4,8 @@
 
 bool ApplicationSpecification::ForceAllTexturesToSRGB = false;
 char *ApplicationSpecification::TextureManifestFileLocation = "../Eden/data/Manifests/TextureManifest.emf";
-char *ApplicationSpecification::ShaderManifestFileLocation = "../Eden/data/Manifests/ShaderManifest.emf";
+char *ApplicationSpecification::MeshManifestFileLocation    = "../Eden/data/Manifests/MeshManifest.emf";
+char *ApplicationSpecification::ShaderManifestFileLocation  = "../Eden/data/Manifests/ShaderManifest.emf";
 bool ApplicationSpecification::RebuildAllShaders = true;
 
 void Direct3DUtils::ThrowIfHRESULTFailed(HRESULT hr)

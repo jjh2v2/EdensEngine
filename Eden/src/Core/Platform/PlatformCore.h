@@ -32,6 +32,7 @@ class ApplicationSpecification
 public:
 	static bool  ForceAllTexturesToSRGB;
 	static char* TextureManifestFileLocation;
+	static char* MeshManifestFileLocation;
 	static char* ShaderManifestFileLocation;
 	static bool  RebuildAllShaders;
 };

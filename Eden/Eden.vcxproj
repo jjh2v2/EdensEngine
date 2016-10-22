@@ -169,6 +169,9 @@
     <ClInclude Include="src\Render\DirectX\Upload\Direct3DUploadManager.h" />
     <ClInclude Include="src\Render\Display\DisplayOrientation.h" />
     <ClInclude Include="src\Render\Graphics\GraphicsManager.h" />
+    <ClInclude Include="src\Render\Mesh\FBX\FBXLoader.h" />
+    <ClInclude Include="src\Render\Mesh\Mesh.h" />
+    <ClInclude Include="src\Render\Mesh\MeshManager.h" />
     <ClInclude Include="src\Render\Renderer\DeferredRenderer.h" />
     <ClInclude Include="src\Render\Shader\RootSignature\RootSignatureManager.h" />
     <ClInclude Include="src\Render\Shader\Shader.h" />
@@ -219,6 +222,9 @@
     <ClCompile Include="src\Render\DirectX\Resources\Direct3DResources.cpp" />
     <ClCompile Include="src\Render\DirectX\Upload\Direct3DUploadManager.cpp" />
     <ClCompile Include="src\Render\Graphics\GraphicsManager.cpp" />
+    <ClCompile Include="src\Render\Mesh\FBX\FBXLoader.cpp" />
+    <ClCompile Include="src\Render\Mesh\Mesh.cpp" />
+    <ClCompile Include="src\Render\Mesh\MeshManager.cpp" />
     <ClCompile Include="src\Render\Renderer\DeferredRenderer.cpp" />
     <ClCompile Include="src\Render\Shader\RootSignature\RootSignatureManager.cpp" />
     <ClCompile Include="src\Render\Shader\Shader.cpp" />
