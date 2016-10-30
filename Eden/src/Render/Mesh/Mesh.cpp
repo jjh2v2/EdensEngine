@@ -42,35 +42,35 @@ void Mesh::RecalculateBounds()
 	{
 		return;
 	}
-	Vector3 boundMin = Vector3::FromD3DVector(mMeshVertices[0].Position);
-	Vector3 boundMax = Vector3::FromD3DVector(mMeshVertices[0].Position);
+	Vector3 boundMin = mMeshVertices[0].Position;
+	Vector3 boundMax = mMeshVertices[0].Position;
 
 	for(int i = 1; i < mVertexCount; i++)
 	{
-		if(mMeshVertices[i].Position.x < boundMin.X)
+		if(mMeshVertices[i].Position.X < boundMin.X)
 		{
-			boundMin.X = mMeshVertices[i].Position.x;
+			boundMin.X = mMeshVertices[i].Position.X;
 		}
-		if(mMeshVertices[i].Position.y < boundMin.Y)
+		if(mMeshVertices[i].Position.Y < boundMin.Y)
 		{
-			boundMin.Y = mMeshVertices[i].Position.y;
+			boundMin.Y = mMeshVertices[i].Position.Y;
 		}
-		if(mMeshVertices[i].Position.z < boundMin.Z)
+		if(mMeshVertices[i].Position.Z < boundMin.Z)
 		{
-			boundMin.Z = mMeshVertices[i].Position.z;
+			boundMin.Z = mMeshVertices[i].Position.Z;
 		}
 
-		if(mMeshVertices[i].Position.x > boundMax.X)
+		if(mMeshVertices[i].Position.X > boundMax.X)
 		{
-			boundMax.X = mMeshVertices[i].Position.x;
+			boundMax.X = mMeshVertices[i].Position.X;
 		}
-		if(mMeshVertices[i].Position.y > boundMax.Y)
+		if(mMeshVertices[i].Position.Y > boundMax.Y)
 		{
-			boundMax.Y = mMeshVertices[i].Position.y;
+			boundMax.Y = mMeshVertices[i].Position.Y;
 		}
-		if(mMeshVertices[i].Position.z > boundMax.Z)
+		if(mMeshVertices[i].Position.Z > boundMax.Z)
 		{
-			boundMax.Z = mMeshVertices[i].Position.z;
+			boundMax.Z = mMeshVertices[i].Position.Z;
 		}
 	}
 

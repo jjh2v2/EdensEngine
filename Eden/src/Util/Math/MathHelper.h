@@ -92,6 +92,11 @@ public:
 		return a < b ? a : b;
 	}
 
+	static uint64 Max(uint64 a, uint64 b)
+	{
+		return a > b ? a : b;
+	}
+
 	static float Ceil(float val)
 	{
 		int x = (int) val;

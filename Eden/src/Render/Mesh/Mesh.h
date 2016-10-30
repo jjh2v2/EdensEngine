@@ -1,5 +1,6 @@
 #pragma once
 #include "Core/Platform/PlatformCore.h"
+#include "Core/Vector/Vector4.h"
 #include "Core/Vector/Vector3.h"
 #include "Core/Vector/Vector2.h"
 #include "Core/Containers/DynamicArray.h"
@@ -7,23 +8,23 @@
 
 struct MeshVertexData
 {
-	D3DXVECTOR3 Position;
-	D3DXVECTOR2 TexCoord;
-	D3DXVECTOR3 Normal;
-	D3DXVECTOR3 Tangent;
-	D3DXVECTOR3 Binormal;
-	D3DXVECTOR4 Color;
+	Vector3 Position;
+	Vector2 TexCoord;
+	Vector3 Normal;
+	Vector3 Tangent;
+	Vector3 Binormal;
+	Vector4 Color;
 
 	static void GetTangentAndBinormal(MeshVertexData data1, MeshVertexData data2, MeshVertexData data3, Vector3 &tangent, Vector3 &binormal)
 	{
 		Vector3 v1, v2;
 		Vector2 t1, t2;
 
-		v1 = Vector3(data2.Position.x - data1.Position.x, data2.Position.y - data1.Position.y, data2.Position.z - data1.Position.z);
-		v2 = Vector3(data3.Position.x - data1.Position.x, data3.Position.y - data1.Position.y, data3.Position.z - data1.Position.z);
+		v1 = Vector3(data2.Position.X - data1.Position.X, data2.Position.Y - data1.Position.Y, data2.Position.Z - data1.Position.Z);
+		v2 = Vector3(data3.Position.X - data1.Position.X, data3.Position.Y - data1.Position.Y, data3.Position.Z - data1.Position.Z);
 
-		t1 = Vector2(data2.TexCoord.x - data1.TexCoord.x, data2.TexCoord.y - data1.TexCoord.y);
-		t2 = Vector2(data3.TexCoord.x - data1.TexCoord.x, data3.TexCoord.y - data1.TexCoord.y);
+		t1 = Vector2(data2.TexCoord.X - data1.TexCoord.X, data2.TexCoord.Y - data1.TexCoord.Y);
+		t2 = Vector2(data3.TexCoord.X - data1.TexCoord.X, data3.TexCoord.Y - data1.TexCoord.Y);
 
 		float div = 1.0f / (t1.X * t2.Y - t2.X * t1.Y);
 

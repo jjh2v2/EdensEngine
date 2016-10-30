@@ -112,6 +112,15 @@
     <Filter Include="Source Files\Render\Mesh\FBX">
       <UniqueIdentifier>{2135aec9-9794-4cec-a301-3a1ae5bacd9d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render\Buffer">
+      <UniqueIdentifier>{0dc7a4d2-7dca-4f91-a326-5f32cfe4b682}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\DirectX\Context">
+      <UniqueIdentifier>{60e37709-46a4-43aa-9845-6b7838a03bf6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\DirectX\Queue">
+      <UniqueIdentifier>{64cd837d-79fd-45e6-a6b4-7b950c326b74}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -285,6 +294,18 @@
     <ClInclude Include="src\Render\Mesh\MeshManager.h">
       <Filter>Source Files\Render\Mesh</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\Buffer\GPUBuffer.h">
+      <Filter>Source Files\Render\Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\DirectX\Context\Direct3DContext.h">
+      <Filter>Source Files\Render\DirectX\Context</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\DirectX\Queue\Direct3DQueue.h">
+      <Filter>Source Files\Render\DirectX\Queue</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\DirectX\Queue\Direct3DQueueManager.h">
+      <Filter>Source Files\Render\DirectX\Queue</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -424,6 +445,18 @@
     </ClCompile>
     <ClCompile Include="src\Render\Mesh\MeshManager.cpp">
       <Filter>Source Files\Render\Mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Buffer\GPUBuffer.cpp">
+      <Filter>Source Files\Render\Buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\DirectX\Context\Direct3DContext.cpp">
+      <Filter>Source Files\Render\DirectX\Context</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\DirectX\Queue\Direct3DQueue.cpp">
+      <Filter>Source Files\Render\DirectX\Queue</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\DirectX\Queue\Direct3DQueueManager.cpp">
+      <Filter>Source Files\Render\DirectX\Queue</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
