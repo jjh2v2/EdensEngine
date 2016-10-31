@@ -306,6 +306,9 @@
     <ClInclude Include="src\Render\DirectX\Queue\Direct3DQueueManager.h">
       <Filter>Source Files\Render\DirectX\Queue</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\Buffer\GPUResource.h">
+      <Filter>Source Files\Render\Buffer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -457,6 +460,9 @@
     </ClCompile>
     <ClCompile Include="src\Render\DirectX\Queue\Direct3DQueueManager.cpp">
       <Filter>Source Files\Render\DirectX\Queue</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Buffer\GPUResource.cpp">
+      <Filter>Source Files\Render\Buffer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

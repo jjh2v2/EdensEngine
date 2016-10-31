@@ -16,7 +16,7 @@ public:
 	void StallForQueue(Direct3DQueue* otherQueue);
 
 	//void StallForProducer(CommandQueue& Producer);
-	void WaitForFence(uint64 FenceValue);
+	void WaitForFence(uint64 fenceValue);
 	void WaitForIdle() { WaitForFence(mNextFenceValue - 1); }
 
 	ID3D12CommandQueue* GetCommandQueue() { return mCommandQueue; }
@@ -25,11 +25,7 @@ public:
 	ID3D12Fence* GetFence() { return mFence; }
 	uint64 GetNextFenceValue() { return mNextFenceValue; }
 
-private:
-
 	uint64 ExecuteCommandList(ID3D12CommandList* List);
-	//ID3D12CommandAllocator* RequestAllocator();
-	//void DiscardAllocator(uint64_t FenceValueForReset, ID3D12CommandAllocator* Allocator);
 
 private:
 	ID3D12CommandQueue* mCommandQueue;

@@ -2,6 +2,8 @@
 
 #include "Render/DirectX/Queue/Direct3DQueue.h"
 
+class GPUResource;
+
 class Direct3DQueueManager
 {
 public:
@@ -17,6 +19,8 @@ public:
 	bool IsFenceComplete(uint64 fenceValue);
 	void WaitForFence(uint64 fenceValue);
 	void WaitForAllIdle();
+
+	void InitializeBuffer(ID3D12Device* device, GPUResource *resource, const void* initData, size_t numBytes, bool useOffset = false, size_t offset = 0);
 
 private:
 	Direct3DQueue *mGraphicsQueue;

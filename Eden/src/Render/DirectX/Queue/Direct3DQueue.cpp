@@ -91,3 +91,14 @@ void Direct3DQueue::WaitForFence(uint64 fenceValue)
 		mLastCompletedFenceValue = fenceValue;
 	}
 }
+
+uint64 Direct3DQueue::ExecuteCommandList(ID3D12CommandList* commandList)
+{
+	std::lock_guard<std::mutex> lockGuard(mFenceMutex);
+
+	Direct3DUtils::ThrowIfHRESULTFailed(((ID3D12GraphicsCommandList*)commandList)->Close());
+	mCommandQueue->ExecuteCommandLists(1, &commandList);
+	mCommandQueue->Signal(mFence, mNextFenceValue);
+
+	return mNextFenceValue++;
+}
