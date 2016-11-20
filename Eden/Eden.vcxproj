@@ -163,6 +163,7 @@
     <ClInclude Include="src\Render\Buffer\GPUBuffer.h" />
     <ClInclude Include="src\Render\Buffer\GPUResource.h" />
     <ClInclude Include="src\Render\DirectX\Context\Direct3DContext.h" />
+    <ClInclude Include="src\Render\DirectX\Context\Direct3DContextManager.h" />
     <ClInclude Include="src\Render\DirectX\D3D12Helper.h" />
     <ClInclude Include="src\Render\DirectX\Direct3DManager.h" />
     <ClInclude Include="src\Render\DirectX\Heap\DescriptorHeap.h" />
@@ -224,6 +225,7 @@
     <ClCompile Include="src\Render\Buffer\GPUBuffer.cpp" />
     <ClCompile Include="src\Render\Buffer\GPUResource.cpp" />
     <ClCompile Include="src\Render\DirectX\Context\Direct3DContext.cpp" />
+    <ClCompile Include="src\Render\DirectX\Context\Direct3DContextManager.cpp" />
     <ClCompile Include="src\Render\DirectX\Direct3DManager.cpp" />
     <ClCompile Include="src\Render\DirectX\Heap\DescriptorHeap.cpp" />
     <ClCompile Include="src\Render\DirectX\Heap\Direct3DHeapManager.cpp" />

@@ -309,6 +309,9 @@
     <ClInclude Include="src\Render\Buffer\GPUResource.h">
       <Filter>Source Files\Render\Buffer</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\DirectX\Context\Direct3DContextManager.h">
+      <Filter>Source Files\Render\DirectX\Context</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -463,6 +466,9 @@
     </ClCompile>
     <ClCompile Include="src\Render\Buffer\GPUResource.cpp">
       <Filter>Source Files\Render\Buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\DirectX\Context\Direct3DContextManager.cpp">
+      <Filter>Source Files\Render\DirectX\Context</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

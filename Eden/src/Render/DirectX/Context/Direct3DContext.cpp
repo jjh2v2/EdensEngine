@@ -101,7 +101,7 @@ void Direct3DContext::BindDescriptorHeaps()
 	}
 }
 
-void Direct3DContext::SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, ID3D12DescriptorHeap* heap)
+void Direct3DContext::SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, ID3D12DescriptorHeap *heap)
 {
 	if (mCurrentDescriptorHeaps[heapType] != heap)
 	{
@@ -110,7 +110,7 @@ void Direct3DContext::SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, ID3
 	}
 }
 
-void Direct3DContext::SetDescriptorHeaps(uint32 numHeaps, D3D12_DESCRIPTOR_HEAP_TYPE heapTypes[], ID3D12DescriptorHeap* heaps[])
+void Direct3DContext::SetDescriptorHeaps(uint32 numHeaps, D3D12_DESCRIPTOR_HEAP_TYPE heapTypes[], ID3D12DescriptorHeap *heaps[])
 {
 	bool changedHeap = false;
 
@@ -127,4 +127,146 @@ void Direct3DContext::SetDescriptorHeaps(uint32 numHeaps, D3D12_DESCRIPTOR_HEAP_
 	{
 		BindDescriptorHeaps();
 	}
+}
+
+void GraphicsContext::SetRootSignature(const RootSignatureInfo &rootSignature)
+{
+	if (rootSignature.RootSignature == mCurrentComputeRootSignature)
+	{
+		return;
+	}
+
+	mCurrentComputeRootSignature = rootSignature.RootSignature;
+	mCommandList->SetGraphicsRootSignature(mCurrentComputeRootSignature);
+	//m_DynamicDescriptorHeap.ParseGraphicsRootSignature(RootSig);
+}
+
+void GraphicsContext::SetRenderTargets(uint32 numRenderTargets, const D3D12_CPU_DESCRIPTOR_HANDLE renderTargets[])
+{
+	mCommandList->OMSetRenderTargets(numRenderTargets, renderTargets, FALSE, NULL);
+}
+
+void GraphicsContext::SetRenderTargets(uint32 numRenderTargets, const D3D12_CPU_DESCRIPTOR_HANDLE renderTargets[], D3D12_CPU_DESCRIPTOR_HANDLE depthStencil)
+{
+	mCommandList->OMSetRenderTargets(numRenderTargets, renderTargets, FALSE, &depthStencil);
+}
+
+void GraphicsContext::SetViewport(const D3D12_VIEWPORT &viewPort)
+{
+	mCommandList->RSSetViewports(1, &viewPort);
+}
+
+void GraphicsContext::SetViewport(float x, float y, float w, float h, float minDepth /* = 0.0f */, float maxDepth /* = 1.0f */)
+{
+	D3D12_VIEWPORT viewPort;
+	viewPort.Width = w;
+	viewPort.Height = h;
+	viewPort.MinDepth = minDepth;
+	viewPort.MaxDepth = maxDepth;
+	viewPort.TopLeftX = x;
+	viewPort.TopLeftY = y;
+
+	mCommandList->RSSetViewports(1, &viewPort);
+}
+
+void GraphicsContext::SetScissorRect(const D3D12_RECT &rect)
+{
+	mCommandList->RSSetScissorRects(1, &rect);
+}
+
+void GraphicsContext::SetScissorRect(uint32 left, uint32 top, uint32 right, uint32 bottom)
+{
+	SetScissorRect(CD3DX12_RECT(left, top, right, bottom));
+}
+
+void GraphicsContext::SetStencilRef(uint32 stencilRef)
+{
+	mCommandList->OMSetStencilRef(stencilRef);
+}
+
+void GraphicsContext::SetBlendFactor(Color blendFactor)
+{
+	float color[4] = { blendFactor.R, blendFactor.G, blendFactor.B, blendFactor.A };
+	mCommandList->OMSetBlendFactor(color);
+}
+
+void GraphicsContext::SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY topology)
+{
+	mCommandList->IASetPrimitiveTopology(topology);
+}
+
+void GraphicsContext::SetPipelineState(ShaderPSO &pipeline)
+{
+	if (mCurrentGraphicsPipelineState == pipeline.GetPipelineState())
+	{
+		return;
+	}
+
+	mCurrentGraphicsPipelineState = pipeline.GetPipelineState();
+	mCommandList->SetPipelineState(mCurrentGraphicsPipelineState);
+}
+
+void GraphicsContext::SetConstants(uint32 index, uint32 numConstants, const void *bufferData)
+{
+	mCommandList->SetGraphicsRoot32BitConstants(index, numConstants, bufferData, 0);
+}
+
+void GraphicsContext::SetConstantBuffer(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS constantBuffer)
+{
+	mCommandList->SetComputeRootConstantBufferView(index, constantBuffer);
+}
+
+void GraphicsContext::SetShaderResourceView(uint32 index, GPUBuffer &shaderResourceView, uint64 offset /* = 0 */)
+{
+	mCommandList->SetGraphicsRootShaderResourceView(index, shaderResourceView.GetGpuAddress() + offset);
+}
+
+void GraphicsContext::SetUnorderedAccessView(uint32 index, GPUBuffer &unorderedAccessView, uint64 offset /* = 0 */)
+{
+	mCommandList->SetComputeRootUnorderedAccessView(index, unorderedAccessView.GetGpuAddress() + offset);
+}
+
+void GraphicsContext::SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle)
+{
+	mCommandList->SetGraphicsRootDescriptorTable(index, handle);
+}
+
+void GraphicsContext::SetIndexBuffer(const D3D12_INDEX_BUFFER_VIEW &indexBuffer)
+{
+	mCommandList->IASetIndexBuffer(&indexBuffer);
+}
+
+void GraphicsContext::SetVertexBuffer(uint32 slot, const D3D12_VERTEX_BUFFER_VIEW &vertexBuffer)
+{
+	SetVertexBuffers(slot, 1, &vertexBuffer);
+}
+
+void GraphicsContext::SetVertexBuffers(uint32 slot, uint32 count, const D3D12_VERTEX_BUFFER_VIEW vertexBuffers[])
+{
+	mCommandList->IASetVertexBuffers(slot, count, vertexBuffers);
+}
+
+void GraphicsContext::Draw(uint32 vertexCount, uint32 vertexStartOffset /* = 0 */)
+{
+
+}
+
+void GraphicsContext::DrawIndexed(uint32 indexCount, uint32 startIndexLocation /* = 0 */, int32 baseVertexLocation /* = 0 */)
+{
+
+}
+
+void GraphicsContext::DrawInstanced(uint32 vertexCountPerInstance, uint32 instanceCount, uint32 startVertexLocation /* = 0 */, uint32 startInstanceLocation /* = 0 */)
+{
+
+}
+
+void GraphicsContext::DrawIndexedInstanced(uint32 indexCountPerInstance, uint32 instanceCount, uint32 startIndexLocation, int32 baseVertexLocation, uint32 startInstanceLocation)
+{
+
+}
+
+void GraphicsContext::DrawIndirect(GPUBuffer& argumentBuffer, size_t argumentBufferOffset /* = 0 */)
+{
+
 }
