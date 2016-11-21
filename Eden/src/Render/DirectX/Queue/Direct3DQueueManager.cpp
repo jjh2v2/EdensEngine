@@ -28,6 +28,8 @@ Direct3DQueue *Direct3DQueueManager::GetQueue(D3D12_COMMAND_LIST_TYPE commandTyp
 	default: 
 		Direct3DUtils::ThrowRuntimeError("Bad command type lookup in queue manager.");
 	}
+
+	return NULL;
 }
 
 bool Direct3DQueueManager::IsFenceComplete(uint64 fenceValue)

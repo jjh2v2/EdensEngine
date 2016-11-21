@@ -8,6 +8,7 @@ Direct3DManager::Direct3DManager()
 	mUseVsync = false;
 	mHeapManager = NULL;
 	mUploadManager = NULL;
+	mContextManager = NULL;
 
 	InitializeDeviceResources();
 }
@@ -17,7 +18,6 @@ Direct3DManager::~Direct3DManager()
 	WaitForGPU();
 
 	delete mHeapManager;
-
 	delete mUploadManager;
 
 	ReleaseSwapChainDependentResources();
@@ -25,20 +25,11 @@ Direct3DManager::~Direct3DManager()
 	mDirect3DResources.SwapChain->Release();
 	mDirect3DResources.SwapChain = NULL;
 
-	mDirect3DResources.Fence->Release();
-	mDirect3DResources.Fence = NULL;
-	
-	mDirect3DResources.CommandList->Release();
-	mDirect3DResources.CommandList = NULL;
+	//mDirect3DResources.Fence->Release();
+	//mDirect3DResources.Fence = NULL;
 
-	for (UINT bufferIndex = 0; bufferIndex < mDirect3DResources.BufferCount; bufferIndex++)
-	{
-		mDirect3DResources.CommandAllocators[bufferIndex]->Release();
-		mDirect3DResources.CommandAllocators[bufferIndex] = NULL;
-	}
-
-	mDirect3DResources.CommandQueue->Release();
-	mDirect3DResources.CommandQueue = NULL;
+	delete mContextManager;
+	mContextManager = NULL;
 
 	mDirect3DResources.Device->Release();
 	mDirect3DResources.Device = NULL;
@@ -80,21 +71,13 @@ void Direct3DManager::InitializeDeviceResources()
 	queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 	queueDesc.NodeMask = 0;
 
-	Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mDirect3DResources.CommandQueue)));
-
-	for (UINT bufferIndex = 0; bufferIndex < mDirect3DResources.BufferCount; bufferIndex++)
-	{
-		Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mDirect3DResources.CommandAllocators[bufferIndex])));
-	}
-
-	Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mDirect3DResources.CommandAllocators[mDirect3DResources.CurrentBuffer], NULL, IID_PPV_ARGS(&mDirect3DResources.CommandList)));
-	mDirect3DResources.CommandList->Close();
+	mContextManager = new Direct3DContextManager(mDirect3DResources.Device);
 
 	// Create synchronization objects.
-	Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.Device->CreateFence(mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer], D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mDirect3DResources.Fence)));
-	mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer]++;
+	//Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.Device->CreateFence(mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer], D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mDirect3DResources.Fence)));
+	//mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer]++;
 
-	mDirect3DResources.FenceEvent = CreateEventEx(nullptr, FALSE, FALSE, EVENT_ALL_ACCESS);
+	//mDirect3DResources.FenceEvent = CreateEventEx(nullptr, FALSE, FALSE, EVENT_ALL_ACCESS);
 }
 
 void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND windowHandle, bool vsync /*= false*/, bool fullScreen /*= false*/)
@@ -224,43 +207,17 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 		IDXGISwapChain1 *swapChain = NULL;
 		Direct3DUtils::ThrowIfHRESULTFailed(
 			mDirect3DResources.DXGIFactory->CreateSwapChainForHwnd(
-				mDirect3DResources.CommandQueue,
+				mContextManager->GetQueueManager()->GetGraphicsQueue()->GetCommandQueue(),
 				windowHandle,
 				&swapChainDesc,
 				&swapChainFullScreenDesc,
-				nullptr,
+				NULL,
 				&swapChain
 				)
 			);
 		
 		Direct3DUtils::ThrowIfHRESULTFailed(swapChain->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&mDirect3DResources.SwapChain));
 	}
-
-	// Set the proper orientation for the swap chain, and generate
-	// 3D matrix transformations for rendering to the rotated swap chain.
-	// The 3D matrix is specified explicitly to avoid rounding errors.
-
-	/*switch (displayRotation)
-	{
-	case DXGI_MODE_ROTATION_IDENTITY:
-		m_orientationTransform3D = ScreenRotation::Rotation0;
-		break;
-
-	case DXGI_MODE_ROTATION_ROTATE90:
-		m_orientationTransform3D = ScreenRotation::Rotation270;
-		break;
-
-	case DXGI_MODE_ROTATION_ROTATE180:
-		m_orientationTransform3D = ScreenRotation::Rotation180;
-		break;
-
-	case DXGI_MODE_ROTATION_ROTATE270:
-		m_orientationTransform3D = ScreenRotation::Rotation90;
-		break;
-
-	default:
-		throw ref new FailureException();
-	}*/
 
 	Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.SwapChain->SetRotation(displayRotation));
 
@@ -326,7 +283,7 @@ void Direct3DManager::BuildSwapChainDependentResources()
 	// to the last value signaled.
 	for (uint32 bufferIndex = 0; bufferIndex < mDirect3DResources.BufferCount; bufferIndex++)
 	{
-		mDirect3DResources.FenceValues[bufferIndex] = mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer];
+	//	mDirect3DResources.FenceValues[bufferIndex] = mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer];
 	}
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptor(mDirect3DResources.RTVHeap->GetCPUDescriptorHandleForHeapStart());
@@ -346,6 +303,9 @@ void Direct3DManager::BuildSwapChainDependentResources()
 
 void Direct3DManager::WaitForGPU()
 {
+	uint64 fenceValue = mContextManager->GetQueueManager()->GetGraphicsQueue()->IncrementFence();
+	mContextManager->GetQueueManager()->GetGraphicsQueue()->WaitForFence(fenceValue);
+	/*
 	// Schedule a Signal command in the queue.
 	Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.CommandQueue->Signal(mDirect3DResources.Fence, mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer]));
 
@@ -354,7 +314,7 @@ void Direct3DManager::WaitForGPU()
 	WaitForSingleObjectEx(mDirect3DResources.FenceEvent, INFINITE, FALSE);
 
 	// Increment the fence value for the current frame.
-	mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer]++;
+	mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer]++;*/
 }
 
 // Present the contents of the swap chain to the screen.
@@ -381,25 +341,53 @@ void Direct3DManager::Present()
 void Direct3DManager::MoveToNextFrame()
 {
 	// Schedule a Signal command in the queue.
-	const UINT64 currentFenceValue = mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer];
-	Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.CommandQueue->Signal(mDirect3DResources.Fence, currentFenceValue));
+	//const UINT64 currentFenceValue = mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer];
+	//Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.CommandQueue->Signal(mDirect3DResources.Fence, currentFenceValue));
 
 	// Advance the frame index.
 	mDirect3DResources.CurrentBuffer = (mDirect3DResources.CurrentBuffer + 1) % mDirect3DResources.BufferCount;
+	uint64 fenceValue = mContextManager->GetQueueManager()->GetGraphicsQueue()->IncrementFence();
+	mContextManager->GetQueueManager()->GetGraphicsQueue()->WaitForFence(fenceValue);
 
 	// Check to see if the next frame is ready to start.
-	if (mDirect3DResources.Fence->GetCompletedValue() < mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer])
-	{
-		Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.Fence->SetEventOnCompletion(mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer], mDirect3DResources.FenceEvent));
-		WaitForSingleObjectEx(mDirect3DResources.FenceEvent, INFINITE, FALSE);
-	}
+	//if (mDirect3DResources.Fence->GetCompletedValue() < mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer])
+	//{
+	//	Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.Fence->SetEventOnCompletion(mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer], mDirect3DResources.FenceEvent));
+	//	WaitForSingleObjectEx(mDirect3DResources.FenceEvent, INFINITE, FALSE);
+	//}
 
 	// Set the fence value for the next frame.
-	mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer] = currentFenceValue + 1;
+	//mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer] = currentFenceValue + 1;
 }
 
 DXGI_MODE_ROTATION Direct3DManager::ComputeDisplayRotation()
 {
+	// Set the proper orientation for the swap chain, and generate
+	// 3D matrix transformations for rendering to the rotated swap chain.
+	// The 3D matrix is specified explicitly to avoid rounding errors.
+
+	/*switch (displayRotation)
+	{
+	case DXGI_MODE_ROTATION_IDENTITY:
+	m_orientationTransform3D = ScreenRotation::Rotation0;
+	break;
+
+	case DXGI_MODE_ROTATION_ROTATE90:
+	m_orientationTransform3D = ScreenRotation::Rotation270;
+	break;
+
+	case DXGI_MODE_ROTATION_ROTATE180:
+	m_orientationTransform3D = ScreenRotation::Rotation180;
+	break;
+
+	case DXGI_MODE_ROTATION_ROTATE270:
+	m_orientationTransform3D = ScreenRotation::Rotation90;
+	break;
+
+	default:
+	throw ref new FailureException();
+	}*/
+
 	DXGI_MODE_ROTATION rotation = DXGI_MODE_ROTATION_UNSPECIFIED;
 
 	// Note: NativeOrientation can only be Landscape or Portrait even though

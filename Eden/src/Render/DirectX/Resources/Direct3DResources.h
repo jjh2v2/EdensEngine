@@ -13,16 +13,13 @@ struct Direct3DResources
 		SwapChain = NULL;
 		RTVHeap = NULL;
 		RTVDescriptorSize = 0;
-		CommandQueue = NULL;
-		CommandList = NULL;
-		Fence = NULL;
-		FenceEvent = NULL;
+		//Fence = NULL;
+		//FenceEvent = NULL;
 
 		for (uint32 bufferIndex = 0; bufferIndex < BufferCount; bufferIndex++)
 		{
-			FenceValues.Add(0);
+			//FenceValues.Add(0);
 			BackBufferTargets.Add(NULL);
-			CommandAllocators.Add(NULL);
 		}
 	}
 
@@ -34,11 +31,8 @@ struct Direct3DResources
 	DynamicArray<ID3D12Resource*> BackBufferTargets;
 	ID3D12DescriptorHeap *RTVHeap;
 	uint32 RTVDescriptorSize;
-	ID3D12CommandQueue *CommandQueue;
-	DynamicArray<ID3D12CommandAllocator*> CommandAllocators;
-	ID3D12GraphicsCommandList *CommandList;
 	D3D12_VIEWPORT ScreenViewport;
-	ID3D12Fence* Fence;
-	DynamicArray<uint64> FenceValues;
-	HANDLE FenceEvent;
+	//ID3D12Fence* Fence;
+	//DynamicArray<uint64> FenceValues;
+	//HANDLE FenceEvent;
 };

@@ -183,11 +183,11 @@ Mesh *MeshManager::LoadFromAssimp(ID3D12Device* device, char *fileName, char *se
 			aiVector3D tangent = scene->mMeshes[i]->mTangents[j];
 			aiVector3D bitangent = scene->mMeshes[i]->mBitangents[j];
 
-			meshData[meshDataIndex].Position = D3DXVECTOR3(vert.x, vert.y, vert.z);
-			meshData[meshDataIndex].Normal = D3DXVECTOR3(normal.x, normal.y, normal.z);
-			meshData[meshDataIndex].TexCoord = D3DXVECTOR2(texcoord.x, 1.0f - texcoord.y);
-			meshData[meshDataIndex].Tangent = D3DXVECTOR3(tangent.x, tangent.y, tangent.z);
-			meshData[meshDataIndex].Binormal = D3DXVECTOR3(bitangent.x, bitangent.y, bitangent.z);
+			meshData[meshDataIndex].Position = Vector3(vert.x, vert.y, vert.z);
+			meshData[meshDataIndex].Normal = Vector3(normal.x, normal.y, normal.z);
+			meshData[meshDataIndex].TexCoord = Vector2(texcoord.x, 1.0f - texcoord.y);
+			meshData[meshDataIndex].Tangent = Vector3(tangent.x, tangent.y, tangent.z);
+			meshData[meshDataIndex].Binormal = Vector3(bitangent.x, bitangent.y, bitangent.z);
 
 			meshDataIndex++;
 		}

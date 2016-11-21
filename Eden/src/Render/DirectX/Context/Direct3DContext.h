@@ -34,7 +34,6 @@ public:
 	void BeginResourceTransition(GPUResource &resource, D3D12_RESOURCE_STATES newState, bool flushImmediate = false);
 	void InsertUAVBarrier(GPUResource &resource, bool flushImmediate = false);
 	void InsertAliasBarrier(GPUResource &before, GPUResource &after, bool flushImmediate = false);
-	inline void FlushResourceBarriers(void);
 
 	ID3D12GraphicsCommandList *GetCommandList(){ return mCommandList; }
 
@@ -101,6 +100,8 @@ public:
 	void SetIndexBuffer(const D3D12_INDEX_BUFFER_VIEW &indexBuffer);
 	void SetVertexBuffer(uint32 slot, const D3D12_VERTEX_BUFFER_VIEW &vertexBuffer);
 	void SetVertexBuffers(uint32 slot, uint32 count, const D3D12_VERTEX_BUFFER_VIEW vertexBuffers[]);
+
+	void ClearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE target, float color[4]);
 
 	void Draw(uint32 vertexCount, uint32 vertexStartOffset = 0);
 	void DrawIndexed(uint32 indexCount, uint32 startIndexLocation = 0, int32 baseVertexLocation = 0);

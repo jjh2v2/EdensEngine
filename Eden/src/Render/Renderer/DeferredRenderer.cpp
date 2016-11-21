@@ -57,33 +57,43 @@ void DeferredRenderer::Render()
 {
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
 
-	ID3D12GraphicsCommandList *commandList = direct3DManager->GetCommandList();
+	//ID3D12GraphicsCommandList *commandList = direct3DManager->GetCommandList();
 
-	Direct3DUtils::ThrowIfHRESULTFailed(direct3DManager->GetCommandAllocator()->Reset());
+	//Direct3DUtils::ThrowIfHRESULTFailed(direct3DManager->GetCommandAllocator()->Reset());
 
 	// The command list can be reset anytime after ExecuteCommandList() is called.
-	Direct3DUtils::ThrowIfHRESULTFailed(commandList->Reset(direct3DManager->GetCommandAllocator(), NULL));
+	//Direct3DUtils::ThrowIfHRESULTFailed(commandList->Reset(direct3DManager->GetCommandAllocator(), NULL));
 
-	D3D12_VIEWPORT viewport = direct3DManager->GetScreenViewport();
-	commandList->RSSetViewports(1, &viewport);
+	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
+
+	graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
+
 	//mCommandList->RSSetScissorRects(1, &m_scissorRect);
 
+	GPUResource resource(direct3DManager->GetBackBufferTarget(), D3D12_RESOURCE_STATE_PRESENT);
+
 	// Indicate this resource will be in use as a render target.
-	CD3DX12_RESOURCE_BARRIER renderTargetResourceBarrier =
-		CD3DX12_RESOURCE_BARRIER::Transition(direct3DManager->GetBackBufferTarget(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	commandList->ResourceBarrier(1, &renderTargetResourceBarrier);
+	//CD3DX12_RESOURCE_BARRIER renderTargetResourceBarrier =
+	//	CD3DX12_RESOURCE_BARRIER::Transition(direct3DManager->GetBackBufferTarget(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	//commandList->ResourceBarrier(1, &renderTargetResourceBarrier);
+
+	graphicsContext->TransitionResource(resource, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
 
 	// Record drawing commands.
 	float color[4] = {0.392156899f, 0.584313750f, 0.929411829f, 1.000000000f};
+	graphicsContext->ClearRenderTarget(direct3DManager->GetRenderTargetView(), color);
+	//commandList->ClearRenderTargetView(direct3DManager->GetRenderTargetView(), color, 0, nullptr);
 
-	commandList->ClearRenderTargetView(direct3DManager->GetRenderTargetView(), color, 0, nullptr);
+	//CD3DX12_RESOURCE_BARRIER presentResourceBarrier =
+	//	CD3DX12_RESOURCE_BARRIER::Transition(direct3DManager->GetBackBufferTarget(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	//commandList->ResourceBarrier(1, &presentResourceBarrier);
 
-	CD3DX12_RESOURCE_BARRIER presentResourceBarrier =
-		CD3DX12_RESOURCE_BARRIER::Transition(direct3DManager->GetBackBufferTarget(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	commandList->ResourceBarrier(1, &presentResourceBarrier);
+	graphicsContext->TransitionResource(resource, D3D12_RESOURCE_STATE_PRESENT, true);
 
-	Direct3DUtils::ThrowIfHRESULTFailed(commandList->Close());
+	//Direct3DUtils::ThrowIfHRESULTFailed(commandList->Close());
 
-	ID3D12CommandList* ppCommandLists[] = { commandList };
-	direct3DManager->GetCommandQueue()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+	graphicsContext->Flush(direct3DManager->GetContextManager()->GetQueueManager(), true);
+
+	//ID3D12CommandList* ppCommandLists[] = { commandList };
+	//direct3DManager->GetCommandQueue()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 }

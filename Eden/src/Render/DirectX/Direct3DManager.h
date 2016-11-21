@@ -11,6 +11,7 @@
 #include "Render/DirectX/Resources/Direct3DResources.h"
 #include "Render/DirectX/Heap/Direct3DHeapManager.h"
 #include "Render/DirectX/Upload/Direct3DUploadManager.h"
+#include "Render/DirectX/Context/Direct3DContextManager.h"
 
 class Direct3DManager
 {
@@ -25,9 +26,6 @@ public:
 	ID3D12Device				*GetDevice() { return mDirect3DResources.Device; }
 	IDXGISwapChain3 			*GetSwapChain() { return mDirect3DResources.SwapChain; }
 	ID3D12Resource  			*GetBackBufferTarget() { return mDirect3DResources.BackBufferTargets[mDirect3DResources.CurrentBuffer]; }
-	ID3D12CommandQueue			*GetCommandQueue() { return mDirect3DResources.CommandQueue; }
-	ID3D12CommandAllocator		*GetCommandAllocator() { return mDirect3DResources.CommandAllocators[mDirect3DResources.CurrentBuffer]; }
-	ID3D12GraphicsCommandList   *GetCommandList() { return mDirect3DResources.CommandList; }
 
 	D3D12_VIEWPORT				GetScreenViewport() { return mDirect3DResources.ScreenViewport; }
 
@@ -40,6 +38,7 @@ public:
 	D3D12_HEAP_PROPERTIES GetUploadHeapProperties()   { return mUploadHeapProperties; }
 	D3D12_HEAP_PROPERTIES GetReadbackHeapProperties() { return mReadbackHeapProperties; }
 
+	Direct3DContextManager *GetContextManager() { return mContextManager; }
 	Direct3DHeapManager *GetHeapManager() { return mHeapManager; }
 	Direct3DUploadManager *GetUploadManager() { return mUploadManager; }
 
@@ -51,6 +50,8 @@ private:
 	void MoveToNextFrame();
 
 	DXGI_MODE_ROTATION ComputeDisplayRotation();
+
+	Direct3DContextManager *mContextManager;
 
 	Direct3DResources mDirect3DResources;
 	Direct3DHeapManager *mHeapManager;

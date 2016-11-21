@@ -10,7 +10,9 @@ public:
 	virtual ~GPUResource();
 
 	ID3D12Resource* GetResource() { return mResource; }
+	void SetResource(ID3D12Resource *resource) { mResource = resource; }
 	D3D12_GPU_VIRTUAL_ADDRESS GetGpuAddress() { return mGPUAddress; }
+	void SetGPUAddress(D3D12_GPU_VIRTUAL_ADDRESS gpuAddress) { mGPUAddress = gpuAddress; }
 	D3D12_RESOURCE_STATES GetUsageState() { return mUsageState; }
 	D3D12_RESOURCE_STATES GetTransitionState() { return mTransitioningState; }
 	void SetUsageState(D3D12_RESOURCE_STATES usageState) { mUsageState = usageState; }

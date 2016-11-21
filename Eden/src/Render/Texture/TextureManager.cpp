@@ -57,7 +57,8 @@ void TextureManager::LoadAllTextures()
 
 Texture *TextureManager::LoadTexture(WCHAR *filePath)
 {
-	Texture *newTexture = new Texture();
+	return NULL;
+	/*Texture *newTexture = new Texture();
 	DirectX::ScratchImage imageData;
 
 	HRESULT loadResult = DirectX::LoadFromDDSFile(filePath, DirectX::DDS_FLAGS_NONE, nullptr, imageData);
@@ -179,5 +180,5 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 	mDirect3DManager->GetCommandList()->ResourceBarrier(1, &barrier);
 
-	return newTexture;
+	return newTexture;*/
 }

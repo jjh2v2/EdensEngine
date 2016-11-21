@@ -9,10 +9,10 @@ Direct3DQueue::Direct3DQueue(ID3D12Device* device, D3D12_COMMAND_LIST_TYPE comma
 	mNextFenceValue = ((uint64_t)commandType << 56 | 1);
 	mLastCompletedFenceValue = ((uint64_t)commandType << 56);
 
-	D3D12_COMMAND_QUEUE_DESC QueueDesc = {};
-	QueueDesc.Type = mQueueType;
-	QueueDesc.NodeMask = 1;
-	device->CreateCommandQueue(&QueueDesc, IID_PPV_ARGS(&mCommandQueue));
+	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+	queueDesc.Type = mQueueType;
+	queueDesc.NodeMask = 1;
+	device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue));
 	mCommandQueue->SetName(L"Direct3DQueue::mCommandQueue");
 
 	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
@@ -20,7 +20,7 @@ Direct3DQueue::Direct3DQueue(ID3D12Device* device, D3D12_COMMAND_LIST_TYPE comma
 	mFence->SetName(L"Direct3DQueue::mFence");
 	mFence->Signal((uint64_t)mQueueType << 56);
 
-	mFenceEventHandle = CreateEvent(nullptr, false, false, nullptr);
+	mFenceEventHandle = CreateEventEx(NULL, false, false, EVENT_ALL_ACCESS);
 
 	Application::Assert(mFenceEventHandle != INVALID_HANDLE_VALUE);
 }
@@ -87,7 +87,7 @@ void Direct3DQueue::WaitForFence(uint64 fenceValue)
 		std::lock_guard<std::mutex> lockGuard(mEventMutex);
 
 		mFence->SetEventOnCompletion(fenceValue, mFenceEventHandle);
-		WaitForSingleObject(mFenceEventHandle, INFINITE);
+		WaitForSingleObjectEx(mFenceEventHandle, INFINITE, false);
 		mLastCompletedFenceValue = fenceValue;
 	}
 }

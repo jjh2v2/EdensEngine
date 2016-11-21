@@ -16,8 +16,8 @@ GPUResource::GPUResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageSt
 	mTransitioningState = D3D12_GPU_RESOURCE_STATE_UNKNOWN;
 }
 
-GPUResource::~GPUResource()
+GPUResource::~GPUResource()						//Sometimes we assign the resource from somewhere else, and don't want it released. How do we handle it?
 {
-	mResource->Release();
-	mResource = NULL;
+//	mResource->Release();
+//	mResource = NULL;
 }

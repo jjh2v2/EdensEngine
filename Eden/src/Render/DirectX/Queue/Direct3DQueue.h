@@ -23,7 +23,6 @@ public:
 
 	uint64 GetNextFenceValue() { return mNextFenceValue; }
 	ID3D12Fence* GetFence() { return mFence; }
-	uint64 GetNextFenceValue() { return mNextFenceValue; }
 
 	uint64 ExecuteCommandList(ID3D12CommandList* List);
 

@@ -128,30 +128,30 @@ public:
 				binormalFound = ReadBiNormal(mesh, iControlPointIndex, j*3 + k, binormal);
 
 				MeshVertexData meshData;
-				meshData.Position.x = (float)pVertices[iControlPointIndex].mData[0];
-				meshData.Position.y = (float)pVertices[iControlPointIndex].mData[1];
-				meshData.Position.z = (float)pVertices[iControlPointIndex].mData[2];
-				meshData.Normal = D3DXVECTOR3(normal.X, normal.Y, normal.Z);
+				meshData.Position.X = (float)pVertices[iControlPointIndex].mData[0];
+				meshData.Position.Y = (float)pVertices[iControlPointIndex].mData[1];
+				meshData.Position.Z = (float)pVertices[iControlPointIndex].mData[2];
+				meshData.Normal = Vector3(normal.X, normal.Y, normal.Z);
 
 				if(tangentFound)
 				{
-					meshData.Tangent = D3DXVECTOR3(tangent.X, tangent.Y, tangent.Z);
+					meshData.Tangent = Vector3(tangent.X, tangent.Y, tangent.Z);
 				}
 				else
 				{
-					meshData.Tangent = placeHolder.AsD3DVector3();
+					meshData.Tangent = placeHolder;
 				}
 
 				if(binormalFound)
 				{
-					meshData.Binormal = D3DXVECTOR3(binormal.X, binormal.Y, binormal.Z);
+					meshData.Binormal = Vector3(binormal.X, binormal.Y, binormal.Z);
 				}
 				else
 				{
-					meshData.Binormal = placeHolder.AsD3DVector3();
+					meshData.Binormal = placeHolder;
 				}
 				
-				meshData.TexCoord = D3DXVECTOR2((float)uv.mData[0], 1.0f - (float)uv.mData[1]);
+				meshData.TexCoord = Vector2((float)uv.mData[0], 1.0f - (float)uv.mData[1]);
 				outVertexVector.Add(meshData);
 				indexCount++;
 			}
@@ -161,18 +161,18 @@ public:
 				Vector3 tangent;
 				Vector3 binormal;
 				MeshVertexData::GetTangentAndBinormal(outVertexVector[j*3], outVertexVector[j*3+1], outVertexVector[j*3+2], tangent, binormal);
-				outVertexVector[j*3].Tangent = tangent.AsD3DVector3();
-				outVertexVector[j*3+1].Tangent = tangent.AsD3DVector3();
-				outVertexVector[j*3+2].Tangent = tangent.AsD3DVector3();
+				outVertexVector[j*3].Tangent = tangent;
+				outVertexVector[j*3+1].Tangent = tangent;
+				outVertexVector[j*3+2].Tangent = tangent;
 			}
 			if(!binormalFound)
 			{
 				Vector3 tangent;
 				Vector3 binormal;
 				MeshVertexData::GetTangentAndBinormal(outVertexVector[j*3], outVertexVector[j*3+1], outVertexVector[j*3+2], tangent, binormal);
-				outVertexVector[j*3].Binormal = binormal.AsD3DVector3();
-				outVertexVector[j*3+1].Binormal = binormal.AsD3DVector3();
-				outVertexVector[j*3+2].Binormal = binormal.AsD3DVector3();
+				outVertexVector[j*3].Binormal = binormal;
+				outVertexVector[j*3+1].Binormal = binormal;
+				outVertexVector[j*3+2].Binormal = binormal;
 			}
 		}
 

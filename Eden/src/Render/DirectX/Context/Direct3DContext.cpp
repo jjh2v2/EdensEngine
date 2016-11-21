@@ -3,8 +3,6 @@
 Direct3DContext::Direct3DContext(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE commandType)
 {
 	mContextType = commandType;
-	//m_CpuLinearAllocator(kCpuWritable);
-	//m_GpuLinearAllocator(kGpuExclusive);
 	mCommandList = NULL;
 	mCommandAllocator = NULL;
 
@@ -15,11 +13,13 @@ Direct3DContext::Direct3DContext(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE c
 	mNumBarriersToFlush = 0;
 
 	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateCommandAllocator(commandType, IID_PPV_ARGS(&mCommandAllocator)));
-	wchar_t AllocatorName[32];
 	mCommandAllocator->SetName(L"Direct3DContext::mCommandAllocator");
+	Direct3DUtils::ThrowIfHRESULTFailed(mCommandAllocator->Reset());
 
 	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateCommandList(1, commandType, mCommandAllocator, NULL, IID_PPV_ARGS(&mCommandList)));
 	mCommandList->SetName(L"Direct3DContext::mCommandList");
+	//Direct3DUtils::ThrowIfHRESULTFailed(mCommandList->Close());
+	//Direct3DUtils::ThrowIfHRESULTFailed(mCommandList->Reset(mCommandAllocator, NULL));
 
 	for (uint32 i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; i++)
 	{
@@ -53,8 +53,10 @@ uint64 Direct3DContext::Flush(Direct3DQueueManager *queueManager, bool waitForCo
 		queueManager->WaitForFence(queueFence);
 	}
 
+	Direct3DUtils::ThrowIfHRESULTFailed(mCommandAllocator->Reset());
+
 	// Reset the command list, keep the previous state
-	mCommandList->Reset(mCommandAllocator, NULL);
+	Direct3DUtils::ThrowIfHRESULTFailed(mCommandList->Reset(mCommandAllocator, NULL));
 
 	if (mCurrentGraphicsRootSignature)
 	{
@@ -96,7 +98,7 @@ void Direct3DContext::BindDescriptorHeaps()
 
 	if (nonNullHeapCount > 0)
 	{
-		mCommandList->SetDescriptorHeaps(nonNullHeapCount, heapsToBind);
+		//mCommandList->SetDescriptorHeaps(nonNullHeapCount, heapsToBind);			//TDA: Not sure what to do with this yet
 	}
 }
 
@@ -367,6 +369,11 @@ void GraphicsContext::SetVertexBuffer(uint32 slot, const D3D12_VERTEX_BUFFER_VIE
 void GraphicsContext::SetVertexBuffers(uint32 slot, uint32 count, const D3D12_VERTEX_BUFFER_VIEW vertexBuffers[])
 {
 	mCommandList->IASetVertexBuffers(slot, count, vertexBuffers);
+}
+
+void GraphicsContext::ClearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE target, float color[4])
+{
+	mCommandList->ClearRenderTargetView(target, color, 0, NULL);
 }
 
 void GraphicsContext::Draw(uint32 vertexCount, uint32 vertexStartOffset /* = 0 */)
