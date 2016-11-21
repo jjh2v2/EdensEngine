@@ -1,20 +1,20 @@
 #include "Direct3DContextManager.h"
 
-Direct3DContextManager::Direct3DContextManager()
+Direct3DContextManager::Direct3DContextManager(ID3D12Device* device)
 {
-
+	mQueueManager = new Direct3DQueueManager(device);
+	mGraphicsContext = new GraphicsContext(device);
 }
 
 Direct3DContextManager::~Direct3DContextManager()
 {
-
+	delete mGraphicsContext;
+	delete mQueueManager;
 }
 
 void Direct3DContextManager::InitializeBuffer(ID3D12Device* device, GPUResource *resource, const void* initData, size_t numBytes, bool useOffset /* = false */, size_t offset /* = 0 */)
 {
 	ID3D12Resource* uploadBuffer;
-
-	CommandContext& InitContext = CommandContext::Begin();
 
 	D3D12_HEAP_PROPERTIES heapProperties;
 	heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
@@ -39,26 +39,26 @@ void Direct3DContextManager::InitializeBuffer(ID3D12Device* device, GPUResource 
 	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE,
 		&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, IID_PPV_ARGS(&uploadBuffer)));
 
-	void* DestAddress;
-	uploadBuffer->Map(0, NULL, &DestAddress);
-	SIMDMemCopy(DestAddress, initData, Math::DivideByMultiple(numBytes, 16));
+	void* mapDestination;
+	uploadBuffer->Map(0, NULL, &mapDestination);
+	memcpy(mapDestination, initData, numBytes);
 	uploadBuffer->Unmap(0, NULL);
 
 	// copy data to the intermediate upload heap and then schedule a copy from the upload heap to the default texture
-	InitContext.TransitionResource(resource, D3D12_RESOURCE_STATE_COPY_DEST, true);
+	mGraphicsContext->TransitionResource((*resource), D3D12_RESOURCE_STATE_COPY_DEST, true);
 	if (useOffset)
 	{
-		InitContext.m_CommandList->CopyBufferRegion(resource->GetResource(), offset, uploadBuffer, 0, numBytes);
+		mGraphicsContext->GetCommandList()->CopyBufferRegion(resource->GetResource(), offset, uploadBuffer, 0, numBytes);
 	}
 	else
 	{
-		InitContext.m_CommandList->CopyResource(resource->GetResource(), uploadBuffer);
+		mGraphicsContext->GetCommandList()->CopyResource(resource->GetResource(), uploadBuffer);
 	}
 
-	InitContext.TransitionResource(Dest, D3D12_RESOURCE_STATE_GENERIC_READ, true);
+	mGraphicsContext->TransitionResource((*resource), D3D12_RESOURCE_STATE_GENERIC_READ, true);
 
 	// Execute the command list and wait for it to finish so we can release the upload buffer
-	InitContext.Finish(true);
+	mGraphicsContext->Flush(mQueueManager, true);
 
 	uploadBuffer->Release();
 }

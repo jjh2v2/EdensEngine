@@ -7,23 +7,36 @@
 #include "Core/Misc/Color.h"
 #include "Render/Shader/RootSignature/RootSignatureManager.h"
 
+#define VALID_COMPUTE_QUEUE_RESOURCE_STATES \
+	( D3D12_RESOURCE_STATE_UNORDERED_ACCESS \
+	| D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE \
+	| D3D12_RESOURCE_STATE_COPY_DEST \
+	| D3D12_RESOURCE_STATE_COPY_SOURCE )
+
 class Direct3DContext
 {
 public:
 	Direct3DContext(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE commandType);
-	~Direct3DContext();
+	virtual ~Direct3DContext();
 
 	Direct3DContext(const Direct3DContext&) = delete;
 	Direct3DContext & operator=(const Direct3DContext&) = delete;
 
+	// Flush existing commands to the GPU but keep the context alive
 	uint64 Flush(Direct3DQueueManager *queueManager, bool waitForCompletion = false);
+
 	void FlushResourceBarriers();
 	void BindDescriptorHeaps();
-
-	ID3D12GraphicsCommandList *GetCommandList(){ return mCommandList; }
-
 	void SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, ID3D12DescriptorHeap *heap);
 	void SetDescriptorHeaps(uint32 numHeaps, D3D12_DESCRIPTOR_HEAP_TYPE heapTypes[], ID3D12DescriptorHeap *heaps[]);
+
+	void TransitionResource(GPUResource &resource, D3D12_RESOURCE_STATES newState, bool flushImmediate = false);
+	void BeginResourceTransition(GPUResource &resource, D3D12_RESOURCE_STATES newState, bool flushImmediate = false);
+	void InsertUAVBarrier(GPUResource &resource, bool flushImmediate = false);
+	void InsertAliasBarrier(GPUResource &before, GPUResource &after, bool flushImmediate = false);
+	inline void FlushResourceBarriers(void);
+
+	ID3D12GraphicsCommandList *GetCommandList(){ return mCommandList; }
 
 protected:
 	D3D12_COMMAND_LIST_TYPE mContextType;
@@ -47,6 +60,8 @@ protected:
 class GraphicsContext : public Direct3DContext
 {
 public:
+	GraphicsContext(ID3D12Device *device);
+	virtual ~GraphicsContext();
 
 	//void ClearUAV(GPUBuffer& Target);
 	//void ClearUAV(ColorBuffer& Target);

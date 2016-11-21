@@ -20,7 +20,6 @@ public:
 	void WaitForFence(uint64 fenceValue);
 	void WaitForAllIdle();
 
-	
 private:
 	Direct3DQueue *mGraphicsQueue;
 	Direct3DQueue *mComputeQueue;

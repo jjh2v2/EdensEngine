@@ -7,7 +7,6 @@ Direct3DContext::Direct3DContext(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE c
 	//m_GpuLinearAllocator(kGpuExclusive);
 	mCommandList = NULL;
 	mCommandAllocator = NULL;
-	//ZeroMemory(m_CurrentDescriptorHeaps, sizeof(m_CurrentDescriptorHeaps));
 
 	mCurrentGraphicsRootSignature = NULL;
 	mCurrentGraphicsPipelineState = NULL;
@@ -129,6 +128,130 @@ void Direct3DContext::SetDescriptorHeaps(uint32 numHeaps, D3D12_DESCRIPTOR_HEAP_
 	}
 }
 
+void Direct3DContext::TransitionResource(GPUResource &resource, D3D12_RESOURCE_STATES newState, bool flushImmediate /* = false */)
+{
+	D3D12_RESOURCE_STATES oldState = resource.GetUsageState();
+
+	if (mContextType == D3D12_COMMAND_LIST_TYPE_COMPUTE)
+	{
+		Application::Assert((oldState & VALID_COMPUTE_QUEUE_RESOURCE_STATES) == oldState);
+		Application::Assert((newState & VALID_COMPUTE_QUEUE_RESOURCE_STATES) == newState);
+	}
+
+	if (oldState != newState)
+	{
+		Application::Assert(mNumBarriersToFlush < BARRIER_LIMIT);
+		D3D12_RESOURCE_BARRIER &barrierDesc = mResourceBarrierBuffer[mNumBarriersToFlush];
+		mNumBarriersToFlush++;
+
+		barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrierDesc.Transition.pResource = resource.GetResource();
+		barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		barrierDesc.Transition.StateBefore = oldState;
+		barrierDesc.Transition.StateAfter = newState;
+
+		// Check to see if we already started the transition
+		if (newState == resource.GetTransitionState())
+		{
+			barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_END_ONLY;
+			resource.SetTransitionState(D3D12_GPU_RESOURCE_STATE_UNKNOWN);
+		}
+		else
+		{
+			barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		}
+
+		resource.SetUsageState(newState);
+	}
+	else if (newState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
+	{
+		InsertUAVBarrier(resource, flushImmediate);
+	}
+
+	if (flushImmediate || mNumBarriersToFlush == BARRIER_LIMIT)
+	{
+		FlushResourceBarriers();
+	}
+}
+
+void Direct3DContext::BeginResourceTransition(GPUResource &resource, D3D12_RESOURCE_STATES newState, bool flushImmediate /* = false */)
+{
+	// If it's already transitioning, finish that transition
+	if (resource.GetTransitionState() != D3D12_GPU_RESOURCE_STATE_UNKNOWN)
+	{
+		TransitionResource(resource, resource.GetTransitionState());
+	}
+
+	D3D12_RESOURCE_STATES oldState = resource.GetUsageState();
+
+	if (oldState != newState)
+	{
+		Application::Assert(mNumBarriersToFlush < BARRIER_LIMIT);
+		D3D12_RESOURCE_BARRIER& barrierDesc = mResourceBarrierBuffer[mNumBarriersToFlush];
+		mNumBarriersToFlush++;
+
+		barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrierDesc.Transition.pResource = resource.GetResource();
+		barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		barrierDesc.Transition.StateBefore = oldState;
+		barrierDesc.Transition.StateAfter = newState;
+
+		barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY;
+
+		resource.SetTransitionState(newState);
+	}
+
+	if (flushImmediate || mNumBarriersToFlush == BARRIER_LIMIT)
+	{
+		FlushResourceBarriers();
+	}
+}
+
+void Direct3DContext::InsertUAVBarrier(GPUResource &resource, bool flushImmediate /* = false */)
+{
+	Application::Assert(mNumBarriersToFlush < 16);
+	D3D12_RESOURCE_BARRIER& barrierDesc = mResourceBarrierBuffer[mNumBarriersToFlush];
+	mNumBarriersToFlush++;
+
+	barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+	barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrierDesc.UAV.pResource = resource.GetResource();
+
+	if (flushImmediate)
+	{
+		FlushResourceBarriers();
+	}
+}
+
+void Direct3DContext::InsertAliasBarrier(GPUResource &before, GPUResource &after, bool flushImmediate /* = false */)
+{
+	Application::Assert(mNumBarriersToFlush < 16);
+	D3D12_RESOURCE_BARRIER& barrierDesc = mResourceBarrierBuffer[mNumBarriersToFlush];
+	mNumBarriersToFlush++;
+
+	barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_ALIASING;
+	barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrierDesc.Aliasing.pResourceBefore = before.GetResource();
+	barrierDesc.Aliasing.pResourceAfter = after.GetResource();
+
+	if (flushImmediate)
+	{
+		FlushResourceBarriers();
+	}
+}
+
+
+GraphicsContext::GraphicsContext(ID3D12Device *device)
+	: Direct3DContext(device, D3D12_COMMAND_LIST_TYPE_DIRECT)
+{
+
+}
+
+GraphicsContext::~GraphicsContext()
+{
+
+}
+
 void GraphicsContext::SetRootSignature(const RootSignatureInfo &rootSignature)
 {
 	if (rootSignature.RootSignature == mCurrentComputeRootSignature)
@@ -248,25 +371,32 @@ void GraphicsContext::SetVertexBuffers(uint32 slot, uint32 count, const D3D12_VE
 
 void GraphicsContext::Draw(uint32 vertexCount, uint32 vertexStartOffset /* = 0 */)
 {
-
+	DrawInstanced(vertexCount, 1, vertexStartOffset, 0);
 }
 
 void GraphicsContext::DrawIndexed(uint32 indexCount, uint32 startIndexLocation /* = 0 */, int32 baseVertexLocation /* = 0 */)
 {
-
+	DrawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
 }
 
 void GraphicsContext::DrawInstanced(uint32 vertexCountPerInstance, uint32 instanceCount, uint32 startVertexLocation /* = 0 */, uint32 startInstanceLocation /* = 0 */)
 {
-
+	FlushResourceBarriers();
+	//m_DynamicDescriptorHeap.CommitGraphicsRootDescriptorTables(m_CommandList);
+	mCommandList->DrawInstanced(vertexCountPerInstance, instanceCount, startVertexLocation, startInstanceLocation);
 }
 
 void GraphicsContext::DrawIndexedInstanced(uint32 indexCountPerInstance, uint32 instanceCount, uint32 startIndexLocation, int32 baseVertexLocation, uint32 startInstanceLocation)
 {
-
+	FlushResourceBarriers();
+	//m_DynamicDescriptorHeap.CommitGraphicsRootDescriptorTables(m_CommandList);
+	mCommandList->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
 void GraphicsContext::DrawIndirect(GPUBuffer& argumentBuffer, size_t argumentBufferOffset /* = 0 */)
 {
-
+	//FlushResourceBarriers();
+	//m_DynamicDescriptorHeap.CommitGraphicsRootDescriptorTables(m_CommandList);
+	//mCommandList->ExecuteIndirect(Graphics::DrawIndirectCommandSignature.GetSignature(), 1, ArgumentBuffer.GetResource(),
+	//	(UINT64)ArgumentBufferOffset, nullptr, 0);
 }
