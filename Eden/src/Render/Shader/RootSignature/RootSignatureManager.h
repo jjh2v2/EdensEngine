@@ -15,6 +15,13 @@ struct RootSignatureInfo
 	ID3DBlob* RootSignatureBlob;
 	ID3DBlob* Error;
 	ID3D12RootSignature* RootSignature;
+
+	RootSignatureInfo()
+	{
+		RootSignatureBlob = NULL;
+		Error = NULL;
+		RootSignature = NULL;
+	}
 };
 
 class RootSignatureManager

@@ -14,7 +14,7 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 
 	CD3DX12_ROOT_PARAMETER rootParameters[4];
 	rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
-	rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);
+	rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);		//TDA: Any way to | just pixel + vertex together? Answer: need to place deny flags here somewhere
 	rootParameters[2].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_VERTEX);
 	rootParameters[3].InitAsDescriptorTable(1, &ranges[3], D3D12_SHADER_VISIBILITY_PIXEL);
 
@@ -27,9 +27,25 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 	mRootSignatures.Add(gbufferSignature);
 }
 
-//TDA: need to free up all this shader memory 
-
 RootSignatureManager::~RootSignatureManager()
 {
+	for (uint32 i = 0; i < mRootSignatures.CurrentSize(); i++)
+	{
+		if (mRootSignatures[i].RootSignature)
+		{
+			mRootSignatures[i].RootSignature->Release();
+		}
 
+		if (mRootSignatures[i].RootSignatureBlob)
+		{
+			mRootSignatures[i].RootSignatureBlob->Release();
+		}
+
+		if (mRootSignatures[i].Error)
+		{
+			mRootSignatures[i].Error->Release();
+		}
+	}
+
+	mRootSignatures.Clear();
 }

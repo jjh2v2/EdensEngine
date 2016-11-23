@@ -22,7 +22,6 @@ public:
 	Direct3DContext(const Direct3DContext&) = delete;
 	Direct3DContext & operator=(const Direct3DContext&) = delete;
 
-	// Flush existing commands to the GPU but keep the context alive
 	uint64 Flush(Direct3DQueueManager *queueManager, bool waitForCompletion = false);
 
 	void FlushResourceBarriers();
@@ -35,7 +34,7 @@ public:
 	void InsertUAVBarrier(GPUResource &resource, bool flushImmediate = false);
 	void InsertAliasBarrier(GPUResource &before, GPUResource &after, bool flushImmediate = false);
 
-	ID3D12GraphicsCommandList *GetCommandList(){ return mCommandList; }
+	//ID3D12GraphicsCommandList *GetCommandList(){ return mCommandList; }
 
 protected:
 	D3D12_COMMAND_LIST_TYPE mContextType;
@@ -51,9 +50,6 @@ protected:
 	uint32 mNumBarriersToFlush;
 
 	ID3D12DescriptorHeap* mCurrentDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
-
-	//LinearAllocator m_CpuLinearAllocator;
-	//LinearAllocator m_GpuLinearAllocator;
 };
 
 class GraphicsContext : public Direct3DContext
@@ -112,4 +108,35 @@ public:
 	void DrawIndirect(GPUBuffer& argumentBuffer, size_t argumentBufferOffset = 0);
 
 private:
+};
+
+class UploadContext : Direct3DContext
+{
+public:
+	UploadContext(ID3D12Device *device);
+	virtual ~UploadContext();
+
+private:
+	bool AllocateUploadSubmission(uint64 size);
+
+	struct UploadBuffer
+	{
+		UploadBuffer()
+		{
+			BufferResource = NULL;
+			BufferAddress = NULL;
+			BufferStart = 0;
+			BufferUsed = 0;
+		}
+
+		ID3D12Resource *BufferResource;
+		uint8 *BufferAddress;
+		uint64 BufferStart;
+		uint64 BufferUsed;
+	};
+
+	UploadBuffer mUploadBuffer;
+	Direct3DUpload mUploads[MAX_GPU_UPLOADS];
+	uint64 mUploadSubmissionStart;
+	uint64 mUploadSubmissionUsed;
 };

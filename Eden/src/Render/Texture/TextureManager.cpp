@@ -5,14 +5,6 @@
 TextureManager::TextureManager(Direct3DManager *direct3DManager)
 {
 	mDirect3DManager = direct3DManager;
-	//DirectX::ScratchImage image;
-	//const WCHAR* filePath = L"../Eden/data/Textures/Character/Mage/MageDiffuseFire.dds";
-
-	//const std::wstring extension = GetFileExtension(filePath);
-	//if (extension == L"DDS" || extension == L"dds")
-	//{
-		//HRESULT result = DirectX::LoadFromDDSFile(filePath, DirectX::DDS_FLAGS_NONE, nullptr, image);
-	//}
 }
 
 TextureManager::~TextureManager()

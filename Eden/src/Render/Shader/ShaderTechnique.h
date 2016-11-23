@@ -14,4 +14,5 @@ public:
 private:
 	Shader *mShader;
 	std::map<ShaderPipelinePermutation, ShaderPSO*> mShaderPipelineMap;
+	DynamicArray<ShaderPSO*> mShaderPipelines;
 };

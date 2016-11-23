@@ -16,14 +16,29 @@ Shader::Shader(ID3D12Device* device, ShaderPipelineDefinition &initData)
 
 Shader::~Shader()
 {
-	mVertexShader->Release();
-	mVertexShader = NULL;
-	mPixelShader->Release();
-	mPixelShader = NULL;
-	mDomainShader->Release();
-	mDomainShader = NULL;
-	mHullShader->Release();
-	mHullShader = NULL;
+	if (mVertexShader)
+	{
+		mVertexShader->Release();
+		mVertexShader = NULL;
+	}
+	
+	if (mPixelShader)
+	{
+		mPixelShader->Release();
+		mPixelShader = NULL;
+	}
+
+	if (mDomainShader)
+	{
+		mDomainShader->Release();
+		mDomainShader = NULL;
+	}
+
+	if (mHullShader)
+	{
+		mHullShader->Release();
+		mHullShader = NULL;
+	}
 }
 
 

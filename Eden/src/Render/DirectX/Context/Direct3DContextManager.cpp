@@ -4,16 +4,18 @@ Direct3DContextManager::Direct3DContextManager(ID3D12Device* device)
 {
 	mQueueManager = new Direct3DQueueManager(device);
 	mGraphicsContext = new GraphicsContext(device);
+	mUploadContext = new UploadContext(device);
 }
 
 Direct3DContextManager::~Direct3DContextManager()
 {
+	delete mUploadContext;
 	delete mGraphicsContext;
 	delete mQueueManager;
 }
 
-GPUBuffer *Direct3DContextManager::CreateGPUBuffer(ID3D12Device* device, uint32 elementCount, uint32 elementSize,
-	const void* initData, size_t numBytes, bool useOffset /* = false */, size_t offset /* = 0 */)
+/*GPUBuffer *Direct3DContextManager::CreateGPUBuffer(ID3D12Device* device, uint32 elementCount, uint32 elementSize,
+	const void* initData, size_t numBytes, bool useOffset, size_t offset)
 {
 	GPUBuffer *newBuffer = new GPUBuffer();
 
@@ -102,7 +104,7 @@ GPUBuffer *Direct3DContextManager::CreateGPUBuffer(ID3D12Device* device, uint32 
 	return newBuffer;
 }
 
-/*void CommandContext::InitializeTexture(GPUResource& destination, UINT numSubresources, D3D12_SUBRESOURCE_DATA subresourceData[])
+void CommandContext::InitializeTexture(GPUResource& destination, UINT numSubresources, D3D12_SUBRESOURCE_DATA subresourceData[])
 {
 	ID3D12Resource* UploadBuffer;
 

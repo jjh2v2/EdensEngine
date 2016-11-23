@@ -11,6 +11,13 @@ ShaderManager::ShaderManager(ID3D12Device *device)
 
 ShaderManager::~ShaderManager()
 {
+	for (uint32 i = 0; i < mShaderTechniques.CurrentSize(); i++)
+	{
+		delete mShaderTechniques[i];
+	}
+	mShaderTechniques.Clear();
+	mShaderTechniqueLookup.clear();
+
 	delete mRootSignatureManager;
 }
 

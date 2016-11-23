@@ -407,3 +407,111 @@ void GraphicsContext::DrawIndirect(GPUBuffer& argumentBuffer, size_t argumentBuf
 	//mCommandList->ExecuteIndirect(Graphics::DrawIndirectCommandSignature.GetSignature(), 1, ArgumentBuffer.GetResource(),
 	//	(UINT64)ArgumentBufferOffset, nullptr, 0);
 }
+
+UploadContext::UploadContext(ID3D12Device *device)
+	:Direct3DContext(device, D3D12_COMMAND_LIST_TYPE_COPY)
+{
+	D3D12_HEAP_PROPERTIES uploadHeapProperties;
+	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+	uploadHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	uploadHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	uploadHeapProperties.CreationNodeMask = 0;
+	uploadHeapProperties.VisibleNodeMask = 0;
+
+	D3D12_RESOURCE_DESC uploadBufferDesc = {};
+	uploadBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	uploadBufferDesc.Width = uint32(UPLOAD_BUFFER_SIZE);
+	uploadBufferDesc.Height = 1;
+	uploadBufferDesc.DepthOrArraySize = 1;
+	uploadBufferDesc.MipLevels = 1;
+	uploadBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+	uploadBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	uploadBufferDesc.SampleDesc.Count = 1;
+	uploadBufferDesc.SampleDesc.Quality = 0;
+	uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	uploadBufferDesc.Alignment = 0;
+
+	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &uploadBufferDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mUploadBuffer.BufferResource)));	//TDA: Nvidia warns to not use generic read, check if this is really necessary, or if we can use a set of flags instead
+
+	D3D12_RANGE readRange = {};
+	Direct3DUtils::ThrowIfHRESULTFailed(mUploadBuffer.BufferResource->Map(0, &readRange, reinterpret_cast<void**>(&mUploadBuffer.BufferAddress)));
+	mUploadBuffer.BufferStart = 0;
+	mUploadBuffer.BufferUsed = 0;
+	mUploadSubmissionStart = 0;
+	mUploadSubmissionUsed = 0;
+}
+
+UploadContext::~UploadContext()
+{
+	if (mUploadBuffer.BufferResource)
+	{
+		mUploadBuffer.BufferResource->Release();
+		mUploadBuffer.BufferResource = NULL;
+	}
+}
+
+bool UploadContext::AllocateUploadSubmission(uint64 size)
+{
+	Application::Assert(mUploadSubmissionUsed <= MAX_GPU_UPLOADS);
+	if (mUploadSubmissionUsed == MAX_GPU_UPLOADS)
+	{
+		return false;
+	}
+
+	const uint64 newSubmissionId = (mUploadSubmissionStart + mUploadSubmissionUsed) % MAX_GPU_UPLOADS;
+	Application::Assert(mUploads[newSubmissionId].UploadSize == 0);
+	Application::Assert(mUploadBuffer.BufferUsed <= UPLOAD_BUFFER_SIZE);
+
+	if (size > (UPLOAD_BUFFER_SIZE - mUploadBuffer.BufferUsed))
+	{
+		return false;
+	}
+
+	const uint64 start = mUploadBuffer.BufferStart;
+	const uint64 end = mUploadBuffer.BufferStart + mUploadBuffer.BufferUsed;
+	uint64 allocOffset = UINT64_MAX;
+	uint64 padding = 0;
+
+	if (end < UPLOAD_BUFFER_SIZE)
+	{
+		const uint64 endAmount = UPLOAD_BUFFER_SIZE - end;
+		if (endAmount >= size)
+		{
+			allocOffset = end;
+		}
+		else if (start >= size)
+		{
+			// Wrap around to the beginning
+			allocOffset = 0;
+			mUploadBuffer.BufferUsed += endAmount;
+			padding = endAmount;
+		}
+	}
+	else
+	{
+		const uint64 wrappedEnd = end % UPLOAD_BUFFER_SIZE;
+		Application::Assert(start > wrappedEnd);
+		if ((start - wrappedEnd) >= size)
+		{
+			allocOffset = wrappedEnd;
+		}
+	}
+
+	if (allocOffset == UINT64_MAX)
+	{
+		return false;
+	}
+
+	mUploadSubmissionUsed += 1;
+	mUploadBuffer.BufferUsed += size;
+
+	++mFenceValue;
+
+	mUploads[newSubmissionId].UploadLocation = allocOffset;
+	mUploads[newSubmissionId].UploadSize = size;
+	mUploads[newSubmissionId].FenceValue = mFenceValue;
+	mUploads[newSubmissionId].UploadPadding = padding;
+
+	return true;
+}

@@ -12,8 +12,4 @@ public:
 
 private:
 	GraphicsManager *mGraphicsManager;
-
-	//ID3D12GraphicsCommandList *mCommandList;
-	ID3D12RootSignature	*mRootSignature;
-	ID3D12PipelineState	*mPipelineState;
 };

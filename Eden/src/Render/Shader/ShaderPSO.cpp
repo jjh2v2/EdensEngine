@@ -35,3 +35,9 @@ ShaderPSO::ShaderPSO(ID3D12Device* device, Shader *shader, ShaderPipelineRenderS
 
 	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateGraphicsPipelineState(&pipelineStateDesc, IID_PPV_ARGS(&mPipelineState)));
 }
+
+ShaderPSO::~ShaderPSO()
+{
+	mPipelineState->Release();
+	mPipelineState = NULL;
+}

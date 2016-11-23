@@ -7,7 +7,7 @@ Direct3DManager::Direct3DManager()
 	mCurrentOrientation = DisplayOrientation_Landscape;
 	mUseVsync = false;
 	mHeapManager = NULL;
-	mUploadManager = NULL;
+	//mUploadManager = NULL;
 	mContextManager = NULL;
 
 	InitializeDeviceResources();
@@ -18,7 +18,7 @@ Direct3DManager::~Direct3DManager()
 	WaitForGPU();
 
 	delete mHeapManager;
-	delete mUploadManager;
+	//delete mUploadManager;
 
 	ReleaseSwapChainDependentResources();
 
@@ -226,7 +226,7 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 	// Set the 3D rendering viewport to target the entire window.
 	mDirect3DResources.ScreenViewport = { 0.0f, 0.0f, mOutputSize.X, mOutputSize.Y, 0.0f, 1.0f };
 
-	mDefaultHeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+	/*mDefaultHeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
 	mDefaultHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
 	mDefaultHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
 	mDefaultHeapProperties.CreationNodeMask = 0;
@@ -242,11 +242,11 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 	mReadbackHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
 	mReadbackHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
 	mReadbackHeapProperties.CreationNodeMask = 0;
-	mReadbackHeapProperties.VisibleNodeMask = 0;
+	mReadbackHeapProperties.VisibleNodeMask = 0;*/
 
 	mHeapManager = new Direct3DHeapManager(mDirect3DResources.Device);
 
-	mUploadManager = new Direct3DUploadManager(mDirect3DResources.Device, mUploadHeapProperties);
+	//mUploadManager = new Direct3DUploadManager(mDirect3DResources.Device, mUploadHeapProperties);
 
 	WaitForGPU();
 }

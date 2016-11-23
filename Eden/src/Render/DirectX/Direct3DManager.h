@@ -34,13 +34,13 @@ public:
 		return CD3DX12_CPU_DESCRIPTOR_HANDLE(mDirect3DResources.RTVHeap->GetCPUDescriptorHandleForHeapStart(), mDirect3DResources.CurrentBuffer, mDirect3DResources.RTVDescriptorSize);
 	}
 
-	D3D12_HEAP_PROPERTIES GetDefaultHeapProperties()  { return mDefaultHeapProperties; }
-	D3D12_HEAP_PROPERTIES GetUploadHeapProperties()   { return mUploadHeapProperties; }
-	D3D12_HEAP_PROPERTIES GetReadbackHeapProperties() { return mReadbackHeapProperties; }
+	//D3D12_HEAP_PROPERTIES GetDefaultHeapProperties()  { return mDefaultHeapProperties; }
+	//D3D12_HEAP_PROPERTIES GetUploadHeapProperties()   { return mUploadHeapProperties; }
+	//D3D12_HEAP_PROPERTIES GetReadbackHeapProperties() { return mReadbackHeapProperties; }
 
 	Direct3DContextManager *GetContextManager() { return mContextManager; }
 	Direct3DHeapManager *GetHeapManager() { return mHeapManager; }
-	Direct3DUploadManager *GetUploadManager() { return mUploadManager; }
+	//Direct3DUploadManager *GetUploadManager() { return mUploadManager; }
 
 private:
 	void InitializeDeviceResources();
@@ -55,7 +55,7 @@ private:
 
 	Direct3DResources mDirect3DResources;
 	Direct3DHeapManager *mHeapManager;
-	Direct3DUploadManager *mUploadManager;
+	//Direct3DUploadManager *mUploadManager;
 
 	bool mDeviceRemoved;
 	bool mUseVsync;
@@ -65,7 +65,7 @@ private:
 	DisplayOrientation mNativeOrientation;
 	DisplayOrientation mCurrentOrientation;
 
-	D3D12_HEAP_PROPERTIES mDefaultHeapProperties;
-	D3D12_HEAP_PROPERTIES mUploadHeapProperties;
-	D3D12_HEAP_PROPERTIES mReadbackHeapProperties;
+	//D3D12_HEAP_PROPERTIES mDefaultHeapProperties;
+	//D3D12_HEAP_PROPERTIES mUploadHeapProperties;
+	//D3D12_HEAP_PROPERTIES mReadbackHeapProperties;
 };
