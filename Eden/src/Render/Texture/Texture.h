@@ -2,6 +2,7 @@
 #include "Core/Vector/Vector3.h"
 #include "Core/Platform/PlatformCore.h"
 #include "Render/DirectX/Heap/DescriptorHeapHandle.h"
+#include "Render/Buffer/GPUResource.h"
 
 class Texture
 {
@@ -12,8 +13,8 @@ public:
 	void SetDescriptorHeapHandle(DescriptorHeapHandle handle) { mDescriptorHandle = handle; }
 	DescriptorHeapHandle GetDescriptorHeapHandle() { return mDescriptorHandle; }
 
-	void SetTextureResource(ID3D12Resource *resource) { mTextureResource = resource; }
-	ID3D12Resource *GetTextureResource() { return mTextureResource; }
+	void SetTextureResource(GPUResource *resource) { mTextureResource = resource; }
+	GPUResource *GetTextureResource() { return mTextureResource; }
 
 	void SetFormat(DXGI_FORMAT format) { mFormat = format; }
 	DXGI_FORMAT GetFormat() { return mFormat; }
@@ -27,7 +28,7 @@ public:
 	bool GetIsCubeMap() { return mIsCubeMap; }
 
 private:
-	ID3D12Resource* mTextureResource;
+	GPUResource* mTextureResource;
 	DescriptorHeapHandle mDescriptorHandle;
 
 	DXGI_FORMAT mFormat;

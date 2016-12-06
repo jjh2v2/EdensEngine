@@ -1,3 +1,4 @@
+/*
 #pragma once
 #include "Core/Platform/PlatformCore.h"
 #include "Core/Containers/DynamicArray.h"
@@ -59,4 +60,4 @@ private:
 	Direct3DUpload mUploads[MAX_GPU_UPLOADS];
 	uint64 mUploadSubmissionStart;
 	uint64 mUploadSubmissionUsed;
-};
+};*/

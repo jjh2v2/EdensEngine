@@ -341,15 +341,15 @@ void GraphicsContext::SetConstantBuffer(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS 
 	mCommandList->SetComputeRootConstantBufferView(index, constantBuffer);
 }
 
-void GraphicsContext::SetShaderResourceView(uint32 index, GPUBuffer &shaderResourceView, uint64 offset /* = 0 */)
-{
-	mCommandList->SetGraphicsRootShaderResourceView(index, shaderResourceView.GetGpuAddress() + offset);
-}
+//void GraphicsContext::SetShaderResourceView(uint32 index, GPUBuffer &shaderResourceView, uint64 offset /* = 0 */)
+//{
+//	mCommandList->SetGraphicsRootShaderResourceView(index, shaderResourceView.GetGpuAddress() + offset);
+//}
 
-void GraphicsContext::SetUnorderedAccessView(uint32 index, GPUBuffer &unorderedAccessView, uint64 offset /* = 0 */)
-{
-	mCommandList->SetComputeRootUnorderedAccessView(index, unorderedAccessView.GetGpuAddress() + offset);
-}
+//void GraphicsContext::SetUnorderedAccessView(uint32 index, GPUBuffer &unorderedAccessView, uint64 offset /* = 0 */)
+//{
+//	mCommandList->SetComputeRootUnorderedAccessView(index, unorderedAccessView.GetGpuAddress() + offset);
+//}
 
 void GraphicsContext::SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle)
 {
@@ -400,13 +400,13 @@ void GraphicsContext::DrawIndexedInstanced(uint32 indexCountPerInstance, uint32 
 	mCommandList->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
-void GraphicsContext::DrawIndirect(GPUBuffer& argumentBuffer, size_t argumentBufferOffset /* = 0 */)
-{
+//void GraphicsContext::DrawIndirect(GPUBuffer& argumentBuffer, size_t argumentBufferOffset /* = 0 */)
+//{
 	//FlushResourceBarriers();
 	//m_DynamicDescriptorHeap.CommitGraphicsRootDescriptorTables(m_CommandList);
 	//mCommandList->ExecuteIndirect(Graphics::DrawIndirectCommandSignature.GetSignature(), 1, ArgumentBuffer.GetResource(),
 	//	(UINT64)ArgumentBufferOffset, nullptr, 0);
-}
+//}
 
 UploadContext::UploadContext(ID3D12Device *device)
 	:Direct3DContext(device, D3D12_COMMAND_LIST_TYPE_COPY)
@@ -451,7 +451,49 @@ UploadContext::~UploadContext()
 	}
 }
 
-bool UploadContext::AllocateUploadSubmission(uint64 size)
+void UploadContext::ClearFinishedUploads(uint64 flushCount, Direct3DQueueManager *queueManager)
+{
+	const uint64 start = mUploadSubmissionStart;
+	const uint64 numUsed = mUploadSubmissionUsed;
+
+	uint64 numFlushed = 0;
+
+	for (uint64 i = 0; i < numUsed; ++i)
+	{
+		Direct3DUpload &submission = mUploads[(start + i) % MAX_GPU_UPLOADS];
+
+		if (submission.IsUploading && !queueManager->GetCopyQueue()->IsFenceComplete(submission.FenceValue))
+		{
+			queueManager->GetCopyQueue()->WaitForFence(submission.FenceValue);
+		}
+		
+		if (submission.IsUploading && queueManager->GetCopyQueue()->IsFenceComplete(submission.FenceValue))
+		{
+			mUploadSubmissionStart = (mUploadSubmissionStart + 1) % MAX_GPU_UPLOADS;
+			mUploadSubmissionUsed -= 1;
+			mUploadBuffer.BufferStart = (mUploadBuffer.BufferStart + submission.UploadPadding) % UPLOAD_BUFFER_SIZE;
+			Application::Assert(submission.UploadLocation == mUploadBuffer.BufferStart);
+			Application::Assert(mUploadBuffer.BufferStart + submission.UploadSize <= UPLOAD_BUFFER_SIZE);
+			mUploadBuffer.BufferStart = (mUploadBuffer.BufferStart + submission.UploadSize) % UPLOAD_BUFFER_SIZE;
+			mUploadBuffer.BufferUsed -= (submission.UploadSize + submission.UploadPadding);
+			submission.Reset();
+
+			if (mUploadBuffer.BufferUsed == 0)
+			{
+				mUploadBuffer.BufferStart = 0;
+			}
+
+			numFlushed++;
+
+			if (numFlushed == flushCount)
+			{
+				break;
+			}
+		}
+	}
+}
+
+bool UploadContext::AllocateUploadSubmission(uint64 size, uint64 &uploadIndex)
 {
 	Application::Assert(mUploadSubmissionUsed <= MAX_GPU_UPLOADS);
 	if (mUploadSubmissionUsed == MAX_GPU_UPLOADS)
@@ -506,12 +548,53 @@ bool UploadContext::AllocateUploadSubmission(uint64 size)
 	mUploadSubmissionUsed += 1;
 	mUploadBuffer.BufferUsed += size;
 
-	++mFenceValue;
-
 	mUploads[newSubmissionId].UploadLocation = allocOffset;
 	mUploads[newSubmissionId].UploadSize = size;
-	mUploads[newSubmissionId].FenceValue = mFenceValue;
 	mUploads[newSubmissionId].UploadPadding = padding;
+	mUploads[newSubmissionId].CommandAllocator = mCommandAllocator;
+	uploadIndex = newSubmissionId;
 
 	return true;
+}
+
+Direct3DUploadInfo UploadContext::BeginUpload(uint64 size, Direct3DQueueManager *queueManager)
+{
+	size = Application::Align(size, UPLOAD_BUFFER_ALIGNMENT);
+	Application::Assert(size <= UPLOAD_BUFFER_SIZE && size > 0);
+
+	uint64 uploadIndex = 0;
+
+	ClearFinishedUploads(0, queueManager);
+	while (!AllocateUploadSubmission(size, uploadIndex))
+	{
+		ClearFinishedUploads(1, queueManager);
+	}
+
+	const uint64 submissionIdx = (mUploadSubmissionStart + (mUploadSubmissionUsed - 1)) % MAX_GPU_UPLOADS;
+	Direct3DUpload &submission = mUploads[submissionIdx];
+
+	//Direct3DUtils::ThrowIfHRESULTFailed(submission.CommandAllocator->Reset());
+	//Direct3DUtils::ThrowIfHRESULTFailed(mCommandList->Reset(submission.CommandAllocator, NULL));
+
+	Direct3DUploadInfo uploadInfo;
+	uploadInfo.Resource = mUploadBuffer.BufferResource;
+	uploadInfo.CPUAddress = mUploadBuffer.BufferAddress + submission.UploadLocation;
+	uploadInfo.ResourceOffset = submission.UploadLocation;
+	uploadInfo.UploadID = uploadIndex;
+
+	return uploadInfo;
+}
+
+void UploadContext::CopyTextureRegion(D3D12_TEXTURE_COPY_LOCATION *destination, D3D12_TEXTURE_COPY_LOCATION *source)
+{
+	mCommandList->CopyTextureRegion(destination, 0, 0, 0, source, NULL);
+}
+
+uint64 UploadContext::EndUpload(Direct3DUploadInfo& context, Direct3DQueueManager *queueManager)
+{
+	uint64 uploadFence = Flush(queueManager, true);//queueManager->GetCopyQueue()->ExecuteCommandList(mCommandList);
+	mUploads[context.UploadID].FenceValue = uploadFence;
+	mUploads[context.UploadID].IsUploading = true;
+
+	return uploadFence;
 }

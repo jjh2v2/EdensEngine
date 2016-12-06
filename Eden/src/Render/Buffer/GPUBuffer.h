@@ -4,7 +4,7 @@
 
 //this is unfinished, UAV/SRV not implemented, this is intended for compute buffers
 
-class GPUBuffer : public GPUResource
+/*class GPUBuffer : public GPUResource
 {
 public:
 	GPUBuffer();
@@ -25,4 +25,4 @@ protected:
 	uint32 mElementCount;
 	uint32 mElementSize;
 	D3D12_RESOURCE_FLAGS mResourceFlags;
-};
+};*/

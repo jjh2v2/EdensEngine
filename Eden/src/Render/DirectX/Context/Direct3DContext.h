@@ -88,8 +88,8 @@ public:
 	void SetPipelineState(ShaderPSO &pipeline);
 	void SetConstants(uint32 index, uint32 numConstants, const void *bufferData);
 	void SetConstantBuffer(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS constantBuffer);
-	void SetShaderResourceView(uint32 index, GPUBuffer &shaderResourceView, uint64 offset = 0);
-	void SetUnorderedAccessView(uint32 index, GPUBuffer &unorderedAccessView, uint64 offset = 0);
+	//void SetShaderResourceView(uint32 index, GPUBuffer &shaderResourceView, uint64 offset = 0);
+	//void SetUnorderedAccessView(uint32 index, GPUBuffer &unorderedAccessView, uint64 offset = 0);
 
 	void SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle);
 
@@ -105,19 +105,41 @@ public:
 		uint32 startVertexLocation = 0, uint32 startInstanceLocation = 0);
 	void DrawIndexedInstanced(uint32 indexCountPerInstance, uint32 instanceCount, uint32 startIndexLocation,
 		int32 baseVertexLocation, uint32 startInstanceLocation);
-	void DrawIndirect(GPUBuffer& argumentBuffer, size_t argumentBufferOffset = 0);
+	//void DrawIndirect(GPUBuffer& argumentBuffer, size_t argumentBufferOffset = 0);
 
 private:
 };
 
-class UploadContext : Direct3DContext
+struct Direct3DUploadInfo
+{
+	Direct3DUploadInfo()
+	{
+		CPUAddress = NULL;
+		ResourceOffset = 0;
+		Resource = NULL;
+		UploadID = 0;
+	}
+
+	void* CPUAddress;
+	uint64 ResourceOffset;
+	ID3D12Resource* Resource;
+	uint64 UploadID;
+};
+
+class UploadContext : public Direct3DContext
 {
 public:
 	UploadContext(ID3D12Device *device);
 	virtual ~UploadContext();
-
+	
+	Direct3DUploadInfo BeginUpload(uint64 size, Direct3DQueueManager *queueManager);
+	void CopyTextureRegion(D3D12_TEXTURE_COPY_LOCATION *destination, D3D12_TEXTURE_COPY_LOCATION *source);
+	uint64 EndUpload(Direct3DUploadInfo& context, Direct3DQueueManager *queueManager);
+	
 private:
-	bool AllocateUploadSubmission(uint64 size);
+	void ClearFinishedUploads(uint64 flushCount, Direct3DQueueManager *queueManager);
+	bool AllocateUploadSubmission(uint64 size, uint64 &uploadIndex);
+	
 
 	struct UploadBuffer
 	{
@@ -133,6 +155,30 @@ private:
 		uint8 *BufferAddress;
 		uint64 BufferStart;
 		uint64 BufferUsed;
+	};
+
+	struct Direct3DUpload
+	{
+		Direct3DUpload()
+		{
+			Reset();
+		}
+
+		void Reset()
+		{
+			UploadLocation = 0;
+			UploadSize = 0;
+			UploadPadding = 0;
+			FenceValue = UINT64_MAX;
+			IsUploading = false;
+		}
+
+		ID3D12CommandAllocator *CommandAllocator;
+		uint64 UploadLocation;
+		uint64 UploadSize;
+		uint64 UploadPadding;
+		uint64 FenceValue;
+		bool   IsUploading;
 	};
 
 	UploadBuffer mUploadBuffer;

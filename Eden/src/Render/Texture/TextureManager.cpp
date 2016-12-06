@@ -12,7 +12,8 @@ TextureManager::~TextureManager()
 	for (uint32 i = 0; i < mTextures.CurrentSize(); i++)
 	{
 		mDirect3DManager->GetHeapManager()->FreeSRVDescriptorHeapHandle(mTextures[i]->GetDescriptorHeapHandle());
-		mTextures[i]->GetTextureResource()->Release();
+		mTextures[i]->GetTextureResource()->GetResource()->Release();	//TDA: put this somewhere else
+		delete mTextures[i]->GetTextureResource();						//TDA: put this somewhere else
 		mTextures[i]->SetTextureResource(NULL);
 		delete mTextures[i];
 	}
@@ -49,8 +50,7 @@ void TextureManager::LoadAllTextures()
 
 Texture *TextureManager::LoadTexture(WCHAR *filePath)
 {
-	return NULL;
-	/*Texture *newTexture = new Texture();
+	Texture *newTexture = new Texture();
 	DirectX::ScratchImage imageData;
 
 	HRESULT loadResult = DirectX::LoadFromDDSFile(filePath, DirectX::DDS_FLAGS_NONE, nullptr, imageData);
@@ -84,12 +84,19 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 	textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	textureDesc.Alignment = 0;
 	
-	D3D12_HEAP_PROPERTIES defaultProperties = mDirect3DManager->GetDefaultHeapProperties();
+	D3D12_HEAP_PROPERTIES defaultProperties;
+	defaultProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+	defaultProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	defaultProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	defaultProperties.CreationNodeMask = 0;
+	defaultProperties.VisibleNodeMask = 0;
+	
 	ID3D12Resource *newTextureResource = NULL;
 	mDirect3DManager->GetDevice()->CreateCommittedResource(&defaultProperties, D3D12_HEAP_FLAG_NONE, &textureDesc,
 		D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&newTextureResource));
 
-	newTexture->SetTextureResource(newTextureResource);
+	GPUResource *textureGPUResource = new GPUResource(newTextureResource, D3D12_RESOURCE_STATE_COPY_DEST, true);
+	newTexture->SetTextureResource(textureGPUResource);
 	newTexture->SetDescriptorHeapHandle(mDirect3DManager->GetHeapManager()->GetNewSRVDescriptorHeapHandle());
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC *srvDescPointer = NULL;
@@ -116,7 +123,8 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 
 	mDirect3DManager->GetDevice()->GetCopyableFootprints(&textureDesc, 0, uint32(numSubResources), 0, layouts, numRows, rowSizesInBytes, &textureMemorySize);
 
-	Direct3DUploadInfo uploadInfo = mDirect3DManager->GetUploadManager()->GetUploadInfoForBuffer(textureMemorySize);
+	UploadContext *uploadContext = mDirect3DManager->GetContextManager()->GetUploadContext();
+	Direct3DUploadInfo uploadInfo = uploadContext->BeginUpload(textureMemorySize, mDirect3DManager->GetContextManager()->GetQueueManager());
 	uint8* uploadMem = reinterpret_cast<uint8*>(uploadInfo.CPUAddress);
 
 	for (uint64 arrayIdx = 0; arrayIdx < textureMetaData.arraySize; ++arrayIdx)
@@ -158,19 +166,14 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 		src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
 		src.PlacedFootprint = layouts[subResourceIdx];
 		src.PlacedFootprint.Offset += uploadInfo.ResourceOffset;
-		uploadInfo.CommandList->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
+		uploadContext->CopyTextureRegion(&dst, &src);
 	}
 
-	mDirect3DManager->GetUploadManager()->ResourceUploadEnd(uploadInfo);
+	uint64 uploadFenceValue = uploadContext->EndUpload(uploadInfo, mDirect3DManager->GetContextManager()->GetQueueManager());
+	
+	//TDA: stall here until loaded until async is implemented
 
-	D3D12_RESOURCE_BARRIER barrier = {};
-	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	barrier.Transition.pResource = newTextureResource;
-	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	mDirect3DManager->GetCommandList()->ResourceBarrier(1, &barrier);
+	mDirect3DManager->GetContextManager()->GetGraphicsContext()->TransitionResource((*textureGPUResource), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
 
-	return newTexture;*/
+	return newTexture;
 }

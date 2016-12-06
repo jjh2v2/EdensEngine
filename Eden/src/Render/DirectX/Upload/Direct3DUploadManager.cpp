@@ -1,3 +1,4 @@
+/*
 #include "Render/DirectX/Upload/Direct3DUploadManager.h"
 #include "Render/DirectX/D3D12Helper.h"
 
@@ -210,4 +211,4 @@ void Direct3DUploadManager::ResourceUploadEnd(Direct3DUploadInfo& context)
 	Application::Assert(submission.UploadSize != 0);
 
 	mCommandQueue->Signal(mFence, submission.FenceValue);
-}
+}*/

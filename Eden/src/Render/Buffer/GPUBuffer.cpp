@@ -1,4 +1,4 @@
-#include "Render/Buffer/GPUBuffer.h"
+/*#include "Render/Buffer/GPUBuffer.h"
 
 GPUBuffer::GPUBuffer()
 {
@@ -15,4 +15,4 @@ void GPUBuffer::SetBufferInfo(size_t bufferSize, uint32 elementCount, uint32 ele
 	mElementCount = elementCount;
 	mElementSize = elementSize;
 	mResourceFlags = flags;
-}
+}*/

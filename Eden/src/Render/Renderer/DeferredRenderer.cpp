@@ -19,7 +19,7 @@ void DeferredRenderer::Render()
 
 	graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
 
-	GPUResource resource(direct3DManager->GetBackBufferTarget(), D3D12_RESOURCE_STATE_PRESENT);
+	GPUResource resource(direct3DManager->GetBackBufferTarget(), D3D12_RESOURCE_STATE_PRESENT, true);
 
 	graphicsContext->TransitionResource(resource, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
 

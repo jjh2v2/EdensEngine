@@ -21,6 +21,7 @@
 #define D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN   ((D3D12_GPU_VIRTUAL_ADDRESS) - 1)
 #define D3D12_GPU_RESOURCE_STATE_UNKNOWN    ((D3D12_RESOURCE_STATES) - 1)
 #define BARRIER_LIMIT						16
+#define UPLOAD_BUFFER_ALIGNMENT				512									//upload buffers need to be 512 aligned
 
 typedef int8_t      int8;
 typedef int16_t		int16;
