@@ -56,3 +56,45 @@ VertexBuffer *Direct3DContextManager::CreateVertexBuffer(void* vertexData, uint3
 
 	return vertexBuffer;
 }
+
+IndexBuffer *Direct3DContextManager::CreateIndexBuffer(void* indexData, uint32 bufferSize)
+{
+	ID3D12Resource *indexBufferResource = NULL;
+
+	D3D12_RESOURCE_DESC indexBufferDesc;
+	indexBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	indexBufferDesc.Alignment = 0;
+	indexBufferDesc.Width = bufferSize;
+	indexBufferDesc.Height = 1;
+	indexBufferDesc.DepthOrArraySize = 1;
+	indexBufferDesc.MipLevels = 1;
+	indexBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+	indexBufferDesc.SampleDesc.Count = 1;
+	indexBufferDesc.SampleDesc.Quality = 0;
+	indexBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	indexBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+	D3D12_HEAP_PROPERTIES defaultProperties;
+	defaultProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+	defaultProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	defaultProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	defaultProperties.CreationNodeMask = 0;
+	defaultProperties.VisibleNodeMask = 0;
+
+	Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommittedResource(&defaultProperties, D3D12_HEAP_FLAG_NONE, &indexBufferDesc,
+		D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&indexBufferResource)));
+
+	Direct3DUploadInfo uploadInfo = mUploadContext->BeginUpload(bufferSize, mQueueManager);
+	uint8* uploadMem = reinterpret_cast<uint8*>(uploadInfo.CPUAddress);
+
+	memcpy(uploadMem, indexData, bufferSize);
+	mUploadContext->CopyResourceRegion(indexBufferResource, 0, uploadInfo.Resource, uploadInfo.ResourceOffset, bufferSize);
+
+	mUploadContext->EndUpload(uploadInfo, mQueueManager);
+
+	IndexBuffer *indexBuffer = new IndexBuffer(indexBufferResource, D3D12_RESOURCE_STATE_COPY_DEST, bufferSize);
+
+	mGraphicsContext->TransitionResource((*indexBuffer), D3D12_RESOURCE_STATE_GENERIC_READ, true);
+
+	return indexBuffer;
+}
