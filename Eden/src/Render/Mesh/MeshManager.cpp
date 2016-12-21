@@ -66,13 +66,11 @@ void MeshManager::LoadAllMeshes(ID3D12Device* device)
 Mesh *MeshManager::LoadFBXMesh(ID3D12Device* device, char *fileName, char *serializationFile)
 {
 	DynamicArray<MeshVertexData> fbxData;
-	DynamicArray<int> indexSplits;
+	DynamicArray<uint32> indexSplits;
 
 	mFBXLoader.LoadFBX(fileName, fbxData, indexSplits);
 
-	Mesh *fbxMesh = new Mesh();
-	fbxMesh->InitializeWithMeshInfo(device, fbxData.CurrentSize(), fbxData.CurrentSize(), fbxData.GetInnerArrayCopy(), indexSplits);
-	
+	Mesh *fbxMesh = new Mesh(device, fbxData.CurrentSize(), fbxData.CurrentSize(), fbxData.GetInnerArrayCopy(), indexSplits);
 	SerializeMeshToFile(fbxMesh, serializationFile);
 
 	return fbxMesh;
@@ -83,17 +81,17 @@ void MeshManager::SerializeMeshToFile(Mesh *mesh, char* fileName)
 	std::ofstream outputFile(fileName, std::ios::binary);
 
 	MeshVertexData *meshData = mesh->GetMeshData();
-	int indexCount = mesh->GetIndexCount();
+	uint32 indexCount = mesh->GetIndexCount();
 
 	outputFile.write((char*)&indexCount, sizeof(indexCount));
 	outputFile.write((char*)meshData, sizeof(MeshVertexData) * mesh->GetIndexCount());
 
-	int splitCount = mesh->GetMeshSplitCount();
+	uint32 splitCount = mesh->GetMeshSplitCount();
 
 	outputFile.write((char*)&splitCount, sizeof(splitCount));
-	for(int i = 0; i < mesh->GetMeshSplitCount(); i++)
+	for(uint32 i = 0; i < mesh->GetMeshSplitCount(); i++)
 	{
-		int indexSplit = mesh->GetMeshIndexSplitByIndex(i);
+		uint32 indexSplit = mesh->GetMeshIndexSplitByIndex(i);
 		outputFile.write((char*)&indexSplit, sizeof(indexSplit));
 	}
 
@@ -102,7 +100,7 @@ void MeshManager::SerializeMeshToFile(Mesh *mesh, char* fileName)
 
 Mesh *MeshManager::DeserializeMeshFromFile(ID3D12Device* device, char* fileName)
 {
-	int indexCount = 0;
+	uint32 indexCount = 0;
 	std::ifstream inputFile(fileName, std::ios::binary);
 
 	inputFile.read((char *)&indexCount, sizeof(indexCount));
@@ -111,22 +109,21 @@ Mesh *MeshManager::DeserializeMeshFromFile(ID3D12Device* device, char* fileName)
 
 	inputFile.read((char *)meshData, sizeof(MeshVertexData) * indexCount);
 
-	int indexSplitCount = 0;
+	uint32 indexSplitCount = 0;
 	inputFile.read((char *)&indexSplitCount, sizeof(indexSplitCount));
 
-	DynamicArray<int> indexSplits(indexSplitCount);
+	DynamicArray<uint32> indexSplits(indexSplitCount);
 
-	for(int i = 0; i < indexSplitCount; i++)
+	for(uint32 i = 0; i < indexSplitCount; i++)
 	{
-		int indexNum = 0;
+		uint32 indexNum = 0;
 		inputFile.read((char *)&indexNum, sizeof(indexNum));
 		indexSplits.Add(indexNum);
 	}
 
 	inputFile.close();
 
-	Mesh *newMesh = new Mesh();
-	newMesh->InitializeWithMeshInfo(device, indexCount, indexCount, meshData, indexSplits);
+	Mesh *newMesh = new Mesh(device, indexCount, indexCount, meshData, indexSplits);
 
 	return newMesh;
 }
@@ -146,11 +143,11 @@ Mesh *MeshManager::LoadFromAssimp(ID3D12Device* device, char *fileName, char *se
 		return NULL;
 	}
 
-	unsigned int vertCount = 0;
-	unsigned int indexCount = 0;
-	DynamicArray<int> indexSplits;
+	uint32 vertCount = 0;
+	uint32 indexCount = 0;
+	DynamicArray<uint32> indexSplits;
 
-	for(unsigned int i = 0; i < scene->mNumMeshes; i++)
+	for(uint32 i = 0; i < scene->mNumMeshes; i++)
 	{
 		vertCount += scene->mMeshes[i]->mNumVertices;
 		indexCount += scene->mMeshes[i]->mNumFaces * 3;
@@ -158,14 +155,14 @@ Mesh *MeshManager::LoadFromAssimp(ID3D12Device* device, char *fileName, char *se
 	}
 
 	MeshVertexData *meshData = new MeshVertexData[vertCount];
-	unsigned long *indices = new unsigned long[indexCount];
+	uint64 *indices = new uint64[indexCount];
 
-	unsigned int meshDataIndex = 0;
-	unsigned int indexIndex = 0;
+	uint32 meshDataIndex = 0;
+	uint32 indexIndex = 0;
 
-	for(unsigned int i = 0; i < scene->mNumMeshes; i++)
+	for(uint32 i = 0; i < scene->mNumMeshes; i++)
 	{
-		for(unsigned int f = 0; f < scene->mMeshes[i]->mNumFaces; f++)
+		for(uint32 f = 0; f < scene->mMeshes[i]->mNumFaces; f++)
 		{
 			indices[indexIndex] = scene->mMeshes[i]->mFaces[f].mIndices[0] + meshDataIndex;
 			indexIndex++;
@@ -175,7 +172,7 @@ Mesh *MeshManager::LoadFromAssimp(ID3D12Device* device, char *fileName, char *se
 			indexIndex++;
 		}
 
-		for(unsigned int j = 0; j < scene->mMeshes[i]->mNumVertices; j++)
+		for(uint32 j = 0; j < scene->mMeshes[i]->mNumVertices; j++)
 		{
 			aiVector3D vert = scene->mMeshes[i]->mVertices[j];
 			aiVector3D normal = scene->mMeshes[i]->mNormals[j];
@@ -193,12 +190,10 @@ Mesh *MeshManager::LoadFromAssimp(ID3D12Device* device, char *fileName, char *se
 		}
 	}
 
-	Mesh *mesh = new Mesh();
-	mesh->InitializeWithMeshInfo(device, vertCount, indexCount, meshData, indexSplits, indices);
+	Mesh *mesh = new Mesh(device, vertCount, indexCount, meshData, indexSplits, indices);
 
 	SerializeMeshToFile(mesh, serializationFile);
 
-	delete [] indices;
 	return mesh;
 }
 
@@ -206,8 +201,8 @@ void MeshManager::ReleaseMeshes()
 {
 	for(uint32 i = 0; i < mMeshes.CurrentSize(); i++)
 	{
-		mMeshes[i]->Release();
 		delete mMeshes[i];
+		mMeshes[i] = NULL;
 	}
 	mMeshes.Clear();
 	mMeshLookup.clear();

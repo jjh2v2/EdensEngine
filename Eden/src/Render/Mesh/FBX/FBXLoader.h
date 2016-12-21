@@ -22,7 +22,7 @@ public:
 		mFBXSDKManager->Destroy();
 	}
 
-	bool LoadFBX(char *fileName, DynamicArray<MeshVertexData> &outVertexVector, DynamicArray<int> &indexSplits)
+	bool LoadFBX(char *fileName, DynamicArray<MeshVertexData> &outVertexVector, DynamicArray<uint32> &indexSplits)
 	{
 		FbxImporter* pImporter = FbxImporter::Create(mFBXSDKManager,"");
 		FbxScene* pFbxScene = FbxScene::Create(mFBXSDKManager,"");
@@ -43,12 +43,12 @@ public:
 
 		if(pFbxRootNode)
 		{
-			int indexCount = 0;
-			int childCount = pFbxRootNode->GetChildCount();
+			uint32 indexCount = 0;
+			uint32 childCount = pFbxRootNode->GetChildCount();
 
-			for(int i = 0; i < childCount; i++)
+			for(uint32 childIndex = 0; childIndex < childCount; childIndex++)
 			{
-				FbxNode* pFbxChildNode = pFbxRootNode->GetChild(i);
+				FbxNode* pFbxChildNode = pFbxRootNode->GetChild(childIndex);
 
 				if(pFbxChildNode->GetNodeAttribute() == NULL)
 				{
@@ -69,24 +69,22 @@ public:
 				if(!isTriangulated)
 				{
 					FbxGeometryConverter geometryConverter(mFBXSDKManager);
+
 					geometryConverter.Triangulate(pMesh, true);
 					pMesh = (FbxMesh*)pFbxChildNode->GetNodeAttribute();
 
 					geometryConverter.SplitMeshPerMaterial(pMesh, true);
-
-					pMesh = (FbxMesh*)pFbxChildNode->GetNodeAttribute();
+					pMesh = (FbxMesh*)pFbxChildNode->GetNodeAttribute(); //must reacquire after splitting
 				}
 
-				for(int i = 0; i < pFbxChildNode->GetNodeAttributeCount(); i++)
+				for(uint32 attributeIndex = 0; attributeIndex < pFbxChildNode->GetNodeAttributeCount(); attributeIndex++)
 				{
-					pMesh = (FbxMesh*)pFbxChildNode->GetNodeAttributeByIndex(i);
-
+					pMesh = (FbxMesh*)pFbxChildNode->GetNodeAttributeByIndex(attributeIndex);
 					pMesh->GenerateTangentsDataForAllUVSets(true);
-
-					pMesh = (FbxMesh*)pFbxChildNode->GetNodeAttributeByIndex(i);
+					pMesh = (FbxMesh*)pFbxChildNode->GetNodeAttributeByIndex(attributeIndex);	//must reacquire after generating UV sets
 
 					AddToD3DMesh(pMesh, outVertexVector);
-					indexCount += pMesh->GetPolygonCount()*3;
+					indexCount += pMesh->GetPolygonCount() * 3;
 					indexSplits.Add(indexCount);
 				}
 			}
@@ -98,39 +96,39 @@ public:
 	}
 
 
-	int AddToD3DMesh(FbxMesh *mesh, DynamicArray<MeshVertexData> &outVertexVector)
+	uint32 AddToD3DMesh(FbxMesh *mesh, DynamicArray<MeshVertexData> &outVertexVector)
 	{
-		int indexCount = 0;
+		uint32 indexCount = 0;
 		FbxVector4* pVertices = mesh->GetControlPoints();
 
-		for (int j = 0; j < mesh->GetPolygonCount(); j++)
+		for (uint32 polygonIndex = 0; polygonIndex < mesh->GetPolygonCount(); polygonIndex++)
 		{
-			int iNumVertices = mesh->GetPolygonSize(j);
-			//assert( iNumVertices == 3 );
+			uint32 numVertices = mesh->GetPolygonSize(polygonIndex);
+			Application::Assert(numVertices == 3);
 
 			bool tangentFound = true;
 			bool binormalFound = true;
-			for (int k = 0; k < iNumVertices; k++)
+			for (uint32 vertIndex = 0; vertIndex < numVertices; vertIndex++)
 			{
-				int iControlPointIndex = mesh->GetPolygonVertex(j, k);
+				int controlPointIndex = mesh->GetPolygonVertex(polygonIndex, vertIndex);
 				FbxVector2 uv;
-				bool mapped = false;
+				bool isMapped = false;
 				FbxStringList lUVNames;
 				mesh->GetUVSetNames(lUVNames);
-				mesh->GetPolygonVertexUV(j, k, lUVNames.GetStringAt(0), uv, mapped);
+				mesh->GetPolygonVertexUV(polygonIndex, vertIndex, lUVNames.GetStringAt(0), uv, isMapped);
 				int testC = mesh->GetElementTangentCount();
 
 				Vector3 placeHolder = Vector3::One();
 				Vector3 normal, tangent, binormal;
 
-				ReadNormal(mesh, iControlPointIndex, j*3 + k, normal);
-				tangentFound = ReadTangent(mesh, iControlPointIndex, j*3 + k, tangent);
-				binormalFound = ReadBiNormal(mesh, iControlPointIndex, j*3 + k, binormal);
+				ReadNormal(mesh, controlPointIndex, polygonIndex*3 + vertIndex, normal);
+				tangentFound = ReadTangent(mesh, controlPointIndex, polygonIndex*3 + vertIndex, tangent);
+				binormalFound = ReadBiNormal(mesh, controlPointIndex, polygonIndex*3 + vertIndex, binormal);
 
 				MeshVertexData meshData;
-				meshData.Position.X = (float)pVertices[iControlPointIndex].mData[0];
-				meshData.Position.Y = (float)pVertices[iControlPointIndex].mData[1];
-				meshData.Position.Z = (float)pVertices[iControlPointIndex].mData[2];
+				meshData.Position.X = (float)pVertices[controlPointIndex].mData[0];
+				meshData.Position.Y = (float)pVertices[controlPointIndex].mData[1];
+				meshData.Position.Z = (float)pVertices[controlPointIndex].mData[2];
 				meshData.Normal = Vector3(normal.X, normal.Y, normal.Z);
 
 				if(tangentFound)
@@ -160,19 +158,19 @@ public:
 			{
 				Vector3 tangent;
 				Vector3 binormal;
-				MeshVertexData::GetTangentAndBinormal(outVertexVector[j*3], outVertexVector[j*3+1], outVertexVector[j*3+2], tangent, binormal);
-				outVertexVector[j*3].Tangent = tangent;
-				outVertexVector[j*3+1].Tangent = tangent;
-				outVertexVector[j*3+2].Tangent = tangent;
+				MeshVertexData::GetTangentAndBinormal(outVertexVector[polygonIndex*3], outVertexVector[polygonIndex*3+1], outVertexVector[polygonIndex*3+2], tangent, binormal);
+				outVertexVector[polygonIndex*3].Tangent = tangent;
+				outVertexVector[polygonIndex*3+1].Tangent = tangent;
+				outVertexVector[polygonIndex*3+2].Tangent = tangent;
 			}
 			if(!binormalFound)
 			{
 				Vector3 tangent;
 				Vector3 binormal;
-				MeshVertexData::GetTangentAndBinormal(outVertexVector[j*3], outVertexVector[j*3+1], outVertexVector[j*3+2], tangent, binormal);
-				outVertexVector[j*3].Binormal = binormal;
-				outVertexVector[j*3+1].Binormal = binormal;
-				outVertexVector[j*3+2].Binormal = binormal;
+				MeshVertexData::GetTangentAndBinormal(outVertexVector[polygonIndex*3], outVertexVector[polygonIndex*3+1], outVertexVector[polygonIndex*3+2], tangent, binormal);
+				outVertexVector[polygonIndex*3].Binormal = binormal;
+				outVertexVector[polygonIndex*3+1].Binormal = binormal;
+				outVertexVector[polygonIndex*3+2].Binormal = binormal;
 			}
 		}
 

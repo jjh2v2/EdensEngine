@@ -44,16 +44,9 @@ struct MeshVertexData
 class Mesh
 {
 public:
-	Mesh();
+	Mesh(ID3D12Device* device, uint32 vertexCount, uint32 indexCount, MeshVertexData *meshData, DynamicArray<uint32> &splits, uint64 *indices = NULL);
 	virtual ~Mesh();
-	virtual bool Initialize(ID3D12Device* device);
-	virtual bool Initialize(ID3D12Device* device, unsigned long *indices);
-	virtual void InitializeWithMeshInfo(ID3D12Device* device, int vertexCount, int indexCount, MeshVertexData *meshData, DynamicArray<int> &splits);
-	virtual void InitializeWithMeshInfo(ID3D12Device* device, int vertexCount, int indexCount, MeshVertexData *meshData, DynamicArray<int> &splits, unsigned long *indices);
-	virtual void Release();
 	//virtual void Render(ID3D12DeviceContext* deviceContext, int subMeshIndex = 0);
-	//void SetRenderTopology(D3D11_PRIMITIVE_TOPOLOGY topology){mRenderTopology = topology;}
-	//D3D11_PRIMITIVE_TOPOLOGY GetRenderTopology(){return mRenderTopology;}
 
 	int GetIndexCount(){return mIndexCount;}
 	int GetMeshSplitCount(){return mIndexSplits.CurrentSize();}
@@ -64,11 +57,12 @@ public:
 	Box GetBounds(){return mMeshBounds;}
 
 protected:
-	int mVertexCount;
-	int mIndexCount;
-
-	DynamicArray<int> mIndexSplits;
+	virtual bool Initialize(ID3D12Device* device, uint64 *indices);
 
 	MeshVertexData *mMeshVertices;
+	uint64 *mMeshIndices;
+	DynamicArray<uint32> mIndexSplits;
+	uint32 mVertexCount;
+	uint32 mIndexCount;
 	Box mMeshBounds;
 };

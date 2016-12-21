@@ -1,38 +1,41 @@
 #include "Render/Mesh/Mesh.h"
 
-Mesh::Mesh()
-{
-	mMeshVertices = NULL;
-}
-
-Mesh::~Mesh()
-{
-
-}
-
-void Mesh::InitializeWithMeshInfo(ID3D12Device* device, int vertexCount, int indexCount, MeshVertexData *meshData, DynamicArray<int> &splits)
+Mesh::Mesh(ID3D12Device* device, uint32 vertexCount, uint32 indexCount, MeshVertexData *meshData, DynamicArray<uint32> &splits, uint64 *indices)
 {
 	mVertexCount = vertexCount;
 	mIndexCount = indexCount;
 	mMeshVertices = meshData;
-	Initialize(device);
+	mMeshIndices = indices;
 
-	for(uint32 i = 0; i < splits.CurrentSize(); i++)
+	if (!mMeshIndices)
+	{
+		mMeshIndices = new uint64[mIndexCount];
+		for (uint32 i = 0; i < mVertexCount; i++)
+		{
+			mMeshIndices[i] = i;
+		}
+	}
+
+	Initialize(device, indices);
+
+	for (uint32 i = 0; i < splits.CurrentSize(); i++)
 	{
 		mIndexSplits.Add(splits[i]);
 	}
 }
 
-void Mesh::InitializeWithMeshInfo(ID3D12Device* device, int vertexCount, int indexCount, MeshVertexData *meshData, DynamicArray<int> &splits, unsigned long *indices)
+Mesh::~Mesh()
 {
-	mVertexCount = vertexCount;
-	mIndexCount = indexCount;
-	mMeshVertices = meshData;
-	Initialize(device, indices);
-
-	for(uint32 i = 0; i < splits.CurrentSize(); i++)
+	if (mMeshVertices)
 	{
-		mIndexSplits.Add(splits[i]);
+		delete[] mMeshVertices;
+		mMeshVertices = NULL;
+	}
+
+	if (mMeshIndices)
+	{
+		delete[] mMeshIndices;
+		mMeshIndices = NULL;
 	}
 }
 
@@ -42,60 +45,25 @@ void Mesh::RecalculateBounds()
 	{
 		return;
 	}
+
 	Vector3 boundMin = mMeshVertices[0].Position;
 	Vector3 boundMax = mMeshVertices[0].Position;
 
-	for(int i = 1; i < mVertexCount; i++)
+	for(uint32 i = 1; i < mVertexCount; i++)
 	{
-		if(mMeshVertices[i].Position.X < boundMin.X)
-		{
-			boundMin.X = mMeshVertices[i].Position.X;
-		}
-		if(mMeshVertices[i].Position.Y < boundMin.Y)
-		{
-			boundMin.Y = mMeshVertices[i].Position.Y;
-		}
-		if(mMeshVertices[i].Position.Z < boundMin.Z)
-		{
-			boundMin.Z = mMeshVertices[i].Position.Z;
-		}
+		boundMin.X = MathHelper::Min(mMeshVertices[i].Position.X, boundMin.X);
+		boundMin.Y = MathHelper::Min(mMeshVertices[i].Position.Y, boundMin.Y);
+		boundMin.Z = MathHelper::Min(mMeshVertices[i].Position.Z, boundMin.Z);
 
-		if(mMeshVertices[i].Position.X > boundMax.X)
-		{
-			boundMax.X = mMeshVertices[i].Position.X;
-		}
-		if(mMeshVertices[i].Position.Y > boundMax.Y)
-		{
-			boundMax.Y = mMeshVertices[i].Position.Y;
-		}
-		if(mMeshVertices[i].Position.Z > boundMax.Z)
-		{
-			boundMax.Z = mMeshVertices[i].Position.Z;
-		}
+		boundMax.X = MathHelper::Max(mMeshVertices[i].Position.X, boundMax.X);
+		boundMax.Y = MathHelper::Max(mMeshVertices[i].Position.Y, boundMax.Y);
+		boundMax.Z = MathHelper::Max(mMeshVertices[i].Position.Z, boundMax.Z);
 	}
 
 	mMeshBounds.Set(boundMin.X, boundMin.Y, boundMin.Z, boundMax.X - boundMin.X, boundMax.Y - boundMin.Y, boundMax.Z - boundMin.Z);
 }
 
-bool Mesh::Initialize(ID3D12Device* device)
-{
-	if (mVertexCount <= 0 || mIndexCount <= 0)
-	{
-		return false;
-	}
-
-	MeshVertexData* vertices = mMeshVertices;
-	
-	unsigned long* indices = new unsigned long[mIndexCount];
-
-	RecalculateBounds();
-
-	delete [] indices;
-	indices = NULL;
-	return true;
-}
-
-bool Mesh::Initialize(ID3D12Device* device, unsigned long *indices)
+bool Mesh::Initialize(ID3D12Device* device, uint64 *indices)
 {
 	/*if (mVertexCount <= 0 || mIndexCount <= 0)
 	{
@@ -146,14 +114,6 @@ bool Mesh::Initialize(ID3D12Device* device, unsigned long *indices)
 	return true;
 }
 
-void Mesh::Release()
-{
-	if(mMeshVertices)
-	{
-		delete [] mMeshVertices;
-		mMeshVertices = NULL;
-	}
-}
 
 /*void Mesh::Render(ID3D11DeviceContext* deviceContext, int subMeshIndex)
 {

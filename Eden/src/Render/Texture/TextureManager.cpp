@@ -39,13 +39,21 @@ void TextureManager::LoadAllTextures()
 		mTextureLookup.insert(std::pair<std::string, TextureLookup>(justFileName, textureLookup));
 	}
 
-	WCHAR *convertedString = StringConverter::StringToWCHARAlloc(mTextureLookup["MageDiffuseFire"].TextureFilePath);
-
-	Texture *texture = LoadTexture(convertedString);
-	mTextureLookup["MageDiffuseFire"].TextureRef = texture;
-	mTextures.Add(texture);
-
-	delete[] convertedString;
+	{
+		WCHAR *convertedString = StringConverter::StringToWCHARAlloc(mTextureLookup["MageDiffuseFire"].TextureFilePath);
+		Texture *texture = LoadTexture(convertedString);
+		mTextureLookup["MageDiffuseFire"].TextureRef = texture;
+		mTextures.Add(texture);
+		delete[] convertedString;
+	}
+	{
+		WCHAR *convertedString = StringConverter::StringToWCHARAlloc(mTextureLookup["MageDiffuseIce"].TextureFilePath);
+		Texture *texture = LoadTexture(convertedString);
+		mTextureLookup["MageDiffuseIce"].TextureRef = texture;
+		mTextures.Add(texture);
+		delete[] convertedString;
+	}
+	
 }
 
 Texture *TextureManager::LoadTexture(WCHAR *filePath)
@@ -171,7 +179,7 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 
 	uint64 uploadFenceValue = uploadContext->EndUpload(uploadInfo, mDirect3DManager->GetContextManager()->GetQueueManager());
 	
-	//TDA: stall here until loaded until async is implemented
+	//TDA: stall here until loaded until async is implemented. //EndUpload currently stalls so it's okay for now
 
 	mDirect3DManager->GetContextManager()->GetGraphicsContext()->TransitionResource((*textureGPUResource), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
 

@@ -435,7 +435,7 @@ UploadContext::UploadContext(ID3D12Device *device)
 		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mUploadBuffer.BufferResource)));	//TDA: Nvidia warns to not use generic read, check if this is really necessary, or if we can use a set of flags instead
 
 	D3D12_RANGE readRange = {};
-	Direct3DUtils::ThrowIfHRESULTFailed(mUploadBuffer.BufferResource->Map(0, &readRange, reinterpret_cast<void**>(&mUploadBuffer.BufferAddress)));
+	Direct3DUtils::ThrowIfHRESULTFailed(mUploadBuffer.BufferResource->Map(0, &readRange, reinterpret_cast<void**>(&mUploadBuffer.BufferAddress))); //TDA: do I need to unmap this in the destructor?
 	mUploadBuffer.BufferStart = 0;
 	mUploadBuffer.BufferUsed = 0;
 	mUploadSubmissionStart = 0;
@@ -573,9 +573,6 @@ Direct3DUploadInfo UploadContext::BeginUpload(uint64 size, Direct3DQueueManager 
 	const uint64 submissionIdx = (mUploadSubmissionStart + (mUploadSubmissionUsed - 1)) % MAX_GPU_UPLOADS;
 	Direct3DUpload &submission = mUploads[submissionIdx];
 
-	//Direct3DUtils::ThrowIfHRESULTFailed(submission.CommandAllocator->Reset());
-	//Direct3DUtils::ThrowIfHRESULTFailed(mCommandList->Reset(submission.CommandAllocator, NULL));
-
 	Direct3DUploadInfo uploadInfo;
 	uploadInfo.Resource = mUploadBuffer.BufferResource;
 	uploadInfo.CPUAddress = mUploadBuffer.BufferAddress + submission.UploadLocation;
@@ -590,11 +587,16 @@ void UploadContext::CopyTextureRegion(D3D12_TEXTURE_COPY_LOCATION *destination, 
 	mCommandList->CopyTextureRegion(destination, 0, 0, 0, source, NULL);
 }
 
-uint64 UploadContext::EndUpload(Direct3DUploadInfo& context, Direct3DQueueManager *queueManager)
+void UploadContext::CopyResourceRegion(ID3D12Resource *destination, uint64 destOffset, ID3D12Resource *source, uint64 sourceOffset, uint64 numBytes)
 {
-	uint64 uploadFence = Flush(queueManager, true);//queueManager->GetCopyQueue()->ExecuteCommandList(mCommandList);
-	mUploads[context.UploadID].FenceValue = uploadFence;
-	mUploads[context.UploadID].IsUploading = true;
+	mCommandList->CopyBufferRegion(destination, destOffset, source, sourceOffset, numBytes);
+}
+
+uint64 UploadContext::EndUpload(Direct3DUploadInfo& uploadInfo, Direct3DQueueManager *queueManager)
+{
+	uint64 uploadFence = Flush(queueManager, true);
+	mUploads[uploadInfo.UploadID].FenceValue = uploadFence;
+	mUploads[uploadInfo.UploadID].IsUploading = true;
 
 	return uploadFence;
 }

@@ -34,8 +34,6 @@ public:
 	void InsertUAVBarrier(GPUResource &resource, bool flushImmediate = false);
 	void InsertAliasBarrier(GPUResource &before, GPUResource &after, bool flushImmediate = false);
 
-	//ID3D12GraphicsCommandList *GetCommandList(){ return mCommandList; }
-
 protected:
 	D3D12_COMMAND_LIST_TYPE mContextType;
 	ID3D12GraphicsCommandList* mCommandList;
@@ -134,7 +132,8 @@ public:
 	
 	Direct3DUploadInfo BeginUpload(uint64 size, Direct3DQueueManager *queueManager);
 	void CopyTextureRegion(D3D12_TEXTURE_COPY_LOCATION *destination, D3D12_TEXTURE_COPY_LOCATION *source);
-	uint64 EndUpload(Direct3DUploadInfo& context, Direct3DQueueManager *queueManager);
+	void CopyResourceRegion(ID3D12Resource *destination, uint64 destOffset, ID3D12Resource *source, uint64 sourceOffset, uint64 numBytes);
+	uint64 EndUpload(Direct3DUploadInfo& uploadInfo, Direct3DQueueManager *queueManager);
 	
 private:
 	void ClearFinishedUploads(uint64 flushCount, Direct3DQueueManager *queueManager);
