@@ -187,4 +187,17 @@ public:
 			str.erase(std::remove(str.begin(), str.end(), chars[i]), str.end());
 		}
 	}
+
+	static bool DoesStringEndWith(const std::string &testString, const std::string &endWith)
+	{
+		if (testString.length() >= endWith.length())
+		{
+			return (0 == testString.compare(testString.length() - endWith.length(), endWith.length(), endWith));
+		}
+		else
+		{
+			return false;
+		}
+		return false;
+	}
 };

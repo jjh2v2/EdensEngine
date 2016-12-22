@@ -5,6 +5,9 @@
 #include "Core/Vector/Vector2.h"
 #include "Core/Containers/DynamicArray.h"
 #include "Core/Misc/Box.h"
+#include "Render/Buffer/GPUResource.h"
+
+class Direct3DManager;
 
 struct MeshVertexData
 {
@@ -44,21 +47,22 @@ struct MeshVertexData
 class Mesh
 {
 public:
-	Mesh(ID3D12Device* device, uint32 vertexCount, uint32 indexCount, MeshVertexData *meshData, DynamicArray<uint32> &splits, uint64 *indices = NULL);
+	Mesh(Direct3DManager *direct3DManager, uint32 vertexCount, uint32 indexCount, MeshVertexData *meshData, DynamicArray<uint32> &splits, uint64 *indices = NULL);
 	virtual ~Mesh();
 	//virtual void Render(ID3D12DeviceContext* deviceContext, int subMeshIndex = 0);
 
-	int GetIndexCount(){return mIndexCount;}
-	int GetMeshSplitCount(){return mIndexSplits.CurrentSize();}
-	int GetMeshIndexSplitByIndex(uint32 index){return mIndexSplits[index];}
+	uint32 GetIndexCount(){return mIndexCount;}
+	uint32 GetMeshSplitCount(){return mIndexSplits.CurrentSize();}
+	uint32 GetMeshIndexSplitByIndex(uint32 index){return mIndexSplits[index];}
 	MeshVertexData *GetMeshData(){return mMeshVertices;}
 
 	void RecalculateBounds();
 	Box GetBounds(){return mMeshBounds;}
 
 protected:
-	virtual bool Initialize(ID3D12Device* device, uint64 *indices);
 
+	VertexBuffer *mVertexBuffer;
+	IndexBuffer *mIndexBuffer;
 	MeshVertexData *mMeshVertices;
 	uint64 *mMeshIndices;
 	DynamicArray<uint32> mIndexSplits;

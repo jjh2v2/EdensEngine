@@ -1,4 +1,6 @@
 #include "Render/Mesh/MeshManager.h"
+#include "Util/File/FileUtil.h"
+#include "Util/String/StringConverter.h"
 #include <assimp/Importer.hpp>      
 #include <assimp/scene.h>           
 #include <assimp/postprocess.h>    
@@ -18,7 +20,7 @@ Mesh *MeshManager::GetMesh(std::string meshName)
 	return mMeshLookup[meshName];
 }
 
-void MeshManager::LoadAllMeshes(ID3D12Device* device)
+void MeshManager::LoadAllMeshes(Direct3DManager *direct3DManager)
 {
 	mManifestLoader.LoadManifest(ApplicationSpecification::MeshManifestFileLocation);
 
@@ -35,48 +37,48 @@ void MeshManager::LoadAllMeshes(ID3D12Device* device)
 
 		std::string serializedName = serializedFileLocation + justFileName + ".sem";
 
-		//if(StringUtil::DoesStringEndWith(fileNames[i], ".fbx"))
-		//{
-		//	if(FileUtil::DoesFileExist(serializedName) && !mRebuildAllMeshes)
-		//	{
-		//		newMesh = DeserializeMeshFromFile(device, (char*)serializedName.c_str());
-		//	}
-		//	else
-		//	{
-				newMesh = LoadFBXMesh(device, (char*)fileNames[i].c_str(), (char*)serializedName.c_str());
-		//	}
-		//}
-		//else
-		//{
-		//	if(FileUtil::DoesFileExist(serializedName) && !mRebuildAllMeshes)
-		//	{
-		//		newMesh = DeserializeMeshFromFile(device, (char*)serializedName.c_str());
-		//	}
-		//	else
-		//	{
-		//		newMesh = LoadFromAssimp(device, (char*)fileNames[i].c_str(), (char*)serializedName.c_str());
-		//	}
-		//}
+		if(StringConverter::DoesStringEndWith(fileNames[i], ".fbx"))
+		{
+			if(FileUtil::DoesFileExist(serializedName) && !mRebuildAllMeshes)
+			{
+				newMesh = DeserializeMeshFromFile(direct3DManager, (char*)serializedName.c_str());
+			}
+			else
+			{
+				newMesh = LoadFBXMesh(direct3DManager, (char*)fileNames[i].c_str(), (char*)serializedName.c_str());
+			}
+		}
+		else
+		{
+			if(FileUtil::DoesFileExist(serializedName) && !mRebuildAllMeshes)
+			{
+				newMesh = DeserializeMeshFromFile(direct3DManager, (char*)serializedName.c_str());
+			}
+			else
+			{
+				newMesh = LoadFromAssimp(direct3DManager, (char*)fileNames[i].c_str(), (char*)serializedName.c_str());
+			}
+		}
 
 		mMeshLookup.insert(std::pair<std::string, Mesh*>(justFileName, newMesh));
 		mMeshes.Add(newMesh);
 	}
 }
 
-Mesh *MeshManager::LoadFBXMesh(ID3D12Device* device, char *fileName, char *serializationFile)
+Mesh *MeshManager::LoadFBXMesh(Direct3DManager *direct3DManager, char *fileName, char *serializationFile)
 {
 	DynamicArray<MeshVertexData> fbxData;
 	DynamicArray<uint32> indexSplits;
 
 	mFBXLoader.LoadFBX(fileName, fbxData, indexSplits);
 
-	Mesh *fbxMesh = new Mesh(device, fbxData.CurrentSize(), fbxData.CurrentSize(), fbxData.GetInnerArrayCopy(), indexSplits);
+	Mesh *fbxMesh = new Mesh(direct3DManager, fbxData.CurrentSize(), fbxData.CurrentSize(), fbxData.GetInnerArrayCopy(), indexSplits);
 	SerializeMeshToFile(fbxMesh, serializationFile);
 
 	return fbxMesh;
 }
 
-void MeshManager::SerializeMeshToFile(Mesh *mesh, char* fileName)
+void MeshManager::SerializeMeshToFile(Mesh *mesh, char *fileName)
 {
 	std::ofstream outputFile(fileName, std::ios::binary);
 
@@ -89,7 +91,7 @@ void MeshManager::SerializeMeshToFile(Mesh *mesh, char* fileName)
 	uint32 splitCount = mesh->GetMeshSplitCount();
 
 	outputFile.write((char*)&splitCount, sizeof(splitCount));
-	for(uint32 i = 0; i < mesh->GetMeshSplitCount(); i++)
+	for(uint32 i = 0; i < splitCount; i++)
 	{
 		uint32 indexSplit = mesh->GetMeshIndexSplitByIndex(i);
 		outputFile.write((char*)&indexSplit, sizeof(indexSplit));
@@ -98,7 +100,7 @@ void MeshManager::SerializeMeshToFile(Mesh *mesh, char* fileName)
 	outputFile.close();
 }
 
-Mesh *MeshManager::DeserializeMeshFromFile(ID3D12Device* device, char* fileName)
+Mesh *MeshManager::DeserializeMeshFromFile(Direct3DManager *direct3DManager, char *fileName)
 {
 	uint32 indexCount = 0;
 	std::ifstream inputFile(fileName, std::ios::binary);
@@ -123,12 +125,12 @@ Mesh *MeshManager::DeserializeMeshFromFile(ID3D12Device* device, char* fileName)
 
 	inputFile.close();
 
-	Mesh *newMesh = new Mesh(device, indexCount, indexCount, meshData, indexSplits);
+	Mesh *newMesh = new Mesh(direct3DManager, indexCount, indexCount, meshData, indexSplits);
 
 	return newMesh;
 }
 
-Mesh *MeshManager::LoadFromAssimp(ID3D12Device* device, char *fileName, char *serializationFile)
+Mesh *MeshManager::LoadFromAssimp(Direct3DManager *direct3DManager, char *fileName, char *serializationFile)
 {
 	Assimp::Importer importer;
 
@@ -190,7 +192,7 @@ Mesh *MeshManager::LoadFromAssimp(ID3D12Device* device, char *fileName, char *se
 		}
 	}
 
-	Mesh *mesh = new Mesh(device, vertCount, indexCount, meshData, indexSplits, indices);
+	Mesh *mesh = new Mesh(direct3DManager, vertCount, indexCount, meshData, indexSplits, indices);
 
 	SerializeMeshToFile(mesh, serializationFile);
 

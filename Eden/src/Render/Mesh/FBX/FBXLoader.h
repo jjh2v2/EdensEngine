@@ -77,7 +77,7 @@ public:
 					pMesh = (FbxMesh*)pFbxChildNode->GetNodeAttribute(); //must reacquire after splitting
 				}
 
-				for(uint32 attributeIndex = 0; attributeIndex < pFbxChildNode->GetNodeAttributeCount(); attributeIndex++)
+				for(int32 attributeIndex = 0; attributeIndex < pFbxChildNode->GetNodeAttributeCount(); attributeIndex++)
 				{
 					pMesh = (FbxMesh*)pFbxChildNode->GetNodeAttributeByIndex(attributeIndex);
 					pMesh->GenerateTangentsDataForAllUVSets(true);
@@ -101,7 +101,7 @@ public:
 		uint32 indexCount = 0;
 		FbxVector4* pVertices = mesh->GetControlPoints();
 
-		for (uint32 polygonIndex = 0; polygonIndex < mesh->GetPolygonCount(); polygonIndex++)
+		for (int32 polygonIndex = 0; polygonIndex < mesh->GetPolygonCount(); polygonIndex++)
 		{
 			uint32 numVertices = mesh->GetPolygonSize(polygonIndex);
 			Application::Assert(numVertices == 3);

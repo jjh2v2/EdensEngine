@@ -103,7 +103,7 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 	mDirect3DManager->GetDevice()->CreateCommittedResource(&defaultProperties, D3D12_HEAP_FLAG_NONE, &textureDesc,
 		D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&newTextureResource));
 
-	GPUResource *textureGPUResource = new GPUResource(newTextureResource, D3D12_RESOURCE_STATE_COPY_DEST, true);
+	TextureResource *textureGPUResource = new TextureResource(newTextureResource, D3D12_RESOURCE_STATE_COPY_DEST);
 	newTexture->SetTextureResource(textureGPUResource);
 	newTexture->SetDescriptorHeapHandle(mDirect3DManager->GetHeapManager()->GetNewSRVDescriptorHeapHandle());
 

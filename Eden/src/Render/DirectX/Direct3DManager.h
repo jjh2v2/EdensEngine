@@ -10,7 +10,6 @@
 #include "Render/Display/DisplayOrientation.h"
 #include "Render/DirectX/Resources/Direct3DResources.h"
 #include "Render/DirectX/Heap/Direct3DHeapManager.h"
-#include "Render/DirectX/Upload/Direct3DUploadManager.h"
 #include "Render/DirectX/Context/Direct3DContextManager.h"
 
 class Direct3DManager

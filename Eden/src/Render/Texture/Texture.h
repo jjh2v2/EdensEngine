@@ -13,8 +13,8 @@ public:
 	void SetDescriptorHeapHandle(DescriptorHeapHandle handle) { mDescriptorHandle = handle; }
 	DescriptorHeapHandle GetDescriptorHeapHandle() { return mDescriptorHandle; }
 
-	void SetTextureResource(GPUResource *resource) { mTextureResource = resource; }
-	GPUResource *GetTextureResource() { return mTextureResource; }
+	void SetTextureResource(TextureResource *resource) { mTextureResource = resource; }
+	TextureResource *GetTextureResource() { return mTextureResource; }
 
 	void SetFormat(DXGI_FORMAT format) { mFormat = format; }
 	DXGI_FORMAT GetFormat() { return mFormat; }
@@ -28,7 +28,7 @@ public:
 	bool GetIsCubeMap() { return mIsCubeMap; }
 
 private:
-	GPUResource* mTextureResource;
+	TextureResource* mTextureResource;
 	DescriptorHeapHandle mDescriptorHandle;
 
 	DXGI_FORMAT mFormat;

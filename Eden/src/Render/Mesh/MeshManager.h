@@ -10,17 +10,17 @@ public:
 	MeshManager();
 	~MeshManager();
 
-	void LoadAllMeshes(ID3D12Device* device);
+	void LoadAllMeshes(Direct3DManager *direct3DManager);
 
 	Mesh *GetMesh(std::string meshName);
 	void ReleaseMeshes();
 
 private:
-	Mesh *LoadFromAssimp(ID3D12Device* device, char *fileName, char *serializationFile);
-	Mesh *LoadFBXMesh(ID3D12Device* device, char *fileName, char *serializationFile);
+	Mesh *LoadFromAssimp(Direct3DManager *direct3DManager, char *fileName, char *serializationFile);
+	Mesh *LoadFBXMesh(Direct3DManager *direct3DManager, char *fileName, char *serializationFile);
 	
-	void SerializeMeshToFile(Mesh *mesh, char* fileName);
-	Mesh *DeserializeMeshFromFile(ID3D12Device* device, char* fileName);
+	void SerializeMeshToFile(Mesh *mesh, char *fileName);
+	Mesh *DeserializeMeshFromFile(Direct3DManager *direct3DManager, char *fileName);
 
 	std::map<std::string, Mesh*> mMeshLookup;
 	DynamicArray<Mesh*> mMeshes;

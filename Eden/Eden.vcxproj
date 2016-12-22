@@ -172,7 +172,6 @@
     <ClInclude Include="src\Render\DirectX\Queue\Direct3DQueue.h" />
     <ClInclude Include="src\Render\DirectX\Queue\Direct3DQueueManager.h" />
     <ClInclude Include="src\Render\DirectX\Resources\Direct3DResources.h" />
-    <ClInclude Include="src\Render\DirectX\Upload\Direct3DUploadManager.h" />
     <ClInclude Include="src\Render\Display\DisplayOrientation.h" />
     <ClInclude Include="src\Render\Graphics\GraphicsManager.h" />
     <ClInclude Include="src\Render\Mesh\FBX\FBXLoader.h" />
@@ -232,7 +231,6 @@
     <ClCompile Include="src\Render\DirectX\Queue\Direct3DQueue.cpp" />
     <ClCompile Include="src\Render\DirectX\Queue\Direct3DQueueManager.cpp" />
     <ClCompile Include="src\Render\DirectX\Resources\Direct3DResources.cpp" />
-    <ClCompile Include="src\Render\DirectX\Upload\Direct3DUploadManager.cpp" />
     <ClCompile Include="src\Render\Graphics\GraphicsManager.cpp" />
     <ClCompile Include="src\Render\Mesh\FBX\FBXLoader.cpp" />
     <ClCompile Include="src\Render\Mesh\Mesh.cpp" />

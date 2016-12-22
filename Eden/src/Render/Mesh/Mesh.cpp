@@ -1,7 +1,10 @@
 #include "Render/Mesh/Mesh.h"
+#include "Render/DirectX/Direct3DManager.h"
 
-Mesh::Mesh(ID3D12Device* device, uint32 vertexCount, uint32 indexCount, MeshVertexData *meshData, DynamicArray<uint32> &splits, uint64 *indices)
+Mesh::Mesh(Direct3DManager *direct3DManager, uint32 vertexCount, uint32 indexCount, MeshVertexData *meshData, DynamicArray<uint32> &splits, uint64 *indices)
 {
+	Application::Assert(vertexCount > 0 && indexCount > 0);
+
 	mVertexCount = vertexCount;
 	mIndexCount = indexCount;
 	mMeshVertices = meshData;
@@ -16,16 +19,31 @@ Mesh::Mesh(ID3D12Device* device, uint32 vertexCount, uint32 indexCount, MeshVert
 		}
 	}
 
-	Initialize(device, indices);
-
 	for (uint32 i = 0; i < splits.CurrentSize(); i++)
 	{
 		mIndexSplits.Add(splits[i]);
 	}
+
+	mVertexBuffer = direct3DManager->GetContextManager()->CreateVertexBuffer(meshData, sizeof(MeshVertexData), vertexCount * sizeof(MeshVertexData));
+	mIndexBuffer = direct3DManager->GetContextManager()->CreateIndexBuffer(meshData, indexCount * sizeof(uint32));
+
+	RecalculateBounds();
 }
 
 Mesh::~Mesh()
 {
+	if (mVertexBuffer)
+	{
+		delete mVertexBuffer;
+		mVertexBuffer = NULL;
+	}
+
+	if (mIndexBuffer)
+	{
+		delete mIndexBuffer;
+		mIndexBuffer = NULL;
+	}
+
 	if (mMeshVertices)
 	{
 		delete[] mMeshVertices;
@@ -61,57 +79,6 @@ void Mesh::RecalculateBounds()
 	}
 
 	mMeshBounds.Set(boundMin.X, boundMin.Y, boundMin.Z, boundMax.X - boundMin.X, boundMax.Y - boundMin.Y, boundMax.Z - boundMin.Z);
-}
-
-bool Mesh::Initialize(ID3D12Device* device, uint64 *indices)
-{
-	/*if (mVertexCount <= 0 || mIndexCount <= 0)
-	{
-		return false;
-	}
-
-	MeshVertexData* vertices = mMeshVertices;
-
-	D3D11_BUFFER_DESC vertexBufferDesc;
-	D3D11_BUFFER_DESC indexBufferDesc;
-	D3D11_SUBRESOURCE_DATA vertexData;
-	D3D11_SUBRESOURCE_DATA indexData;
-	HRESULT result;
-
-	vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	vertexBufferDesc.ByteWidth = sizeof(MeshVertexData) * mVertexCount;
-	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	vertexBufferDesc.CPUAccessFlags = 0;
-	vertexBufferDesc.MiscFlags = 0;
-	vertexBufferDesc.StructureByteStride = 0;
-	vertexData.pSysMem = vertices;
-	vertexData.SysMemPitch = 0;
-	vertexData.SysMemSlicePitch = 0;
-
-	result = device->CreateBuffer(&vertexBufferDesc, &vertexData, &mVertexBuffer);
-	if(FAILED(result))
-	{
-		return false;
-	}
-
-	indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	indexBufferDesc.ByteWidth = sizeof(unsigned long) * mIndexCount;
-	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	indexBufferDesc.CPUAccessFlags = 0;
-	indexBufferDesc.MiscFlags = 0;
-	indexBufferDesc.StructureByteStride = 0;
-	indexData.pSysMem = indices;
-	indexData.SysMemPitch = 0;
-	indexData.SysMemSlicePitch = 0;
-	result = device->CreateBuffer(&indexBufferDesc, &indexData, &mIndexBuffer);
-	if(FAILED(result))
-	{
-		return false;
-	}
-
-	RecalculateBounds();
-	*/
-	return true;
 }
 
 
