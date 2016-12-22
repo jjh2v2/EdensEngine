@@ -27,6 +27,4 @@ private:
 
 	ManifestLoader mManifestLoader;
 	FBXLoader mFBXLoader;
-
-	static bool mRebuildAllMeshes;
 };

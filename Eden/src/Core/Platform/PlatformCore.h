@@ -36,10 +36,12 @@ class ApplicationSpecification
 {
 public:
 	static bool  ForceAllTexturesToSRGB;
-	static char* TextureManifestFileLocation;
-	static char* MeshManifestFileLocation;
-	static char* ShaderManifestFileLocation;
+	static char *TextureManifestFileLocation;
+	static char *MeshManifestFileLocation;
+	static char *MeshSerializationLocation;
+	static char *ShaderManifestFileLocation;
 	static bool  RebuildAllShaders;
+	static bool  RebuildAllMeshes;
 };
 
 class Direct3DUtils

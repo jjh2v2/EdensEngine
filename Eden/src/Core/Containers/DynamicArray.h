@@ -1,8 +1,9 @@
 #pragma once
 #include <assert.h>
 #include "Core/Platform/PlatformCore.h"
+#include <algorithm>
 
-template <class T>
+template <class T, bool copyMem = true>
 class DynamicArray
 {
 public:
@@ -56,13 +57,15 @@ public:
 		}
 	}
 
-	void Remove(uint32 index)
+	void Remove(uint32 index, bool memCopy = true)
 	{
-		//assert(index < mSize);
+		Application::Assert(memCopy == true);
 
-		memcpy(mArray + index, mArray + index + 1, sizeof(T) * (mSize - index - 1));
-
-		mSize -= 1;
+		if (memCopy)
+		{
+			memcpy(mArray + index, mArray + index + 1, sizeof(T) * (mSize - index - 1));
+			mSize -= 1;
+		}
 	}
 
 	T RemoveLast()
@@ -95,9 +98,17 @@ public:
 		if(newSize <= mMaxSize){return mMaxSize;}
 
 		T* newArray = new T[newSize];
-		for(uint32 i = 0; i < mMaxSize; i++)
+
+		if (copyMem)
 		{
-			newArray[i] = mArray[i];
+			memcpy(newArray, mArray, sizeof(T) * mMaxSize);
+		}
+		else
+		{
+			for(uint32 i = 0; i < mMaxSize; i++)
+			{
+				newArray[i] = mArray[i];
+			}
 		}
 
 		delete [] mArray;
@@ -114,10 +125,19 @@ public:
 	T* GetInnerArrayCopy()
 	{
 		T* copyArray = new T[mSize];
-		for(uint32 i = 0; i < mSize; i++)
+
+		if (copyMem)
 		{
-			copyArray[i] = mArray[i];
+			memcpy(copyArray, mArray, sizeof(T) * mSize);
 		}
+		else
+		{
+			for (uint32 i = 0; i < mSize; i++)
+			{
+				copyArray[i] = mArray[i];
+			}
+		}
+		
 		return copyArray;
 	}
 

@@ -3,9 +3,7 @@
 #include "Util/String/StringConverter.h"
 #include <assimp/Importer.hpp>      
 #include <assimp/scene.h>           
-#include <assimp/postprocess.h>    
-
-bool MeshManager::mRebuildAllMeshes = false;
+#include <assimp/postprocess.h> 
 
 MeshManager::MeshManager()
 {
@@ -13,6 +11,13 @@ MeshManager::MeshManager()
 
 MeshManager::~MeshManager()
 {
+	for (uint32 i = 0; i < mMeshes.CurrentSize(); i++)
+	{
+		delete mMeshes[i];
+		mMeshes[i] = NULL;
+	}
+	mMeshes.Clear();
+	mMeshLookup.clear();
 }
 
 Mesh *MeshManager::GetMesh(std::string meshName)
@@ -24,9 +29,9 @@ void MeshManager::LoadAllMeshes(Direct3DManager *direct3DManager)
 {
 	mManifestLoader.LoadManifest(ApplicationSpecification::MeshManifestFileLocation);
 
-	std::string serializedFileLocation = "../EdensEngine/data/Meshes/Serialized/";
+	std::string serializedFileLocation = ApplicationSpecification::MeshSerializationLocation;
 
-	DynamicArray<std::string> &fileNames = mManifestLoader.GetFileNames();
+	DynamicArray<std::string, false> &fileNames = mManifestLoader.GetFileNames();
 
 	for(uint32 i = 0; i < fileNames.CurrentSize(); i++)
 	{
@@ -39,7 +44,7 @@ void MeshManager::LoadAllMeshes(Direct3DManager *direct3DManager)
 
 		if(StringConverter::DoesStringEndWith(fileNames[i], ".fbx"))
 		{
-			if(FileUtil::DoesFileExist(serializedName) && !mRebuildAllMeshes)
+			if(FileUtil::DoesFileExist(serializedName) && !ApplicationSpecification::RebuildAllMeshes)
 			{
 				newMesh = DeserializeMeshFromFile(direct3DManager, (char*)serializedName.c_str());
 			}
@@ -50,7 +55,7 @@ void MeshManager::LoadAllMeshes(Direct3DManager *direct3DManager)
 		}
 		else
 		{
-			if(FileUtil::DoesFileExist(serializedName) && !mRebuildAllMeshes)
+			if(FileUtil::DoesFileExist(serializedName) && !ApplicationSpecification::RebuildAllMeshes)
 			{
 				newMesh = DeserializeMeshFromFile(direct3DManager, (char*)serializedName.c_str());
 			}
@@ -197,15 +202,4 @@ Mesh *MeshManager::LoadFromAssimp(Direct3DManager *direct3DManager, char *fileNa
 	SerializeMeshToFile(mesh, serializationFile);
 
 	return mesh;
-}
-
-void MeshManager::ReleaseMeshes()
-{
-	for(uint32 i = 0; i < mMeshes.CurrentSize(); i++)
-	{
-		delete mMeshes[i];
-		mMeshes[i] = NULL;
-	}
-	mMeshes.Clear();
-	mMeshLookup.clear();
 }

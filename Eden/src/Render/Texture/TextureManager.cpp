@@ -25,7 +25,7 @@ void TextureManager::LoadAllTextures()
 	//TDA: This isn't finished EDIT: Thanks past Alex, that's a really helpful comment.
 	mManifestLoader.LoadManifest(ApplicationSpecification::TextureManifestFileLocation);
 
-	DynamicArray<std::string> &fileNames = mManifestLoader.GetFileNames();
+	DynamicArray<std::string, false> &fileNames = mManifestLoader.GetFileNames();
 	for (uint32 i = 0; i < fileNames.CurrentSize(); i++)
 	{
 		size_t lastSlash = fileNames[i].find_last_of("/");

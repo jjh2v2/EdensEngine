@@ -25,7 +25,7 @@ void ShaderManager::LoadAllShaders(ID3D12Device *device)
 {
 	mManifestLoader.LoadManifest(ApplicationSpecification::ShaderManifestFileLocation);
 
-	DynamicArray<std::string> &fileNames = mManifestLoader.GetFileNames();
+	DynamicArray<std::string, false> &fileNames = mManifestLoader.GetFileNames();
 	for (uint32 i = 0; i < fileNames.CurrentSize(); i++)
 	{
 		size_t lastSlash = fileNames[i].find_last_of("/");

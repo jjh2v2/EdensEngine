@@ -37,12 +37,12 @@ public:
 		}
 	}
 
-	DynamicArray<std::string> &GetFileNames()
+	DynamicArray<std::string, false> &GetFileNames()
 	{
 		return mFileNames;
 	}
 
 private:
-	DynamicArray<std::string> mFileNames;
+	DynamicArray<std::string, false> mFileNames;
 	std::string mDirectoryMapping;
 };
