@@ -29,6 +29,13 @@ public:
 	virtual ~TextureResource();
 };
 
+class RenderTarget : public GPUResource
+{
+public:
+	RenderTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState);
+	virtual ~RenderTarget();
+};
+
 class VertexBuffer : public GPUResource
 {
 public:

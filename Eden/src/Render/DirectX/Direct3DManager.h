@@ -22,15 +22,15 @@ public:
 	void WaitForGPU();
 	void Present();
 	
-	ID3D12Device				*GetDevice() { return mDirect3DResources.Device; }
-	IDXGISwapChain3 			*GetSwapChain() { return mDirect3DResources.SwapChain; }
-	ID3D12Resource  			*GetBackBufferTarget() { return mDirect3DResources.BackBufferTargets[mDirect3DResources.CurrentBuffer]; }
+	ID3D12Device				*GetDevice() { return mDevice; }
+	IDXGISwapChain3 			*GetSwapChain() { return mSwapChain; }
+	RenderTarget  			    *GetBackBufferTarget() { return mBackBuffers[mCurrentBackBuffer]; }
 
-	D3D12_VIEWPORT				GetScreenViewport() { return mDirect3DResources.ScreenViewport; }
+	D3D12_VIEWPORT				GetScreenViewport() { return mScreenViewport; }
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView() const
+	D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView()
 	{
-		return CD3DX12_CPU_DESCRIPTOR_HANDLE(mDirect3DResources.RTVHeap->GetCPUDescriptorHandleForHeapStart(), mDirect3DResources.CurrentBuffer, mDirect3DResources.RTVDescriptorSize);
+		return mBackBufferHeapHandles[mCurrentBackBuffer].GetCPUHandle();
 	}
 
 	//D3D12_HEAP_PROPERTIES GetDefaultHeapProperties()  { return mDefaultHeapProperties; }
@@ -39,7 +39,6 @@ public:
 
 	Direct3DContextManager *GetContextManager() { return mContextManager; }
 	Direct3DHeapManager *GetHeapManager() { return mHeapManager; }
-	//Direct3DUploadManager *GetUploadManager() { return mUploadManager; }
 
 private:
 	void InitializeDeviceResources();
@@ -49,17 +48,22 @@ private:
 	void MoveToNextFrame();
 
 	DXGI_MODE_ROTATION ComputeDisplayRotation();
-
+	
+	ID3D12Device *mDevice;
+	IDXGIFactory4 *mDXGIFactory;
+	IDXGISwapChain3	*mSwapChain;
+	DynamicArray<RenderTarget*> mBackBuffers;
+	DynamicArray<DescriptorHeapHandle> mBackBufferHeapHandles;
+	uint32 mCurrentBackBuffer;
+	
 	Direct3DContextManager *mContextManager;
-
-	Direct3DResources mDirect3DResources;
 	Direct3DHeapManager *mHeapManager;
-	//Direct3DUploadManager *mUploadManager;
 
 	bool mDeviceRemoved;
 	bool mUseVsync;
 	bool mIsFullScreen;
 
+	D3D12_VIEWPORT mScreenViewport;
 	Vector2	mOutputSize;
 	DisplayOrientation mNativeOrientation;
 	DisplayOrientation mCurrentOrientation;

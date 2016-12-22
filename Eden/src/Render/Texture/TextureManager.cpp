@@ -12,7 +12,6 @@ TextureManager::~TextureManager()
 	for (uint32 i = 0; i < mTextures.CurrentSize(); i++)
 	{
 		mDirect3DManager->GetHeapManager()->FreeSRVDescriptorHeapHandle(mTextures[i]->GetDescriptorHeapHandle());
-		mTextures[i]->GetTextureResource()->GetResource()->Release();	//TDA: put this somewhere else
 		delete mTextures[i]->GetTextureResource();						//TDA: put this somewhere else
 		mTextures[i]->SetTextureResource(NULL);
 		delete mTextures[i];

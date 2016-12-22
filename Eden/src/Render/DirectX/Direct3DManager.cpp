@@ -7,8 +7,8 @@ Direct3DManager::Direct3DManager()
 	mCurrentOrientation = DisplayOrientation_Landscape;
 	mUseVsync = false;
 	mHeapManager = NULL;
-	//mUploadManager = NULL;
 	mContextManager = NULL;
+	mCurrentBackBuffer = 0;
 
 	InitializeDeviceResources();
 }
@@ -17,25 +17,21 @@ Direct3DManager::~Direct3DManager()
 {
 	WaitForGPU();
 
-	delete mHeapManager;
-	//delete mUploadManager;
-
 	ReleaseSwapChainDependentResources();
 
-	mDirect3DResources.SwapChain->Release();
-	mDirect3DResources.SwapChain = NULL;
+	delete mHeapManager;
 
-	//mDirect3DResources.Fence->Release();
-	//mDirect3DResources.Fence = NULL;
+	mSwapChain->Release();
+	mSwapChain = NULL;
 
 	delete mContextManager;
 	mContextManager = NULL;
 
-	mDirect3DResources.Device->Release();
-	mDirect3DResources.Device = NULL;
+	mDevice->Release();
+	mDevice = NULL;
 
-	mDirect3DResources.DXGIFactory->Release();
-	mDirect3DResources.DXGIFactory = NULL;
+	mDXGIFactory->Release();
+	mDXGIFactory = NULL;
 }
 
 void Direct3DManager::InitializeDeviceResources()
@@ -55,13 +51,13 @@ void Direct3DManager::InitializeDeviceResources()
 }
 #endif
 
-	Direct3DUtils::ThrowIfHRESULTFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mDirect3DResources.DXGIFactory)));
+	Direct3DUtils::ThrowIfHRESULTFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mDXGIFactory)));
 
 	// Create the Direct3D 12 API device object
 	Direct3DUtils::ThrowIfHRESULTFailed(D3D12CreateDevice(
 		nullptr,						// Specify nullptr to use the default adapter.
 		D3D_FEATURE_LEVEL_11_0,			// Minimum feature level this app can support.
-		IID_PPV_ARGS(&mDirect3DResources.Device)		// Returns the Direct3D device created.
+		IID_PPV_ARGS(&mDevice)		// Returns the Direct3D device created.
 		));
 
 	// Create the command queue.
@@ -71,13 +67,7 @@ void Direct3DManager::InitializeDeviceResources()
 	queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 	queueDesc.NodeMask = 0;
 
-	mContextManager = new Direct3DContextManager(mDirect3DResources.Device);
-
-	// Create synchronization objects.
-	//Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.Device->CreateFence(mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer], D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mDirect3DResources.Fence)));
-	//mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer]++;
-
-	//mDirect3DResources.FenceEvent = CreateEventEx(nullptr, FALSE, FALSE, EVENT_ALL_ACCESS);
+	mContextManager = new Direct3DContextManager(mDevice);
 }
 
 void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND windowHandle, bool vsync /*= false*/, bool fullScreen /*= false*/)
@@ -98,11 +88,11 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 	mOutputSize.X = swapDimensions ? screenSize.Y : screenSize.X;
 	mOutputSize.Y = swapDimensions ? screenSize.X : screenSize.Y;
 
-	if (mDirect3DResources.SwapChain != NULL)
+	if (mSwapChain != NULL)
 	{
 		ReleaseSwapChainDependentResources();
 		// If the swap chain already exists, resize it.
-		HRESULT hr = mDirect3DResources.SwapChain->ResizeBuffers(mDirect3DResources.BufferCount, lround(mOutputSize.X), lround(mOutputSize.Y), DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+		HRESULT hr = mSwapChain->ResizeBuffers(BACK_BUFFER_COUNT, lround(mOutputSize.X), lround(mOutputSize.Y), DXGI_FORMAT_R8G8B8A8_UNORM, 0);
 
 		if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
 		{
@@ -124,7 +114,7 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 		IDXGIOutput* adapterOutput = NULL;
 		uint32 numDisplayModes = 0;
 
-		Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.DXGIFactory->EnumAdapters(0, &adapter));
+		Direct3DUtils::ThrowIfHRESULTFailed(mDXGIFactory->EnumAdapters(0, &adapter));
 		Direct3DUtils::ThrowIfHRESULTFailed(adapter->EnumOutputs(0, &adapterOutput));
 		Direct3DUtils::ThrowIfHRESULTFailed(adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &numDisplayModes, NULL));
 		DXGI_MODE_DESC *displayModeList = new DXGI_MODE_DESC[numDisplayModes];
@@ -180,7 +170,7 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 		swapChainDesc.SampleDesc.Count = 1;							// Don't use multi-sampling.
 		swapChainDesc.SampleDesc.Quality = 0;
 		swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		swapChainDesc.BufferCount = mDirect3DResources.BufferCount;					// Use triple-buffering to minimize latency.
+		swapChainDesc.BufferCount = BACK_BUFFER_COUNT;					// Use triple-buffering to minimize latency.
 		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;	// All Windows Universal apps must use _FLIP_ SwapEffects
 		swapChainDesc.Flags = 0;
 		swapChainDesc.Scaling = DXGI_SCALING_NONE;
@@ -206,7 +196,7 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 
 		IDXGISwapChain1 *swapChain = NULL;
 		Direct3DUtils::ThrowIfHRESULTFailed(
-			mDirect3DResources.DXGIFactory->CreateSwapChainForHwnd(
+			mDXGIFactory->CreateSwapChainForHwnd(
 				mContextManager->GetQueueManager()->GetGraphicsQueue()->GetCommandQueue(),
 				windowHandle,
 				&swapChainDesc,
@@ -216,70 +206,55 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 				)
 			);
 		
-		Direct3DUtils::ThrowIfHRESULTFailed(swapChain->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&mDirect3DResources.SwapChain));
+		Direct3DUtils::ThrowIfHRESULTFailed(swapChain->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&mSwapChain));
 	}
 
-	Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.SwapChain->SetRotation(displayRotation));
+	Direct3DUtils::ThrowIfHRESULTFailed(mSwapChain->SetRotation(displayRotation));
+
+	mHeapManager = new Direct3DHeapManager(mDevice);
 
 	BuildSwapChainDependentResources();
 
 	// Set the 3D rendering viewport to target the entire window.
-	mDirect3DResources.ScreenViewport = { 0.0f, 0.0f, mOutputSize.X, mOutputSize.Y, 0.0f, 1.0f };
+	mScreenViewport = { 0.0f, 0.0f, mOutputSize.X, mOutputSize.Y, 0.0f, 1.0f };
 
-	mHeapManager = new Direct3DHeapManager(mDirect3DResources.Device);
-
-	//mUploadManager = new Direct3DUploadManager(mDirect3DResources.Device, mUploadHeapProperties);
+	
 
 	WaitForGPU();
 }
 
 void Direct3DManager::ReleaseSwapChainDependentResources()
 {
-	for (uint32 bufferIndex = 0; bufferIndex < mDirect3DResources.BufferCount; bufferIndex++)
+	for (uint32 bufferIndex = 0; bufferIndex < BACK_BUFFER_COUNT; bufferIndex++)
 	{
-		mDirect3DResources.BackBufferTargets[bufferIndex]->Release();
-		mDirect3DResources.BackBufferTargets[bufferIndex] = NULL;
+		delete mBackBuffers[bufferIndex];
+		mBackBuffers[bufferIndex] = NULL;
+
+		mHeapManager->FreeRTVDescriptorHeapHandle(mBackBufferHeapHandles[bufferIndex]);
 	}
-
-	mDirect3DResources.RTVHeap->Release();
-	mDirect3DResources.RTVHeap = NULL;
-
-	// All pending GPU work was already finished. Update the tracked fence values
-	// to the last value signaled.
-	//for (uint32 bufferIndex = 0; bufferIndex < mBufferCount; bufferIndex++)
-	//{
-	//	mFenceValues[bufferIndex] = mFenceValues[mCurrentBuffer];
-	//}
 }
 
 void Direct3DManager::BuildSwapChainDependentResources()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC desc = {};
-	desc.NumDescriptors = mDirect3DResources.BufferCount;
+	desc.NumDescriptors = BACK_BUFFER_COUNT;
 	desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.Device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&mDirect3DResources.RTVHeap)));
-	mDirect3DResources.RTVHeap->SetName(L"Backbuffer Descriptor Heap");
-
-	// All pending GPU work was already finished. Update the tracked fence values
-	// to the last value signaled.
-	for (uint32 bufferIndex = 0; bufferIndex < mDirect3DResources.BufferCount; bufferIndex++)
+	
+	for (uint32 bufferIndex = 0; bufferIndex < BACK_BUFFER_COUNT; bufferIndex++)
 	{
-	//	mDirect3DResources.FenceValues[bufferIndex] = mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer];
-	}
+		mBackBufferHeapHandles.Add(mHeapManager->GetNewRTVDescriptorHeapHandle());
+		
+		ID3D12Resource *backBufferResource = NULL;
+		//TDA: we need a render target view desc here, especially to use an SRGB target
+		Direct3DUtils::ThrowIfHRESULTFailed(mSwapChain->GetBuffer(bufferIndex, IID_PPV_ARGS(&backBufferResource)));
+		mDevice->CreateRenderTargetView(backBufferResource, nullptr, mBackBufferHeapHandles[bufferIndex].GetCPUHandle());
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptor(mDirect3DResources.RTVHeap->GetCPUDescriptorHandleForHeapStart());
-	mDirect3DResources.RTVDescriptorSize = mDirect3DResources.Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	for (uint32 bufferIndex = 0; bufferIndex < mDirect3DResources.BufferCount; bufferIndex++)
-	{
-		//TDA: we need a descriptor here, especially to use an SRGB target
-		Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.SwapChain->GetBuffer(bufferIndex, IID_PPV_ARGS(&mDirect3DResources.BackBufferTargets[bufferIndex])));
-		mDirect3DResources.Device->CreateRenderTargetView(mDirect3DResources.BackBufferTargets[bufferIndex], nullptr, rtvDescriptor);
-		rtvDescriptor.Offset(mDirect3DResources.RTVDescriptorSize);
+		mBackBuffers.Add(new RenderTarget(backBufferResource, D3D12_RESOURCE_STATE_PRESENT));
 
 		WCHAR name[25];
 		swprintf_s(name, L"Backbuffer Target %d", bufferIndex);
-		mDirect3DResources.BackBufferTargets[bufferIndex]->SetName(name);
+		mBackBuffers[bufferIndex]->GetResource()->SetName(name);
 	}
 }
 
@@ -287,16 +262,6 @@ void Direct3DManager::WaitForGPU()
 {
 	uint64 fenceValue = mContextManager->GetQueueManager()->GetGraphicsQueue()->IncrementFence();
 	mContextManager->GetQueueManager()->GetGraphicsQueue()->WaitForFence(fenceValue);
-	/*
-	// Schedule a Signal command in the queue.
-	Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.CommandQueue->Signal(mDirect3DResources.Fence, mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer]));
-
-	// Wait until the fence has been crossed.
-	Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.Fence->SetEventOnCompletion(mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer], mDirect3DResources.FenceEvent));
-	WaitForSingleObjectEx(mDirect3DResources.FenceEvent, INFINITE, FALSE);
-
-	// Increment the fence value for the current frame.
-	mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer]++;*/
 }
 
 // Present the contents of the swap chain to the screen.
@@ -305,7 +270,7 @@ void Direct3DManager::Present()
 	// The first argument instructs DXGI to block until VSync, putting the application
 	// to sleep until the next VSync. This ensures we don't waste any cycles rendering
 	// frames that will never be displayed to the screen.
-	HRESULT hr = mDirect3DResources.SwapChain->Present(mUseVsync ? 1 : 0, 0);
+	HRESULT hr = mSwapChain->Present(mUseVsync ? 1 : 0, 0);
 
 	// If the device was removed either by a disconnection or a driver upgrade, we 
 	// must recreate all device resources.
@@ -322,24 +287,10 @@ void Direct3DManager::Present()
 
 void Direct3DManager::MoveToNextFrame()
 {
-	// Schedule a Signal command in the queue.
-	//const UINT64 currentFenceValue = mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer];
-	//Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.CommandQueue->Signal(mDirect3DResources.Fence, currentFenceValue));
-
 	// Advance the frame index.
-	mDirect3DResources.CurrentBuffer = (mDirect3DResources.CurrentBuffer + 1) % mDirect3DResources.BufferCount;
+	mCurrentBackBuffer = (mCurrentBackBuffer + 1) % BACK_BUFFER_COUNT;
 	uint64 fenceValue = mContextManager->GetQueueManager()->GetGraphicsQueue()->IncrementFence();
 	mContextManager->GetQueueManager()->GetGraphicsQueue()->WaitForFence(fenceValue);
-
-	// Check to see if the next frame is ready to start.
-	//if (mDirect3DResources.Fence->GetCompletedValue() < mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer])
-	//{
-	//	Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DResources.Fence->SetEventOnCompletion(mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer], mDirect3DResources.FenceEvent));
-	//	WaitForSingleObjectEx(mDirect3DResources.FenceEvent, INFINITE, FALSE);
-	//}
-
-	// Set the fence value for the next frame.
-	//mDirect3DResources.FenceValues[mDirect3DResources.CurrentBuffer] = currentFenceValue + 1;
 }
 
 DXGI_MODE_ROTATION Direct3DManager::ComputeDisplayRotation()

@@ -12,8 +12,8 @@ GPUResource::GPUResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageSt
 
 GPUResource::~GPUResource()						//Sometimes we assign the resource from somewhere else, and don't want it released. How do we handle it? Answer: we release it here, everything that creates a resource should do it through this
 {
-//	mResource->Release();
-//	mResource = NULL;
+	mResource->Release();
+	mResource = NULL;
 }
 
 TextureResource::TextureResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState)
@@ -23,6 +23,17 @@ TextureResource::TextureResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES
 }
 
 TextureResource::~TextureResource()
+{
+
+}
+
+RenderTarget::RenderTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState)
+	:GPUResource(resource, usageState)
+{
+
+}
+
+RenderTarget::~RenderTarget()
 {
 
 }
