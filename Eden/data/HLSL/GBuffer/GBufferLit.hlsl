@@ -1,4 +1,4 @@
-#include "../Common/ShaderCommon.hlsl"
+#include "../Common/GBufferShaderCommon.hlsl"
 
 GBufferVertexOutput GBufferLitVertexShader(VertexInput input)
 {
