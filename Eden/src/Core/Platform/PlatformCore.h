@@ -8,7 +8,7 @@
 #include <d3dcompiler.h>
 
 #define NUM_DEFAULT_WORKER_THREADS			8
-#define BACK_BUFFER_COUNT				2
+#define BACK_BUFFER_COUNT					2
 #define RTV_DESCRIPTOR_HEAP_SIZE			64
 #define SRV_DESCRIPTOR_HEAP_SIZE			1024
 #define DSV_DESCRIPTOR_HEAP_SIZE			32

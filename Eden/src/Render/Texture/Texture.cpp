@@ -13,5 +13,9 @@ Texture::Texture()
 
 Texture::~Texture()
 {
-
+	if (mTextureResource)
+	{
+		delete mTextureResource;
+		mTextureResource = NULL;
+	}
 }

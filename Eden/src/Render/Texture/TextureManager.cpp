@@ -11,9 +11,7 @@ TextureManager::~TextureManager()
 {
 	for (uint32 i = 0; i < mTextures.CurrentSize(); i++)
 	{
-		mDirect3DManager->GetHeapManager()->FreeSRVDescriptorHeapHandle(mTextures[i]->GetDescriptorHeapHandle());
-		delete mTextures[i]->GetTextureResource();						//TDA: put this somewhere else
-		mTextures[i]->SetTextureResource(NULL);
+		mDirect3DManager->GetContextManager()->GetHeapManager()->FreeSRVDescriptorHeapHandle(mTextures[i]->GetTextureResource()->GetShaderResourceViewHandle());
 		delete mTextures[i];
 	}
 
@@ -22,7 +20,6 @@ TextureManager::~TextureManager()
 
 void TextureManager::LoadAllTextures()
 {
-	//TDA: This isn't finished EDIT: Thanks past Alex, that's a really helpful comment.
 	mManifestLoader.LoadManifest(ApplicationSpecification::TextureManifestFileLocation);
 
 	DynamicArray<std::string, false> &fileNames = mManifestLoader.GetFileNames();
@@ -102,9 +99,8 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 	mDirect3DManager->GetDevice()->CreateCommittedResource(&defaultProperties, D3D12_HEAP_FLAG_NONE, &textureDesc,
 		D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&newTextureResource));
 
-	TextureResource *textureGPUResource = new TextureResource(newTextureResource, D3D12_RESOURCE_STATE_COPY_DEST);
+	TextureResource *textureGPUResource = new TextureResource(newTextureResource, D3D12_RESOURCE_STATE_COPY_DEST, mDirect3DManager->GetContextManager()->GetHeapManager()->GetNewSRVDescriptorHeapHandle());
 	newTexture->SetTextureResource(textureGPUResource);
-	newTexture->SetDescriptorHeapHandle(mDirect3DManager->GetHeapManager()->GetNewSRVDescriptorHeapHandle());
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC *srvDescPointer = NULL;
 	D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc = {};
@@ -120,7 +116,7 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath)
 		srvDescPointer = &shaderResourceViewDesc;
 	}
 
-	mDirect3DManager->GetDevice()->CreateShaderResourceView(newTextureResource, srvDescPointer, newTexture->GetDescriptorHeapHandle().GetCPUHandle());
+	mDirect3DManager->GetDevice()->CreateShaderResourceView(newTextureResource, srvDescPointer, newTexture->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle());
 
 	const uint64 numSubResources = textureMetaData.mipLevels * textureMetaData.arraySize;
 	uint64 textureMemorySize = 0;

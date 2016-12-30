@@ -9,7 +9,6 @@
 #include "Core/Vector/Vector2.h"
 #include "Render/Display/DisplayOrientation.h"
 #include "Render/DirectX/Resources/Direct3DResources.h"
-#include "Render/DirectX/Heap/Direct3DHeapManager.h"
 #include "Render/DirectX/Context/Direct3DContextManager.h"
 
 class Direct3DManager
@@ -30,7 +29,7 @@ public:
 
 	D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView()
 	{
-		return mBackBufferHeapHandles[mCurrentBackBuffer].GetCPUHandle();
+		return mBackBuffers[mCurrentBackBuffer]->GetRenderTargetViewHandle().GetCPUHandle();
 	}
 
 	//D3D12_HEAP_PROPERTIES GetDefaultHeapProperties()  { return mDefaultHeapProperties; }
@@ -38,7 +37,6 @@ public:
 	//D3D12_HEAP_PROPERTIES GetReadbackHeapProperties() { return mReadbackHeapProperties; }
 
 	Direct3DContextManager *GetContextManager() { return mContextManager; }
-	Direct3DHeapManager *GetHeapManager() { return mHeapManager; }
 
 private:
 	void InitializeDeviceResources();
@@ -53,11 +51,9 @@ private:
 	IDXGIFactory4 *mDXGIFactory;
 	IDXGISwapChain3	*mSwapChain;
 	DynamicArray<RenderTarget*> mBackBuffers;
-	DynamicArray<DescriptorHeapHandle> mBackBufferHeapHandles;
 	uint32 mCurrentBackBuffer;
 	
 	Direct3DContextManager *mContextManager;
-	Direct3DHeapManager *mHeapManager;
 
 	bool mDeviceRemoved;
 	bool mUseVsync;

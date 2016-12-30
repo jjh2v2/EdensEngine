@@ -6,7 +6,6 @@ Direct3DManager::Direct3DManager()
 	mNativeOrientation = DisplayOrientation_Landscape;
 	mCurrentOrientation = DisplayOrientation_Landscape;
 	mUseVsync = false;
-	mHeapManager = NULL;
 	mContextManager = NULL;
 	mCurrentBackBuffer = 0;
 
@@ -18,8 +17,6 @@ Direct3DManager::~Direct3DManager()
 	WaitForGPU();
 
 	ReleaseSwapChainDependentResources();
-
-	delete mHeapManager;
 
 	mSwapChain->Release();
 	mSwapChain = NULL;
@@ -59,13 +56,6 @@ void Direct3DManager::InitializeDeviceResources()
 		D3D_FEATURE_LEVEL_11_0,			// Minimum feature level this app can support.
 		IID_PPV_ARGS(&mDevice)		// Returns the Direct3D device created.
 		));
-
-	// Create the command queue.
-	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-	queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-	queueDesc.NodeMask = 0;
 
 	mContextManager = new Direct3DContextManager(mDevice);
 }
@@ -211,14 +201,10 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 
 	Direct3DUtils::ThrowIfHRESULTFailed(mSwapChain->SetRotation(displayRotation));
 
-	mHeapManager = new Direct3DHeapManager(mDevice);
-
 	BuildSwapChainDependentResources();
 
 	// Set the 3D rendering viewport to target the entire window.
 	mScreenViewport = { 0.0f, 0.0f, mOutputSize.X, mOutputSize.Y, 0.0f, 1.0f };
-
-	
 
 	WaitForGPU();
 }
@@ -227,10 +213,9 @@ void Direct3DManager::ReleaseSwapChainDependentResources()
 {
 	for (uint32 bufferIndex = 0; bufferIndex < BACK_BUFFER_COUNT; bufferIndex++)
 	{
+		mContextManager->GetHeapManager()->FreeRTVDescriptorHeapHandle(mBackBuffers[bufferIndex]->GetRenderTargetViewHandle());
 		delete mBackBuffers[bufferIndex];
 		mBackBuffers[bufferIndex] = NULL;
-
-		mHeapManager->FreeRTVDescriptorHeapHandle(mBackBufferHeapHandles[bufferIndex]);
 	}
 }
 
@@ -243,14 +228,18 @@ void Direct3DManager::BuildSwapChainDependentResources()
 	
 	for (uint32 bufferIndex = 0; bufferIndex < BACK_BUFFER_COUNT; bufferIndex++)
 	{
-		mBackBufferHeapHandles.Add(mHeapManager->GetNewRTVDescriptorHeapHandle());
-		
 		ID3D12Resource *backBufferResource = NULL;
-		//TDA: we need a render target view desc here, especially to use an SRGB target
-		Direct3DUtils::ThrowIfHRESULTFailed(mSwapChain->GetBuffer(bufferIndex, IID_PPV_ARGS(&backBufferResource)));
-		mDevice->CreateRenderTargetView(backBufferResource, nullptr, mBackBufferHeapHandles[bufferIndex].GetCPUHandle());
+		DescriptorHeapHandle backBufferHeapHandle = mContextManager->GetHeapManager()->GetNewRTVDescriptorHeapHandle();
+		D3D12_RENDER_TARGET_VIEW_DESC rtvDesc;
+		rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+		rtvDesc.Texture2D.MipSlice = 0;
+		rtvDesc.Texture2D.PlaneSlice = 0;
 
-		mBackBuffers.Add(new RenderTarget(backBufferResource, D3D12_RESOURCE_STATE_PRESENT));
+		Direct3DUtils::ThrowIfHRESULTFailed(mSwapChain->GetBuffer(bufferIndex, IID_PPV_ARGS(&backBufferResource)));
+		mDevice->CreateRenderTargetView(backBufferResource, &rtvDesc, backBufferHeapHandle.GetCPUHandle());
+
+		mBackBuffers.Add(new RenderTarget(backBufferResource, D3D12_RESOURCE_STATE_PRESENT, backBufferHeapHandle));
 
 		WCHAR name[25];
 		swprintf_s(name, L"Backbuffer Target %d", bufferIndex);

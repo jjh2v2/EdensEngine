@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Platform/PlatformCore.h"
+#include "Render/DirectX/Heap/DescriptorHeapHandle.h"
 
 class GPUResource
 {
@@ -22,19 +23,32 @@ protected:
 	D3D12_RESOURCE_STATES mTransitioningState;
 };
 
+
 class TextureResource : public GPUResource
 {
 public:
-	TextureResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState);
+	TextureResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, DescriptorHeapHandle shaderResourceViewHandle);
 	virtual ~TextureResource();
+
+	DescriptorHeapHandle GetShaderResourceViewHandle() { return mShaderResourceViewHandle; }
+
+private:
+	DescriptorHeapHandle mShaderResourceViewHandle;
 };
+
 
 class RenderTarget : public GPUResource
 {
 public:
-	RenderTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState);
+	RenderTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, DescriptorHeapHandle renderTargetViewHandle);
 	virtual ~RenderTarget();
+
+	DescriptorHeapHandle GetRenderTargetViewHandle() { return mRenderTargetViewHandle; }
+
+private:
+	DescriptorHeapHandle mRenderTargetViewHandle;
 };
+
 
 class VertexBuffer : public GPUResource
 {
@@ -48,6 +62,7 @@ protected:
 	D3D12_VERTEX_BUFFER_VIEW mVertexBufferView;
 };
 
+
 class IndexBuffer : public GPUResource
 {
 public:
@@ -58,4 +73,16 @@ public:
 
 private:
 	D3D12_INDEX_BUFFER_VIEW mIndexBufferView;
+};
+
+
+class ConstantBuffer : public GPUResource
+{
+public:
+	ConstantBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferDesc, DescriptorHeapHandle constantBufferViewHandle);
+	virtual ~ConstantBuffer();
+
+private:
+	D3D12_CONSTANT_BUFFER_VIEW_DESC mConstantBufferViewDesc;
+	DescriptorHeapHandle mConstantBufferViewHandle;
 };

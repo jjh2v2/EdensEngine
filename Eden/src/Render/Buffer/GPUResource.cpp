@@ -16,10 +16,10 @@ GPUResource::~GPUResource()						//Sometimes we assign the resource from somewhe
 	mResource = NULL;
 }
 
-TextureResource::TextureResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState)
+TextureResource::TextureResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, DescriptorHeapHandle shaderResourceViewHandle)
 	:GPUResource(resource, usageState)
 {
-
+	mShaderResourceViewHandle = shaderResourceViewHandle;
 }
 
 TextureResource::~TextureResource()
@@ -27,10 +27,10 @@ TextureResource::~TextureResource()
 
 }
 
-RenderTarget::RenderTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState)
+RenderTarget::RenderTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, DescriptorHeapHandle renderTargetViewHandle)
 	:GPUResource(resource, usageState)
 {
-
+	mRenderTargetViewHandle = renderTargetViewHandle;
 }
 
 RenderTarget::~RenderTarget()
@@ -62,6 +62,19 @@ IndexBuffer::IndexBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageSt
 }
 
 IndexBuffer::~IndexBuffer()
+{
+
+}
+
+ConstantBuffer::ConstantBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferDesc, DescriptorHeapHandle constantBufferViewHandle)
+	:GPUResource(resource, usageState)
+{
+	mGPUAddress = constantBufferDesc.BufferLocation;
+	mConstantBufferViewDesc = constantBufferDesc;
+	mConstantBufferViewHandle = constantBufferViewHandle;
+}
+
+ConstantBuffer::~ConstantBuffer()
 {
 
 }

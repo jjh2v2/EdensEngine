@@ -15,6 +15,12 @@ public:
 		
 	}
 
+	static uint32 AlignU32(uint32 valueToAlign, uint32 alignment)
+	{
+		alignment -= 1;
+		return (uint32)((valueToAlign + alignment) & ~alignment);
+	}
+
 	static float Clamp(float val, float min, float max)
 	{
 		if(val < min)

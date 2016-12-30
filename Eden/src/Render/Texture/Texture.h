@@ -10,9 +10,6 @@ public:
 	Texture();
 	~Texture();
 
-	void SetDescriptorHeapHandle(DescriptorHeapHandle handle) { mDescriptorHandle = handle; }
-	DescriptorHeapHandle GetDescriptorHeapHandle() { return mDescriptorHandle; }
-
 	void SetTextureResource(TextureResource *resource) { mTextureResource = resource; }
 	TextureResource *GetTextureResource() { return mTextureResource; }
 
@@ -29,7 +26,6 @@ public:
 
 private:
 	TextureResource* mTextureResource;
-	DescriptorHeapHandle mDescriptorHandle;
 
 	DXGI_FORMAT mFormat;
 	Vector3		mDimensions;
