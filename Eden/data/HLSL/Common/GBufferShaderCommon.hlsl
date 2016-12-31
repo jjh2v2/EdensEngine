@@ -25,13 +25,13 @@ struct GBufferPixelOutput
 	float4 material : SV_Target2;
 };
 
-cbuffer PerFrameBuffer : register(b0)
+cbuffer GBufferPassPerFrameBuffer : register(b0)
 {
 	matrix pfViewMatrix;
     matrix pfProjectionMatrix;
 };
 
-cbuffer PerObjectBuffer : register(b1)
+cbuffer GBufferPassPerObjectBuffer : register(b1)
 {
 	matrix 	poWorldMatrix;
     float4 	poDiffuseColor;

@@ -6,6 +6,7 @@
 #include "Render/Shader/ShaderPSO.h"
 #include "Core/Misc/Color.h"
 #include "Render/Shader/RootSignature/RootSignatureManager.h"
+#include "Render/Texture/Texture.h"
 
 #define VALID_COMPUTE_QUEUE_RESOURCE_STATES \
 	( D3D12_RESOURCE_STATE_UNORDERED_ACCESS \
@@ -83,17 +84,16 @@ public:
 	void SetBlendFactor(Color blendFactor);
 	void SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY topology);
 
-	void SetPipelineState(ShaderPSO &pipeline);
+	void SetPipelineState(ShaderPSO *pipeline);
 	void SetConstants(uint32 index, uint32 numConstants, const void *bufferData);
-	void SetConstantBuffer(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS constantBuffer);
-	//void SetShaderResourceView(uint32 index, GPUBuffer &shaderResourceView, uint64 offset = 0);
+	void SetConstantBuffer(uint32 index, ConstantBuffer *constantBuffer);
+	void SetTexture(uint32 index, Texture *texture, uint64 offset = 0);
 	//void SetUnorderedAccessView(uint32 index, GPUBuffer &unorderedAccessView, uint64 offset = 0);
 
 	void SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle);
 
-	void SetIndexBuffer(const D3D12_INDEX_BUFFER_VIEW &indexBuffer);
-	void SetVertexBuffer(uint32 slot, const D3D12_VERTEX_BUFFER_VIEW &vertexBuffer);
-	void SetVertexBuffers(uint32 slot, uint32 count, const D3D12_VERTEX_BUFFER_VIEW vertexBuffers[]);
+	void SetIndexBuffer(IndexBuffer *indexBuffer);
+	void SetVertexBuffer(uint32 slot, VertexBuffer *vertexBuffer);
 
 	void ClearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE target, float color[4]);
 

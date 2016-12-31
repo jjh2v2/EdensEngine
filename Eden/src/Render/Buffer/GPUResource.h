@@ -82,7 +82,10 @@ public:
 	ConstantBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferDesc, DescriptorHeapHandle constantBufferViewHandle);
 	virtual ~ConstantBuffer();
 
+	void SetConstantBufferData(void* bufferData, uint32 bufferSize);
+
 private:
+	void *mMappedBuffer;
 	D3D12_CONSTANT_BUFFER_VIEW_DESC mConstantBufferViewDesc;
 	DescriptorHeapHandle mConstantBufferViewHandle;
 };

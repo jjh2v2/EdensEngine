@@ -32,10 +32,6 @@ public:
 		return mBackBuffers[mCurrentBackBuffer]->GetRenderTargetViewHandle().GetCPUHandle();
 	}
 
-	//D3D12_HEAP_PROPERTIES GetDefaultHeapProperties()  { return mDefaultHeapProperties; }
-	//D3D12_HEAP_PROPERTIES GetUploadHeapProperties()   { return mUploadHeapProperties; }
-	//D3D12_HEAP_PROPERTIES GetReadbackHeapProperties() { return mReadbackHeapProperties; }
-
 	Direct3DContextManager *GetContextManager() { return mContextManager; }
 
 private:
@@ -63,8 +59,4 @@ private:
 	Vector2	mOutputSize;
 	DisplayOrientation mNativeOrientation;
 	DisplayOrientation mCurrentOrientation;
-
-	//D3D12_HEAP_PROPERTIES mDefaultHeapProperties;
-	//D3D12_HEAP_PROPERTIES mUploadHeapProperties;
-	//D3D12_HEAP_PROPERTIES mReadbackHeapProperties;
 };

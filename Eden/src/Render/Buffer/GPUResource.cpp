@@ -72,9 +72,18 @@ ConstantBuffer::ConstantBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES u
 	mGPUAddress = constantBufferDesc.BufferLocation;
 	mConstantBufferViewDesc = constantBufferDesc;
 	mConstantBufferViewHandle = constantBufferViewHandle;
+
+	mMappedBuffer = NULL;
+	mResource->Map(0, NULL, &mMappedBuffer);
 }
 
 ConstantBuffer::~ConstantBuffer()
 {
 
+}
+
+void ConstantBuffer::SetConstantBufferData(void* bufferData, uint32 bufferSize)
+{
+	Application::Assert(bufferSize < mConstantBufferViewDesc.SizeInBytes);
+	memcpy(mMappedBuffer, bufferData, bufferSize);
 }

@@ -118,6 +118,18 @@
     <Filter Include="Source Files\Render\DirectX\Queue">
       <UniqueIdentifier>{64cd837d-79fd-45e6-a6b4-7b950c326b74}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render\Shader\Definitions">
+      <UniqueIdentifier>{e96ab6a2-5159-47f8-8e4a-35305c606733}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Render\Material">
+      <UniqueIdentifier>{ae34f5e8-c0b3-4e0f-901e-1d18e44caf8c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Entity">
+      <UniqueIdentifier>{ed97d2ec-2c81-44c5-ba7d-6b13a385f450}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Camera">
+      <UniqueIdentifier>{3eeacf9e-5dc9-49cc-aa11-9bcb80aa7d7d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -306,6 +318,21 @@
     <ClInclude Include="src\Render\DirectX\Context\Direct3DContextManager.h">
       <Filter>Source Files\Render\DirectX\Context</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\Shader\Definitions\ConstantBufferDefinitions.h">
+      <Filter>Source Files\Render\Shader\Definitions</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\Material\Material.h">
+      <Filter>Source Files\Render\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Entity\SceneEntity.h">
+      <Filter>Source Files\Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\Material\MaterialManager.h">
+      <Filter>Source Files\Render\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Camera\Camera.h">
+      <Filter>Source Files\Camera</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -460,6 +487,18 @@
     </ClCompile>
     <ClCompile Include="src\Render\DirectX\Context\Direct3DContextManager.cpp">
       <Filter>Source Files\Render\DirectX\Context</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Material\Material.cpp">
+      <Filter>Source Files\Render\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Entity\SceneEntity.cpp">
+      <Filter>Source Files\Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Material\MaterialManager.cpp">
+      <Filter>Source Files\Render\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Camera\Camera.cpp">
+      <Filter>Source Files\Camera</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

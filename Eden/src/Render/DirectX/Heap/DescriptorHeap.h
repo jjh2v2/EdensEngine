@@ -13,8 +13,11 @@ public:
 	DescriptorHeapHandle GetNewHeapHandle();
 	void FreeHeapHandle(DescriptorHeapHandle handle);
 
+	ID3D12DescriptorHeap *GetHeap() { return mDescriptorHeap; }
+	D3D12_DESCRIPTOR_HEAP_TYPE GetHeapType() { return mHeapType; }
+
 private:
-	ID3D12DescriptorHeap* mDescriptorHeap;
+	ID3D12DescriptorHeap *mDescriptorHeap;
 	D3D12_DESCRIPTOR_HEAP_TYPE mHeapType;
 	D3D12_CPU_DESCRIPTOR_HANDLE mDescriptorHeapCPUStart;
 	D3D12_GPU_DESCRIPTOR_HANDLE mDescriptorHeapGPUStart;

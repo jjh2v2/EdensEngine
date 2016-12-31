@@ -90,7 +90,7 @@ void Direct3DContext::BindDescriptorHeaps()
 
 	for (uint32 i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; i++)
 	{
-		if (mCurrentDescriptorHeaps[i] != nullptr)
+		if (mCurrentDescriptorHeaps[i] != NULL)
 		{
 			heapsToBind[nonNullHeapCount++] = mCurrentDescriptorHeaps[i];
 		}
@@ -98,7 +98,7 @@ void Direct3DContext::BindDescriptorHeaps()
 
 	if (nonNullHeapCount > 0)
 	{
-		//mCommandList->SetDescriptorHeaps(nonNullHeapCount, heapsToBind);			//TDA: Not sure what to do with this yet
+		mCommandList->SetDescriptorHeaps(nonNullHeapCount, heapsToBind);			//TDA: Not sure what to do with this yet
 	}
 }
 
@@ -320,14 +320,14 @@ void GraphicsContext::SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY topology)
 	mCommandList->IASetPrimitiveTopology(topology);
 }
 
-void GraphicsContext::SetPipelineState(ShaderPSO &pipeline)
+void GraphicsContext::SetPipelineState(ShaderPSO *pipeline)
 {
-	if (mCurrentGraphicsPipelineState == pipeline.GetPipelineState())
+	if (mCurrentGraphicsPipelineState == pipeline->GetPipelineState())
 	{
 		return;
 	}
 
-	mCurrentGraphicsPipelineState = pipeline.GetPipelineState();
+	mCurrentGraphicsPipelineState = pipeline->GetPipelineState();
 	mCommandList->SetPipelineState(mCurrentGraphicsPipelineState);
 }
 
@@ -336,39 +336,31 @@ void GraphicsContext::SetConstants(uint32 index, uint32 numConstants, const void
 	mCommandList->SetGraphicsRoot32BitConstants(index, numConstants, bufferData, 0);
 }
 
-void GraphicsContext::SetConstantBuffer(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS constantBuffer)
+void GraphicsContext::SetConstantBuffer(uint32 index, ConstantBuffer *constantBuffer)
 {
-	mCommandList->SetComputeRootConstantBufferView(index, constantBuffer);
+	mCommandList->SetGraphicsRootConstantBufferView(index, constantBuffer->GetGpuAddress());
 }
 
-//void GraphicsContext::SetShaderResourceView(uint32 index, GPUBuffer &shaderResourceView, uint64 offset /* = 0 */)
-//{
-//	mCommandList->SetGraphicsRootShaderResourceView(index, shaderResourceView.GetGpuAddress() + offset);
-//}
-
-//void GraphicsContext::SetUnorderedAccessView(uint32 index, GPUBuffer &unorderedAccessView, uint64 offset /* = 0 */)
-//{
-//	mCommandList->SetComputeRootUnorderedAccessView(index, unorderedAccessView.GetGpuAddress() + offset);
-//}
+void GraphicsContext::SetTexture(uint32 index, Texture *texture, uint64 offset /*= 0*/)
+{
+	mCommandList->SetGraphicsRootShaderResourceView(index, texture->GetTextureResource()->GetGpuAddress() + offset);
+}
 
 void GraphicsContext::SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle)
 {
 	mCommandList->SetGraphicsRootDescriptorTable(index, handle);
 }
 
-void GraphicsContext::SetIndexBuffer(const D3D12_INDEX_BUFFER_VIEW &indexBuffer)
+void GraphicsContext::SetIndexBuffer(IndexBuffer *indexBuffer)
 {
-	mCommandList->IASetIndexBuffer(&indexBuffer);
+	D3D12_INDEX_BUFFER_VIEW indexBufferView = indexBuffer->GetIndexBufferView();
+	mCommandList->IASetIndexBuffer(&indexBufferView);
 }
 
-void GraphicsContext::SetVertexBuffer(uint32 slot, const D3D12_VERTEX_BUFFER_VIEW &vertexBuffer)
+void GraphicsContext::SetVertexBuffer(uint32 slot, VertexBuffer *vertexBuffer)
 {
-	SetVertexBuffers(slot, 1, &vertexBuffer);
-}
-
-void GraphicsContext::SetVertexBuffers(uint32 slot, uint32 count, const D3D12_VERTEX_BUFFER_VIEW vertexBuffers[])
-{
-	mCommandList->IASetVertexBuffers(slot, count, vertexBuffers);
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView = vertexBuffer->GetVertexBufferView();
+	mCommandList->IASetVertexBuffers(slot, 1, &vertexBufferView);
 }
 
 void GraphicsContext::ClearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE target, float color[4])
