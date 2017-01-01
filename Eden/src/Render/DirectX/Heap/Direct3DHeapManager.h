@@ -17,14 +17,14 @@ public:
 	void FreeDSVDescriptorHeapHandle(DescriptorHeapHandle handle) { mDSVDescriptorHeap->FreeHeapHandle(handle); }
 	void FreeSamplerDescriptorHeapHandle(DescriptorHeapHandle handle) { mRTVDescriptorHeap->FreeHeapHandle(handle); }
 
-	DescriptorHeap *GetRTVDescriptorHeap() { return mRTVDescriptorHeap; }
-	DescriptorHeap *GetSRVDescriptorHeap() { return mSRVDescriptorHeap; }
-	DescriptorHeap *GetDSVDescriptorHeap() { return mDSVDescriptorHeap; }
-	DescriptorHeap *GetSamplerDescriptorHeap() { return mSamplerDescriptorHeap; }
+	DynamicDescriptorHeap *GetRTVDescriptorHeap() { return mRTVDescriptorHeap; }
+	DynamicDescriptorHeap *GetSRVDescriptorHeap() { return mSRVDescriptorHeap; }
+	DynamicDescriptorHeap *GetDSVDescriptorHeap() { return mDSVDescriptorHeap; }
+	DynamicDescriptorHeap *GetSamplerDescriptorHeap() { return mSamplerDescriptorHeap; }
 
 private:
-	DescriptorHeap *mRTVDescriptorHeap;
-	DescriptorHeap *mSRVDescriptorHeap;
-	DescriptorHeap *mDSVDescriptorHeap;
-	DescriptorHeap *mSamplerDescriptorHeap;
+	DynamicDescriptorHeap *mRTVDescriptorHeap;
+	DynamicDescriptorHeap *mSRVDescriptorHeap;
+	DynamicDescriptorHeap *mDSVDescriptorHeap;
+	DynamicDescriptorHeap *mSamplerDescriptorHeap;
 };

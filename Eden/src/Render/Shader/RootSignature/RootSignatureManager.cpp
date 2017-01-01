@@ -19,7 +19,7 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 	rootParameters[3].InitAsDescriptorTable(1, &ranges[3], D3D12_SHADER_VISIBILITY_PIXEL);
 
 	RootSignatureInfo gbufferSignature;
-	gbufferSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	gbufferSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&gbufferSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &gbufferSignature.RootSignatureBlob, &gbufferSignature.Error));
 	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, gbufferSignature.RootSignatureBlob->GetBufferPointer(), gbufferSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&gbufferSignature.RootSignature)));

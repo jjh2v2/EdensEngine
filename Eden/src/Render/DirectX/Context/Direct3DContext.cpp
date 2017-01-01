@@ -341,10 +341,12 @@ void GraphicsContext::SetConstantBuffer(uint32 index, ConstantBuffer *constantBu
 	mCommandList->SetGraphicsRootConstantBufferView(index, constantBuffer->GetGpuAddress());
 }
 
-void GraphicsContext::SetTexture(uint32 index, Texture *texture, uint64 offset /*= 0*/)
-{
-	mCommandList->SetGraphicsRootShaderResourceView(index, texture->GetTextureResource()->GetGpuAddress() + offset);
-}
+//void GraphicsContext::SetTexture(uint32 index, Texture *texture, uint64 offset /*= 0*/)
+//{
+//	mCommandList->SetGraphicsRootShaderResourceView(index, texture->GetTextureResource()->GetGpuAddress() + offset);
+//}
+
+//TDA: Alex, you need to create descriptor heaps and copy into them so they're contiguous for the descriptor tables
 
 void GraphicsContext::SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle)
 {

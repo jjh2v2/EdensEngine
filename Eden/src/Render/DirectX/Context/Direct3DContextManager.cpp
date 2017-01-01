@@ -7,17 +7,6 @@ Direct3DContextManager::Direct3DContextManager(ID3D12Device* device)
 	mQueueManager = new Direct3DQueueManager(mDevice);
 	mUploadContext = new UploadContext(mDevice);
 	mGraphicsContext = new GraphicsContext(mDevice);
-
-	D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapTypes[2];
-	ID3D12DescriptorHeap *descriptorHeaps[2];
-
-	descriptorHeapTypes[0] = mHeapManager->GetSRVDescriptorHeap()->GetHeapType();
-	descriptorHeaps[0] = mHeapManager->GetSRVDescriptorHeap()->GetHeap();
-
-	descriptorHeapTypes[1] = mHeapManager->GetSamplerDescriptorHeap()->GetHeapType();
-	descriptorHeaps[1] = mHeapManager->GetSamplerDescriptorHeap()->GetHeap();
-
-	mGraphicsContext->SetDescriptorHeaps(2, descriptorHeapTypes, descriptorHeaps);
 }
 
 Direct3DContextManager::~Direct3DContextManager()
