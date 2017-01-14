@@ -11,8 +11,7 @@ public:
 	Material(ID3D12Device *device, MaterialBuffer initialConstants, ConstantBuffer *constantBuffer, DynamicArray<Texture*> &textures);
 	~Material();
 
-	void CommitConstantBufferChanges();
-	void CommitTextureChanges(ID3D12Device *device);
+	void CommitConstantBufferChanges(); //TDA: This needs to go in favor of a change-based system
 	MaterialBuffer *GetMaterialBuffer() { return &mConstants; }
 
 private:
@@ -20,6 +19,4 @@ private:
 	ConstantBuffer *mConstantBuffer;
 	MaterialBuffer mConstants;
 	DynamicArray<Texture*> mTextures;
-	DescriptorHeap *mSRVHeap;
-	DescriptorHeap *mSamplerHeap;
 };

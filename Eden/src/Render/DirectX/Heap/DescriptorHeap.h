@@ -3,6 +3,8 @@
 #include "Core/Containers/DynamicArray.h"
 #include "Render/DirectX/Heap/DescriptorHeapHandle.h"
 
+//TDA: Alex this should be swapped to uint64's possibly?
+
 class DescriptorHeap
 {
 public:
@@ -41,4 +43,18 @@ private:
 	DynamicArray<uint32> mFreeDescriptors;
 	uint32 mCurrentDescriptorIndex;
 	uint32 mActiveHandleCount;
+};
+
+//To do: need to assess and grow these heaps on the fly based on the scene
+class RenderPassDescriptorHeap : public DescriptorHeap
+{
+public:
+	RenderPassDescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, uint32 numDescriptors, bool isReferencedByShader);
+	virtual ~RenderPassDescriptorHeap();
+
+	void Reset();
+	DescriptorHeapHandle GetHeapHandleBlock(uint32 count);
+
+private:
+	uint32 mCurrentDescriptorIndex;
 };

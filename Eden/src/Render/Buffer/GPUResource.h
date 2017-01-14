@@ -2,6 +2,7 @@
 
 #include "Core/Platform/PlatformCore.h"
 #include "Render/DirectX/Heap/DescriptorHeapHandle.h"
+#include "Core/Containers/DynamicArray.h"
 
 class GPUResource
 {
@@ -37,16 +38,48 @@ private:
 };
 
 
-class RenderTarget : public GPUResource
+class BackBufferTarget : public GPUResource
 {
 public:
-	RenderTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, DescriptorHeapHandle renderTargetViewHandle);
-	virtual ~RenderTarget();
+	BackBufferTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, DescriptorHeapHandle renderTargetViewHandle);
+	virtual ~BackBufferTarget();
 
 	DescriptorHeapHandle GetRenderTargetViewHandle() { return mRenderTargetViewHandle; }
 
 private:
 	DescriptorHeapHandle mRenderTargetViewHandle;
+};
+
+class RenderTarget : public GPUResource
+{
+public:
+	struct UAVHandle
+	{
+		UAVHandle()
+		{
+			HasUAV = false;
+		}
+
+		bool HasUAV;
+		DescriptorHeapHandle Handle;
+	};
+
+	RenderTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_RESOURCE_DESC renderTargetDesc, DescriptorHeapHandle renderTargetViewHandle, 
+		DynamicArray<DescriptorHeapHandle> &renderTargetViewArray, DescriptorHeapHandle shaderResourceViewHandle, UAVHandle unorderedAccessViewHandle);
+	virtual ~RenderTarget();
+
+	DescriptorHeapHandle GetRenderTargetViewHandle() { return mRenderTargetViewHandle; }
+	DescriptorHeapHandle GetRenderTargetViewHandle(uint32 index) { return mRenderTargetViewArray[index]; }
+	const DynamicArray<DescriptorHeapHandle> &GetRenderTargetViewArray() { return mRenderTargetViewArray; }
+	DescriptorHeapHandle GetShaderResourceViewHandle() { return mShaderResourceViewHandle; }
+	UAVHandle GetUnorderedAccessViewHandle() { return mUnorderedAccessViewHandle; }
+
+private:
+	D3D12_RESOURCE_DESC	 mRenderTargetDesc;
+	DescriptorHeapHandle mRenderTargetViewHandle;
+	DescriptorHeapHandle mShaderResourceViewHandle;
+	UAVHandle mUnorderedAccessViewHandle;
+	DynamicArray<DescriptorHeapHandle> mRenderTargetViewArray;
 };
 
 

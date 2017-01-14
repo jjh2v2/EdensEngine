@@ -2,7 +2,6 @@
 
 #include "Core/Platform/PlatformCore.h"
 #include "Render/DirectX/Queue/Direct3DQueueManager.h"
-#include "Render/Buffer/GPUBuffer.h"
 #include "Render/Shader/ShaderPSO.h"
 #include "Core/Misc/Color.h"
 #include "Render/Shader/RootSignature/RootSignatureManager.h"

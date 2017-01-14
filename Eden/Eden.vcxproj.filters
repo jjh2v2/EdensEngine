@@ -300,9 +300,6 @@
     <ClInclude Include="src\Render\Mesh\MeshManager.h">
       <Filter>Source Files\Render\Mesh</Filter>
     </ClInclude>
-    <ClInclude Include="src\Render\Buffer\GPUBuffer.h">
-      <Filter>Source Files\Render\Buffer</Filter>
-    </ClInclude>
     <ClInclude Include="src\Render\DirectX\Context\Direct3DContext.h">
       <Filter>Source Files\Render\DirectX\Context</Filter>
     </ClInclude>
@@ -469,9 +466,6 @@
     </ClCompile>
     <ClCompile Include="src\Render\Mesh\MeshManager.cpp">
       <Filter>Source Files\Render\Mesh</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Render\Buffer\GPUBuffer.cpp">
-      <Filter>Source Files\Render\Buffer</Filter>
     </ClCompile>
     <ClCompile Include="src\Render\DirectX\Context\Direct3DContext.cpp">
       <Filter>Source Files\Render\DirectX\Context</Filter>

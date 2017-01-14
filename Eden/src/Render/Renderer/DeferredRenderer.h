@@ -12,4 +12,12 @@ public:
 
 private:
 	GraphicsManager *mGraphicsManager;
+
+	RenderPassDescriptorHeap *mGBufferTextureDescHeap;
+	RenderPassDescriptorHeap *mGBufferCBVDescHeap;
+	RenderPassDescriptorHeap *mGBufferPerFrameDescHeap;
+	RenderPassDescriptorHeap *mGBufferSamplerDescHeap;
+
+	//Mesh *mMesh;
+	//Material *mMaterial;
 };

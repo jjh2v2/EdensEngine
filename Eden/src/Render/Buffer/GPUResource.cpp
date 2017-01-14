@@ -27,10 +27,30 @@ TextureResource::~TextureResource()
 
 }
 
-RenderTarget::RenderTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, DescriptorHeapHandle renderTargetViewHandle)
+BackBufferTarget::BackBufferTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, DescriptorHeapHandle renderTargetViewHandle)
 	:GPUResource(resource, usageState)
 {
 	mRenderTargetViewHandle = renderTargetViewHandle;
+}
+
+BackBufferTarget::~BackBufferTarget()
+{
+
+}
+
+RenderTarget::RenderTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_RESOURCE_DESC renderTargetDesc, DescriptorHeapHandle renderTargetViewHandle,
+	DynamicArray<DescriptorHeapHandle> &renderTargetViewArray, DescriptorHeapHandle shaderResourceViewHandle, UAVHandle unorderedAccessViewHandle)
+	:GPUResource(resource, usageState)
+{
+	mRenderTargetDesc = renderTargetDesc;
+	mRenderTargetViewHandle = renderTargetViewHandle;
+	mShaderResourceViewHandle = shaderResourceViewHandle;
+	mUnorderedAccessViewHandle = unorderedAccessViewHandle;
+
+	for (uint32 i = 0; i < renderTargetViewArray.CurrentSize(); i++)
+	{
+		mRenderTargetViewArray.Add(renderTargetViewArray[i]);
+	}
 }
 
 RenderTarget::~RenderTarget()

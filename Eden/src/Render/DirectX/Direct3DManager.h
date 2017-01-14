@@ -23,7 +23,7 @@ public:
 	
 	ID3D12Device				*GetDevice() { return mDevice; }
 	IDXGISwapChain3 			*GetSwapChain() { return mSwapChain; }
-	RenderTarget  			    *GetBackBufferTarget() { return mBackBuffers[mCurrentBackBuffer]; }
+	BackBufferTarget  			*GetBackBufferTarget() { return mBackBuffers[mCurrentBackBuffer]; }
 
 	D3D12_VIEWPORT				GetScreenViewport() { return mScreenViewport; }
 
@@ -46,7 +46,7 @@ private:
 	ID3D12Device *mDevice;
 	IDXGIFactory4 *mDXGIFactory;
 	IDXGISwapChain3	*mSwapChain;
-	DynamicArray<RenderTarget*> mBackBuffers;
+	DynamicArray<BackBufferTarget*> mBackBuffers;
 	uint32 mCurrentBackBuffer;
 	
 	Direct3DContextManager *mContextManager;

@@ -60,7 +60,7 @@ DescriptorHeapHandle DynamicDescriptorHeap::GetNewHeapHandle()
 	}
 	else
 	{
-		Direct3DUtils::ThrowRuntimeError("Ran out of descriptor heap handles, need to increase heap size.");
+		Direct3DUtils::ThrowRuntimeError("Ran out of dynamic descriptor heap handles, need to increase heap size.");
 	}
 
 	DescriptorHeapHandle newHandle;
@@ -97,4 +97,52 @@ void DynamicDescriptorHeap::Reset()
 	mFreeDescriptors.Clear();
 	mCurrentDescriptorIndex = 0;
 	mActiveHandleCount = 0;
+}
+
+RenderPassDescriptorHeap::RenderPassDescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, uint32 numDescriptors, bool isReferencedByShader)
+	:DescriptorHeap(device, heapType, numDescriptors, isReferencedByShader)
+{
+	mCurrentDescriptorIndex = 0;
+}
+
+RenderPassDescriptorHeap::~RenderPassDescriptorHeap()
+{
+
+}
+
+DescriptorHeapHandle RenderPassDescriptorHeap::GetHeapHandleBlock(uint32 count)
+{
+	uint32 newHandleID = 0;
+	uint32 blockEnd = mCurrentDescriptorIndex + count;
+
+	if (blockEnd < mMaxDescriptors)
+	{
+		newHandleID = mCurrentDescriptorIndex;
+		mCurrentDescriptorIndex = blockEnd;
+	}
+	else
+	{
+		Direct3DUtils::ThrowRuntimeError("Ran out of render pass descriptor heap handles, need to increase heap size.");
+	}
+
+	DescriptorHeapHandle newHandle;
+	D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = mDescriptorHeapCPUStart;
+	cpuHandle.ptr += newHandleID * mDescriptorSize;
+	newHandle.SetCPUHandle(cpuHandle);
+
+	if (mIsReferencedByShader)
+	{
+		D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = mDescriptorHeapGPUStart;
+		gpuHandle.ptr += newHandleID * mDescriptorSize;
+		newHandle.SetGPUHandle(gpuHandle);
+	}
+
+	newHandle.SetHeapIndex(newHandleID);
+
+	return newHandle;
+}
+
+void RenderPassDescriptorHeap::Reset()
+{
+	mCurrentDescriptorIndex = 0;
 }

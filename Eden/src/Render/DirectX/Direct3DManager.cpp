@@ -239,7 +239,7 @@ void Direct3DManager::BuildSwapChainDependentResources()
 		Direct3DUtils::ThrowIfHRESULTFailed(mSwapChain->GetBuffer(bufferIndex, IID_PPV_ARGS(&backBufferResource)));
 		mDevice->CreateRenderTargetView(backBufferResource, &rtvDesc, backBufferHeapHandle.GetCPUHandle());
 
-		mBackBuffers.Add(new RenderTarget(backBufferResource, D3D12_RESOURCE_STATE_PRESENT, backBufferHeapHandle));
+		mBackBuffers.Add(new BackBufferTarget(backBufferResource, D3D12_RESOURCE_STATE_PRESENT, backBufferHeapHandle));
 
 		WCHAR name[25];
 		swprintf_s(name, L"Backbuffer Target %d", bufferIndex);

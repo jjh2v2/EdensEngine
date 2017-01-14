@@ -5,11 +5,20 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 	mGraphicsManager = graphicsManager;
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
 	direct3DManager->WaitForGPU();
+
+	//we need to be able to make these bigger
+	mGBufferTextureDescHeap = new RenderPassDescriptorHeap(direct3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true);
+	mGBufferCBVDescHeap = new RenderPassDescriptorHeap(direct3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true);
+	mGBufferPerFrameDescHeap = new RenderPassDescriptorHeap(direct3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 16, true);
+	mGBufferSamplerDescHeap = new RenderPassDescriptorHeap(direct3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 16, true);
 }
 
 DeferredRenderer::~DeferredRenderer()
 {
-
+	delete mGBufferTextureDescHeap;
+	delete mGBufferCBVDescHeap;
+	delete mGBufferPerFrameDescHeap;
+	delete mGBufferSamplerDescHeap;
 }
 
 void DeferredRenderer::Render()
@@ -19,7 +28,7 @@ void DeferredRenderer::Render()
 
 	graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
 
-	RenderTarget *backBuffer = direct3DManager->GetBackBufferTarget();
+	BackBufferTarget *backBuffer = direct3DManager->GetBackBufferTarget();
 	graphicsContext->TransitionResource((*backBuffer), D3D12_RESOURCE_STATE_RENDER_TARGET, true);
 
 	static float blueSub = 0.0f;

@@ -140,3 +140,89 @@ ConstantBuffer *Direct3DContextManager::CreateConstantBuffer(uint32 bufferSize)
 	ConstantBuffer *constantBuffer = new ConstantBuffer(constantBufferResource, D3D12_RESOURCE_STATE_GENERIC_READ, constantBufferViewDesc, constantBufferHeapHandle);
 	return constantBuffer;
 }
+
+RenderTarget *Direct3DContextManager::CreateRenderTarget(uint32 width, uint32 height, DXGI_FORMAT format, bool hasUAV, uint16 arraySize, uint32 sampleCount, uint32 quality)
+{
+	D3D12_RESOURCE_DESC targetDesc = {};
+	targetDesc.MipLevels = 1;
+	targetDesc.Format = format;
+	targetDesc.Width = uint32(width);
+	targetDesc.Height = uint32(height);
+	targetDesc.DepthOrArraySize = arraySize;
+	targetDesc.SampleDesc.Count = sampleCount;
+	targetDesc.SampleDesc.Quality = sampleCount > 1 ? quality : 0;
+	targetDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	targetDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	targetDesc.Alignment = 0;
+	targetDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+	if (hasUAV)
+	{
+		targetDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+	}
+
+	D3D12_CLEAR_VALUE clearValue = {};
+	clearValue.Format = format;
+
+	D3D12_HEAP_PROPERTIES defaultHeapProperties;
+	defaultHeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+	defaultHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	defaultHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	defaultHeapProperties.CreationNodeMask = 0;
+	defaultHeapProperties.VisibleNodeMask = 0;
+
+	ID3D12Resource *renderTargetResource = NULL;
+	Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &targetDesc,
+		D3D12_RESOURCE_STATE_RENDER_TARGET, &clearValue, IID_PPV_ARGS(&renderTargetResource)));
+
+	DescriptorHeapHandle srvHandle = mHeapManager->GetNewSRVDescriptorHeapHandle();
+	DescriptorHeapHandle rtvHandle = mHeapManager->GetNewRTVDescriptorHeapHandle();
+
+	mDevice->CreateShaderResourceView(renderTargetResource, NULL, srvHandle.GetCPUHandle());
+	mDevice->CreateRenderTargetView(renderTargetResource, NULL, rtvHandle.GetCPUHandle());
+
+	RenderTarget::UAVHandle uavHandle;
+	uavHandle.HasUAV = hasUAV;
+
+	if (hasUAV)
+	{
+		uavHandle.Handle = mHeapManager->GetNewSRVDescriptorHeapHandle();
+		mDevice->CreateUnorderedAccessView(renderTargetResource, NULL, NULL, uavHandle.Handle.GetCPUHandle());
+	}
+
+	DynamicArray<DescriptorHeapHandle> rtvArrayHeapHandles;
+
+	if (arraySize > 1)
+	{
+		D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+		rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
+		rtvDesc.Format = format;
+		if (sampleCount > 1)
+		{
+			rtvDesc.Texture2DMSArray.ArraySize = 1;
+		}
+		else
+		{
+			rtvDesc.Texture2DArray.ArraySize = 1;
+		}
+
+		for (uint32 i = 0; i < arraySize; i++)
+		{
+			if (sampleCount > 1)
+			{
+				rtvDesc.Texture2DMSArray.FirstArraySlice = (uint32)i;
+			}
+			else
+			{
+				rtvDesc.Texture2DArray.FirstArraySlice = (uint32)i;
+			}
+
+			DescriptorHeapHandle rtvArrayHandle = mHeapManager->GetNewRTVDescriptorHeapHandle();
+			mDevice->CreateRenderTargetView(renderTargetResource, &rtvDesc, rtvArrayHandle.GetCPUHandle());
+			rtvArrayHeapHandles.Add(rtvArrayHandle);
+		}
+	}
+
+	RenderTarget *renderTarget = new RenderTarget(renderTargetResource, D3D12_RESOURCE_STATE_RENDER_TARGET, targetDesc, rtvHandle, rtvArrayHeapHandles,
+		srvHandle, uavHandle);
+	return renderTarget;
+}
