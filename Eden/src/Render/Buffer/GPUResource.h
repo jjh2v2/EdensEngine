@@ -140,6 +140,7 @@ public:
 	virtual ~ConstantBuffer();
 
 	void SetConstantBufferData(void* bufferData, uint32 bufferSize);
+	DescriptorHeapHandle GetConstantBufferViewHandle() { return mConstantBufferViewHandle; }
 
 private:
 	void *mMappedBuffer;

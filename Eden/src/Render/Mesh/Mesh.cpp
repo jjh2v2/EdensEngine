@@ -65,8 +65,8 @@ void Mesh::RecalculateBounds()
 		return;
 	}
 
-	Vector3 boundMin = mMeshVertices[0].Position;
-	Vector3 boundMax = mMeshVertices[0].Position;
+	Vector3 boundMin = Vector3(mMeshVertices[0].Position.X, mMeshVertices[0].Position.Y, mMeshVertices[0].Position.Z);
+	Vector3 boundMax = Vector3(mMeshVertices[0].Position.X, mMeshVertices[0].Position.Y, mMeshVertices[0].Position.Z);
 
 	for(uint32 i = 1; i < mVertexCount; i++)
 	{

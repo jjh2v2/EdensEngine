@@ -1,6 +1,6 @@
 #include "Camera/Camera.h"
 
-Camera::Camera(int32 screenWidth, int32 screenHeight, float screenNear, float screenFar, float fov /* = (float)D3DX_PI / 4.0f */)
+Camera::Camera(uint32 screenWidth, uint32 screenHeight, float screenNear, float screenFar, float fov /* = (float)D3DX_PI / 4.0f */)
 {
 	mPosition = Vector3(0, 0, 0);
 	mRotation = Vector3(0, 0, 0);
@@ -14,6 +14,7 @@ Camera::Camera(int32 screenWidth, int32 screenHeight, float screenNear, float sc
 	mScreenFar = screenFar;
 
 	D3DXMatrixPerspectiveFovLH(&mProjectionMatrix, mFieldOfView, mScreenAspectRatio, screenNear, screenFar);
+	D3DXMatrixPerspectiveFovLH(&mReverseProjectionMatrix, mFieldOfView, mScreenAspectRatio, screenFar, screenNear);
 }
 
 Camera::~Camera()

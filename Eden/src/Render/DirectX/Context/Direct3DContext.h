@@ -87,7 +87,6 @@ public:
 	void SetPipelineState(ShaderPSO *pipeline);
 	void SetConstants(uint32 index, uint32 numConstants, const void *bufferData);
 	void SetRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer);
-	//void SetTexture(uint32 index, Texture *texture, uint64 offset = 0);								//this is for SRV's that are NOT textures
 	//void SetUnorderedAccessView(uint32 index, GPUBuffer &unorderedAccessView, uint64 offset = 0);
 
 	void SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle);

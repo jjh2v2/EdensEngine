@@ -11,8 +11,8 @@ class Direct3DManager;
 
 struct MeshVertexData
 {
-	Vector3 Position;
-	Vector2 TexCoord;
+	Vector4 Position;
+	Vector4 TexCoord;
 	Vector3 Normal;
 	Vector3 Tangent;
 	Vector3 Binormal;
@@ -51,10 +51,11 @@ public:
 	virtual ~Mesh();
 	//virtual void Render(ID3D12DeviceContext* deviceContext, int subMeshIndex = 0);
 
-	uint32 GetIndexCount(){return mIndexCount;}
-	uint32 GetMeshSplitCount(){return mIndexSplits.CurrentSize();}
-	uint32 GetMeshIndexSplitByIndex(uint32 index){return mIndexSplits[index];}
-	MeshVertexData *GetMeshData(){return mMeshVertices;}
+	uint32 GetIndexCount() { return mIndexCount; }
+	uint32 GetVertexCount() { return mVertexCount; }
+	uint32 GetMeshSplitCount() { return mIndexSplits.CurrentSize(); }
+	uint32 GetMeshIndexSplitByIndex(uint32 index) { return mIndexSplits[index]; }
+	MeshVertexData *GetMeshData() { return mMeshVertices; }
 
 	void RecalculateBounds();
 	Box GetBounds(){return mMeshBounds;}

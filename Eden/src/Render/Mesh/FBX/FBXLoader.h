@@ -129,6 +129,8 @@ public:
 				meshData.Position.X = (float)pVertices[controlPointIndex].mData[0];
 				meshData.Position.Y = (float)pVertices[controlPointIndex].mData[1];
 				meshData.Position.Z = (float)pVertices[controlPointIndex].mData[2];
+				meshData.Position.W = 1.0f;
+				meshData.Color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 				meshData.Normal = Vector3(normal.X, normal.Y, normal.Z);
 
 				if(tangentFound)
@@ -149,7 +151,7 @@ public:
 					meshData.Binormal = placeHolder;
 				}
 				
-				meshData.TexCoord = Vector2((float)uv.mData[0], 1.0f - (float)uv.mData[1]);
+				meshData.TexCoord = Vector4((float)uv.mData[0], 1.0f - (float)uv.mData[1], (float)uv.mData[0], 1.0f - (float)uv.mData[1]);
 				outVertexVector.Add(meshData);
 				indexCount++;
 			}

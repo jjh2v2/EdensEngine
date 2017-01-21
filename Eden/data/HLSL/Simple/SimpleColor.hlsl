@@ -44,8 +44,6 @@ float4 SimpleColorPixelShader(VertexOutput input) : SV_TARGET
 {
     float4 textureColor = DiffuseTexture.Sample(DiffuseSampler, input.texCoord0.xy);
 	textureColor.rgb = pow(abs(textureColor.rgb), 2.2);	//gamma correction
-	
-	float3 normal = input.normal;
 
     return float4(textureColor.rgb, 1);
 }

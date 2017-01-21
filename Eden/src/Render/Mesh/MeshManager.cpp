@@ -187,9 +187,9 @@ Mesh *MeshManager::LoadFromAssimp(Direct3DManager *direct3DManager, char *fileNa
 			aiVector3D tangent = scene->mMeshes[i]->mTangents[j];
 			aiVector3D bitangent = scene->mMeshes[i]->mBitangents[j];
 
-			meshData[meshDataIndex].Position = Vector3(vert.x, vert.y, vert.z);
+			meshData[meshDataIndex].Position = Vector4(vert.x, vert.y, vert.z, 1.0f);
 			meshData[meshDataIndex].Normal = Vector3(normal.x, normal.y, normal.z);
-			meshData[meshDataIndex].TexCoord = Vector2(texcoord.x, 1.0f - texcoord.y);
+			meshData[meshDataIndex].TexCoord = Vector4(texcoord.x, 1.0f - texcoord.y, texcoord.x, 1.0f - texcoord.y);
 			meshData[meshDataIndex].Tangent = Vector3(tangent.x, tangent.y, tangent.z);
 			meshData[meshDataIndex].Binormal = Vector3(bitangent.x, bitangent.y, bitangent.z);
 

@@ -143,14 +143,14 @@ void ShaderPipelineStateCreator::BuildPipelineStates()
 	gbufferTarget.RenderTargetFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;	//albedo
 	gbufferTarget.RenderTargetFormats[1] = DXGI_FORMAT_R16G16B16A16_FLOAT;  //normals
 	gbufferTarget.RenderTargetFormats[2] = DXGI_FORMAT_R16G16B16A16_FLOAT;  //material
-	gbufferTarget.DepthStencilFormat = DXGI_FORMAT_R32G8X24_TYPELESS;
+	gbufferTarget.DepthStencilFormat = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 
 	mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_GBuffer, gbufferTarget));
 
 	ShaderPipelineTargetState standardSingleTarget;
 	standardSingleTarget.NumRenderTargets = 1;
 	standardSingleTarget.RenderTargetFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-	standardSingleTarget.DepthStencilFormat = DXGI_FORMAT_R32G8X24_TYPELESS;
+	standardSingleTarget.DepthStencilFormat = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 
 	mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_Standard_BackBuffer, standardSingleTarget));
 }

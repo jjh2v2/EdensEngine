@@ -4,7 +4,7 @@
 class Camera
 {
 public:
-	Camera(int32 screenWidth, int32 screenHeight, float screenNear, float screenFar, float fov = (float)D3DX_PI / 4.0f);
+	Camera(uint32 screenWidth, uint32 screenHeight, float screenNear, float screenFar, float fov = (float)D3DX_PI / 4.0f);
 	~Camera();
 
 	Vector3 GetPosition() { return mPosition; }
@@ -23,12 +23,13 @@ public:
 
 	const D3DXMATRIX& GetViewMatrix() { return mViewMatrix; }
 	const D3DXMATRIX& GetProjectionMatrix() { return mProjectionMatrix; }
-
+	const D3DXMATRIX& GetReverseProjectionMatrix() { return mReverseProjectionMatrix; }
 private:
 	Vector3 mPosition;
 	Vector3 mRotation;
 	D3DXMATRIX mViewMatrix;
 	D3DXMATRIX mProjectionMatrix;
+	D3DXMATRIX mReverseProjectionMatrix;
 
 	float mMoveSpeed;
 	float mMoveSensitivity;
