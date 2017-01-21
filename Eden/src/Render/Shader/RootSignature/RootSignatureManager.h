@@ -6,6 +6,7 @@
 enum RootSignatureType
 {
 	RootSignatureType_GBuffer = 0,
+	RootSignatureType_Simple_Color = 1,
 	NumRootSignatures
 };
 

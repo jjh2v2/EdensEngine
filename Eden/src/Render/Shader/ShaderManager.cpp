@@ -38,9 +38,14 @@ void ShaderManager::LoadAllShaders(ID3D12Device *device)
 		mShaderTechniques.Add(shaderTechnique);
 	}
 
-	ShaderPipelinePermutation permutation(Render_GBuffer_Standard, Target_GBuffer);
-
-	mShaderTechniques[0]->AddAndCompilePermutation(device, permutation, mRootSignatureManager->GetRootSignature(RootSignatureType_GBuffer).RootSignature);
+	{
+		ShaderPipelinePermutation permutation(Render_Standard, Target_GBuffer);
+		mShaderTechniques[0]->AddAndCompilePermutation(device, permutation, mRootSignatureManager->GetRootSignature(RootSignatureType_GBuffer).RootSignature);
+	}
+	{
+		ShaderPipelinePermutation permutation(Render_Standard, Target_Standard_BackBuffer);
+		mShaderTechniques[1]->AddAndCompilePermutation(device, permutation, mRootSignatureManager->GetRootSignature(RootSignatureType_Simple_Color).RootSignature);
+	}
 }
 
 ShaderTechnique *ShaderManager::LoadShader(ID3D12Device *device, const char *fileName)

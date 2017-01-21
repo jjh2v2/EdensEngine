@@ -144,16 +144,16 @@ ConstantBuffer *Direct3DContextManager::CreateConstantBuffer(uint32 bufferSize)
 RenderTarget *Direct3DContextManager::CreateRenderTarget(uint32 width, uint32 height, DXGI_FORMAT format, bool hasUAV, uint16 arraySize, uint32 sampleCount, uint32 quality)
 {
 	D3D12_RESOURCE_DESC targetDesc = {};
-	targetDesc.MipLevels = 1;
+	targetDesc.Width = width;
+	targetDesc.Height = height;
 	targetDesc.Format = format;
-	targetDesc.Width = uint32(width);
-	targetDesc.Height = uint32(height);
 	targetDesc.DepthOrArraySize = arraySize;
+	targetDesc.MipLevels = 1;
+	targetDesc.Alignment = 0;
 	targetDesc.SampleDesc.Count = sampleCount;
 	targetDesc.SampleDesc.Quality = sampleCount > 1 ? quality : 0;
 	targetDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	targetDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	targetDesc.Alignment = 0;
 	targetDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 	if (hasUAV)
 	{
@@ -224,5 +224,186 @@ RenderTarget *Direct3DContextManager::CreateRenderTarget(uint32 width, uint32 he
 
 	RenderTarget *renderTarget = new RenderTarget(renderTargetResource, D3D12_RESOURCE_STATE_RENDER_TARGET, targetDesc, rtvHandle, rtvArrayHeapHandles,
 		srvHandle, uavHandle);
+
 	return renderTarget;
+}
+
+/*
+These are valid formats for a depth-stencil view:
+DXGI_FORMAT_D16_UNORM
+DXGI_FORMAT_D24_UNORM_S8_UINT
+DXGI_FORMAT_D32_FLOAT
+DXGI_FORMAT_D32_FLOAT_S8X24_UINT
+DXGI_FORMAT_UNKNOWN
+A depth-stencil view can't use a typeless format. If the format chosen is DXGI_FORMAT_UNKNOWN, the format of the parent resource is used.
+https://msdn.microsoft.com/en-us/library/windows/desktop/dn770357(v=vs.85).aspx
+*/
+DepthStencilTarget *Direct3DContextManager::CreateDepthStencilTarget(uint32 width, uint32 height, DXGI_FORMAT format, uint16 arraySize, uint32 sampleCount, uint32 quality)
+{
+	DXGI_FORMAT depthStencilResourceFormat = DXGI_FORMAT_UNKNOWN;
+	DXGI_FORMAT shaderResourceViewFormat = DXGI_FORMAT_UNKNOWN;
+	bool hasStencil = (format == DXGI_FORMAT_D24_UNORM_S8_UINT) || (format == DXGI_FORMAT_D32_FLOAT_S8X24_UINT);
+
+	switch (format)
+	{
+	case DXGI_FORMAT_D16_UNORM:
+		depthStencilResourceFormat = DXGI_FORMAT_R16_TYPELESS;
+		shaderResourceViewFormat = DXGI_FORMAT_R16_UNORM;
+		break;
+	case DXGI_FORMAT_D24_UNORM_S8_UINT:
+		depthStencilResourceFormat = DXGI_FORMAT_R24G8_TYPELESS;
+		shaderResourceViewFormat = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+		break;
+	case DXGI_FORMAT_D32_FLOAT:
+		depthStencilResourceFormat = DXGI_FORMAT_R32_TYPELESS;
+		shaderResourceViewFormat = DXGI_FORMAT_R32_FLOAT;
+		break;
+	case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
+		depthStencilResourceFormat = DXGI_FORMAT_R32G8X24_TYPELESS;
+		shaderResourceViewFormat = DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+		break;
+	default:
+		Direct3DUtils::ThrowRuntimeError("Not using a valid depth-stencil format, see comment above Direct3DContextManager::CreateDepthStencilTarget");
+		break;
+	}
+
+	D3D12_RESOURCE_DESC textureDesc = {};
+	textureDesc.Width = width;
+	textureDesc.Height = height;
+	textureDesc.Format = depthStencilResourceFormat;
+	textureDesc.DepthOrArraySize = arraySize;
+	textureDesc.MipLevels = 1;
+	textureDesc.Alignment = 0;
+	textureDesc.SampleDesc.Count = sampleCount;
+	textureDesc.SampleDesc.Quality = sampleCount > 1 ? quality : 0;
+	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	textureDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+	D3D12_CLEAR_VALUE clearValue = {};
+	clearValue.Format = format;
+	clearValue.DepthStencil.Depth = 0.0f;
+	clearValue.DepthStencil.Stencil = 0;
+
+	D3D12_HEAP_PROPERTIES defaultHeapProperties;
+	defaultHeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+	defaultHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	defaultHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	defaultHeapProperties.CreationNodeMask = 0;
+	defaultHeapProperties.VisibleNodeMask = 0;
+
+	ID3D12Resource *depthStencilResource = NULL;
+	Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &textureDesc,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, IID_PPV_ARGS(&depthStencilResource)));
+
+	
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format = shaderResourceViewFormat;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+	dsvDesc.Format = format;
+
+	if (sampleCount == 1)
+	{
+		if (arraySize > 1)
+		{
+			srvDesc.Texture2DArray.ArraySize = (uint32)arraySize;
+			srvDesc.Texture2DArray.FirstArraySlice = 0;
+			srvDesc.Texture2DArray.MipLevels = 1;
+			srvDesc.Texture2DArray.MostDetailedMip = 0;
+			srvDesc.Texture2DArray.PlaneSlice = 0;
+			srvDesc.Texture2DArray.ResourceMinLODClamp = 0.0f;
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+			dsvDesc.Texture2DArray.ArraySize = (uint32)arraySize;
+			dsvDesc.Texture2DArray.FirstArraySlice = 0;
+			dsvDesc.Texture2DArray.MipSlice = 0;
+			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+		}
+		else
+		{
+			srvDesc.Texture2D.MipLevels = 1;
+			srvDesc.Texture2D.MostDetailedMip = 0;
+			srvDesc.Texture2D.PlaneSlice = 0;
+			srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			dsvDesc.Texture2D.MipSlice = 0;
+			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+		}
+		
+	}
+	else
+	{
+		if (arraySize > 1)
+		{
+			srvDesc.Texture2DMSArray.FirstArraySlice = 0;
+			srvDesc.Texture2DMSArray.ArraySize = (uint32)arraySize;
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY;
+			dsvDesc.Texture2DMSArray.ArraySize = (uint32)arraySize;
+			dsvDesc.Texture2DMSArray.FirstArraySlice = 0;
+			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY;
+		}
+		else
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMS;
+			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
+		}
+		
+	}
+
+	DescriptorHeapHandle srvHandle = mHeapManager->GetNewSRVDescriptorHeapHandle();
+	mDevice->CreateShaderResourceView(depthStencilResource, &srvDesc, srvHandle.GetCPUHandle());
+
+	DescriptorHeapHandle dsvHandle = mHeapManager->GetNewDSVDescriptorHeapHandle();
+	mDevice->CreateDepthStencilView(depthStencilResource, &dsvDesc, dsvHandle.GetCPUHandle());
+
+	dsvDesc.Flags = D3D12_DSV_FLAG_READ_ONLY_DEPTH;
+	dsvDesc.Flags |= hasStencil ? D3D12_DSV_FLAG_READ_ONLY_STENCIL : D3D12_DSV_FLAG_NONE;
+	DescriptorHeapHandle readOnlyDSVHandle = mHeapManager->GetNewDSVDescriptorHeapHandle();
+	mDevice->CreateDepthStencilView(depthStencilResource, &dsvDesc, readOnlyDSVHandle.GetCPUHandle());
+
+	DynamicArray<DescriptorHeapHandle> dsvArrayHeapHandles;
+	DynamicArray<DescriptorHeapHandle> readOnlyDSVArrayHeapHandles;
+
+	if (arraySize > 1)
+	{
+		if (sampleCount > 1)
+		{
+			dsvDesc.Texture2DMSArray.ArraySize = 1;
+		}
+		else
+		{
+			dsvDesc.Texture2DArray.ArraySize = 1;
+		}
+
+		for (uint32 i = 0; i < arraySize; i++)
+		{
+			dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+
+			if (sampleCount > 1)
+			{
+				dsvDesc.Texture2DMSArray.FirstArraySlice = i;
+			}
+			else
+			{
+				dsvDesc.Texture2DArray.FirstArraySlice = i;
+			}
+
+			DescriptorHeapHandle dsvArrayHandle = mHeapManager->GetNewRTVDescriptorHeapHandle();
+			mDevice->CreateDepthStencilView(depthStencilResource, &dsvDesc, dsvArrayHandle.GetCPUHandle());
+			dsvArrayHeapHandles.Add(dsvArrayHandle);
+
+			dsvDesc.Flags = D3D12_DSV_FLAG_READ_ONLY_DEPTH;
+			dsvDesc.Flags |= hasStencil ? D3D12_DSV_FLAG_READ_ONLY_STENCIL : D3D12_DSV_FLAG_NONE;
+			DescriptorHeapHandle readOnlyDSVArrayHandle = mHeapManager->GetNewRTVDescriptorHeapHandle();
+			mDevice->CreateDepthStencilView(depthStencilResource, &dsvDesc, readOnlyDSVArrayHandle.GetCPUHandle());
+			readOnlyDSVArrayHeapHandles.Add(readOnlyDSVArrayHandle);
+		}
+	}
+
+	DepthStencilTarget *newDepthStencilTarget = new DepthStencilTarget(depthStencilResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, textureDesc, dsvHandle, readOnlyDSVHandle,
+		dsvArrayHeapHandles, readOnlyDSVArrayHeapHandles, srvHandle);
+
+	return newDepthStencilTarget;
 }

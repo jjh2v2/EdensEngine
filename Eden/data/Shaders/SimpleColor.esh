@@ -1,0 +1,6 @@
+VertexShader
+[Simple/SimpleColor.hlsl]
+[SimpleColorVertexShader]
+PixelShader
+[Simple/SimpleColor.hlsl]
+[SimpleColorPixelShader]

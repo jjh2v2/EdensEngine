@@ -26,10 +26,9 @@ enum KeyboardKey
 class InputManager
 {
 public:
-	InputManager();
+	InputManager(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeight);
 	~InputManager();
 
-	bool Initialize(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeight);
 	bool Update();
 
 	Vector2 GetMouseLocation()
@@ -61,6 +60,7 @@ public:
 	bool GetRightClickUp();
 
 private:
+	void AttemptAcquireMouse();
 	bool ReadKeyboard();
 	bool ReadMouse();
 	void ProcessInput();

@@ -13,11 +13,16 @@ public:
 private:
 	GraphicsManager *mGraphicsManager;
 
+	DynamicArray<RenderTarget*> mGBufferTargets;
+	DepthStencilTarget *mGBufferDepth;
+
 	RenderPassDescriptorHeap *mGBufferTextureDescHeap;
 	RenderPassDescriptorHeap *mGBufferCBVDescHeap;
 	RenderPassDescriptorHeap *mGBufferPerFrameDescHeap;
 	RenderPassDescriptorHeap *mGBufferSamplerDescHeap;
 
-	//Mesh *mMesh;
-	//Material *mMaterial;
+	ShaderTechnique *mShader;
+	Sampler *mSampler;
+	Texture *mTexture;
+	Mesh *mMesh;
 };

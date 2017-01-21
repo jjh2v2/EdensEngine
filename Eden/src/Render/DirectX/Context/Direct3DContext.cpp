@@ -98,7 +98,7 @@ void Direct3DContext::BindDescriptorHeaps()
 
 	if (nonNullHeapCount > 0)
 	{
-		mCommandList->SetDescriptorHeaps(nonNullHeapCount, heapsToBind);			//TDA: Not sure what to do with this yet
+		mCommandList->SetDescriptorHeaps(nonNullHeapCount, heapsToBind);
 	}
 }
 
@@ -263,7 +263,6 @@ void GraphicsContext::SetRootSignature(const RootSignatureInfo &rootSignature)
 
 	mCurrentComputeRootSignature = rootSignature.RootSignature;
 	mCommandList->SetGraphicsRootSignature(mCurrentComputeRootSignature);
-	//m_DynamicDescriptorHeap.ParseGraphicsRootSignature(RootSig);
 }
 
 void GraphicsContext::SetRenderTargets(uint32 numRenderTargets, const D3D12_CPU_DESCRIPTOR_HANDLE renderTargets[])
@@ -336,7 +335,7 @@ void GraphicsContext::SetConstants(uint32 index, uint32 numConstants, const void
 	mCommandList->SetGraphicsRoot32BitConstants(index, numConstants, bufferData, 0);
 }
 
-void GraphicsContext::SetConstantBuffer(uint32 index, ConstantBuffer *constantBuffer)
+void GraphicsContext::SetRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer)
 {
 	mCommandList->SetGraphicsRootConstantBufferView(index, constantBuffer->GetGpuAddress());
 }

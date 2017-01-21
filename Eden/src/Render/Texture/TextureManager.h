@@ -18,6 +18,7 @@ public:
 
 	void LoadAllTextures();
 	Texture *LoadTexture(WCHAR *filePath);
+	Texture *GetTexture(std::string textureName) { return mTextureLookup[textureName].TextureRef; }
 
 private:
 	Direct3DManager *mDirect3DManager;

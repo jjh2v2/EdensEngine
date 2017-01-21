@@ -58,6 +58,31 @@ RenderTarget::~RenderTarget()
 
 }
 
+DepthStencilTarget::DepthStencilTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_RESOURCE_DESC depthStencilDesc, DescriptorHeapHandle depthStencilViewHandle, DescriptorHeapHandle readOnlyDepthStencilViewHandle,
+	DynamicArray<DescriptorHeapHandle> &depthStencilViewArray, DynamicArray<DescriptorHeapHandle> &readOnlyDepthStencilViewArray, DescriptorHeapHandle shaderResourceViewHandle)
+	:GPUResource(resource, usageState)
+{
+	mDepthStencilDesc = depthStencilDesc;
+	mDepthStencilViewHandle = depthStencilViewHandle;
+	mReadOnlyDepthStencilViewHandle = readOnlyDepthStencilViewHandle;
+	mShaderResourceViewHandle = shaderResourceViewHandle;
+
+	for (uint32 i = 0; i < depthStencilViewArray.CurrentSize(); i++)
+	{
+		mDepthStencilViewArray.Add(depthStencilViewArray[i]);
+	}
+
+	for (uint32 i = 0; i < readOnlyDepthStencilViewArray.CurrentSize(); i++)
+	{
+		mReadOnlyDepthStencilViewArray.Add(readOnlyDepthStencilViewArray[i]);
+	}
+}
+
+DepthStencilTarget::~DepthStencilTarget()
+{
+
+}
+
 VertexBuffer::VertexBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, uint32 vertexStride, uint32 bufferSize)
 	:GPUResource(resource, usageState)
 {

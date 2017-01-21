@@ -135,7 +135,7 @@ void ShaderPipelineStateCreator::BuildPipelineStates()
 	mBlendDescs[Blend_Subtract].RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
 	mBlendDescs[Blend_Subtract].RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
-	mPipelineRenderStateMap.insert(std::pair<ShaderRenderStateType, ShaderPipelineRenderState>(Render_GBuffer_Standard,
+	mPipelineRenderStateMap.insert(std::pair<ShaderRenderStateType, ShaderPipelineRenderState>(Render_Standard,
 		ShaderPipelineRenderState(mDepthStencilDescs[DepthStencil_WriteGreaterEqual], mRasterDescs[Raster_BackFaceCull], mBlendDescs[Blend_Disabled])));
 
 	ShaderPipelineTargetState gbufferTarget;
@@ -146,4 +146,11 @@ void ShaderPipelineStateCreator::BuildPipelineStates()
 	gbufferTarget.DepthStencilFormat = DXGI_FORMAT_R32G8X24_TYPELESS;
 
 	mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_GBuffer, gbufferTarget));
+
+	ShaderPipelineTargetState standardSingleTarget;
+	standardSingleTarget.NumRenderTargets = 1;
+	standardSingleTarget.RenderTargetFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	standardSingleTarget.DepthStencilFormat = DXGI_FORMAT_R32G8X24_TYPELESS;
+
+	mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_Standard_BackBuffer, standardSingleTarget));
 }

@@ -1,10 +1,28 @@
 #include "InputManager.h"
 
-InputManager::InputManager()
+InputManager::InputManager(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeight)
 {
 	mDirectInput = NULL;
 	mKeyboard = NULL;
 	mMouse = NULL;
+	mWindow = hwnd;
+
+	mScreenWidth = screenWidth;
+	mScreenHeight = screenHeight;
+	mWasLeftMouseDownLastFrame = false;
+	mWasRightMouseDownLastFrame = false;
+	mMouseButtons[0] = false;
+	mMouseButtons[1] = false;
+	mMouseButtons[2] = false;
+	mMouseButtons[3] = false;
+
+	Direct3DUtils::ThrowIfHRESULTFailed(DirectInput8Create(hinstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&mDirectInput, NULL));
+	Direct3DUtils::ThrowIfHRESULTFailed(mDirectInput->CreateDevice(GUID_SysKeyboard, &mKeyboard, NULL));
+	Direct3DUtils::ThrowIfHRESULTFailed(mKeyboard->SetDataFormat(&c_dfDIKeyboard));
+	Direct3DUtils::ThrowIfHRESULTFailed(mKeyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_EXCLUSIVE));
+	mKeyboard->Acquire();
+
+	AttemptAcquireMouse();
 }
 
 InputManager::~InputManager()
@@ -30,75 +48,32 @@ InputManager::~InputManager()
 	}
 }
 
-bool InputManager::Initialize(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeight)
+void InputManager::AttemptAcquireMouse()
 {
-	HRESULT result;
-	mWindow = hwnd;
-
-	mScreenWidth = screenWidth;
-	mScreenHeight = screenHeight;
-	mWasLeftMouseDownLastFrame = false;
-	mWasRightMouseDownLastFrame = false;
-	mMouseButtons[0] = false;
-	mMouseButtons[1] = false;
-	mMouseButtons[2] = false;
-	mMouseButtons[3] = false;
-
-	result = DirectInput8Create(hinstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&mDirectInput, NULL);
-	if (FAILED(result))
+	if (mMouse)
 	{
-		return false;
+		return;
 	}
 
-	result = mDirectInput->CreateDevice(GUID_SysKeyboard, &mKeyboard, NULL);
+	HRESULT result = mDirectInput->CreateDevice(GUID_SysMouse, &mMouse, NULL);
 	if (FAILED(result))
 	{
-		return false;
-	}
-
-	result = mKeyboard->SetDataFormat(&c_dfDIKeyboard);
-	if (FAILED(result))
-	{
-		return false;
-	}
-
-	result = mKeyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_EXCLUSIVE);
-	if (FAILED(result))
-	{
-		return false;
-	}
-
-	result = mKeyboard->Acquire();
-	if (FAILED(result))
-	{
-		return false;
-	}
-
-	result = mDirectInput->CreateDevice(GUID_SysMouse, &mMouse, NULL);
-	if (FAILED(result))
-	{
-		return false;
+		return;
 	}
 
 	result = mMouse->SetDataFormat(&c_dfDIMouse);
 	if (FAILED(result))
 	{
-		return false;
+		return;
 	}
 
-	result = mMouse->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+	result = mMouse->SetCooperativeLevel(mWindow, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
 	if (FAILED(result))
 	{
-		return false;
+		return;
 	}
 
 	result = mMouse->Acquire();
-	if (FAILED(result))
-	{
-		return false;
-	}
-
-	return true;
 }
 
 bool InputManager::Update()
@@ -113,10 +88,15 @@ bool InputManager::Update()
 		return false;
 	}
 
-	result = ReadMouse();
-	if(!result)
+	AttemptAcquireMouse();
+
+	if (mMouse)
 	{
-		return false;
+		result = ReadMouse();
+		if (!result)
+		{
+			return false;
+		}
 	}
 
 	ProcessInput();
@@ -148,10 +128,7 @@ bool InputManager::ReadKeyboard()
 
 bool InputManager::ReadMouse()
 {
-	HRESULT result;
-
-	//TDA: mouse can be null here somehow
-	result = mMouse->GetDeviceState(sizeof(DIMOUSESTATE), (LPVOID)&mMouseState);
+	HRESULT result = mMouse->GetDeviceState(sizeof(DIMOUSESTATE), (LPVOID)&mMouseState);
 	if(FAILED(result))
 	{
 		if((result == DIERR_INPUTLOST) || (result == DIERR_NOTACQUIRED))

@@ -73,6 +73,7 @@ public:
 	const DynamicArray<DescriptorHeapHandle> &GetRenderTargetViewArray() { return mRenderTargetViewArray; }
 	DescriptorHeapHandle GetShaderResourceViewHandle() { return mShaderResourceViewHandle; }
 	UAVHandle GetUnorderedAccessViewHandle() { return mUnorderedAccessViewHandle; }
+	uint16 GetArraySize() { return mRenderTargetDesc.DepthOrArraySize; }
 
 private:
 	D3D12_RESOURCE_DESC	 mRenderTargetDesc;
@@ -82,6 +83,29 @@ private:
 	DynamicArray<DescriptorHeapHandle> mRenderTargetViewArray;
 };
 
+class DepthStencilTarget : public GPUResource
+{
+public:
+	DepthStencilTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_RESOURCE_DESC depthStencilDesc, DescriptorHeapHandle depthStencilViewHandle, DescriptorHeapHandle readOnlyDepthStencilViewHandle,
+		DynamicArray<DescriptorHeapHandle> &depthStencilViewArray, DynamicArray<DescriptorHeapHandle> &readOnlyDepthStencilViewArray, DescriptorHeapHandle shaderResourceViewHandle);
+	virtual ~DepthStencilTarget();
+
+	DescriptorHeapHandle GetDepthStencilViewHandle() { return mDepthStencilViewHandle; }
+	DescriptorHeapHandle GetReadOnlyDepthStencilViewHandle() { return mReadOnlyDepthStencilViewHandle; }
+	DescriptorHeapHandle GetDepthStencilViewHandle(uint32 index) { return mDepthStencilViewArray[index]; }
+	DescriptorHeapHandle GetReadOnlyDepthStencilViewHandle(uint32 index) { return mReadOnlyDepthStencilViewArray[index]; }
+	const DynamicArray<DescriptorHeapHandle> &GetDepthStencilViewArray() { return mDepthStencilViewArray; }
+	DescriptorHeapHandle GetShaderResourceViewHandle() { return mShaderResourceViewHandle; }
+	uint16 GetArraySize() { return mDepthStencilDesc.DepthOrArraySize; }
+
+private:
+	D3D12_RESOURCE_DESC	 mDepthStencilDesc;
+	DescriptorHeapHandle mDepthStencilViewHandle;
+	DescriptorHeapHandle mReadOnlyDepthStencilViewHandle;
+	DescriptorHeapHandle mShaderResourceViewHandle;
+	DynamicArray<DescriptorHeapHandle> mDepthStencilViewArray;
+	DynamicArray<DescriptorHeapHandle> mReadOnlyDepthStencilViewArray;
+};
 
 class VertexBuffer : public GPUResource
 {

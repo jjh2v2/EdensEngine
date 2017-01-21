@@ -26,6 +26,7 @@ public:
 	BackBufferTarget  			*GetBackBufferTarget() { return mBackBuffers[mCurrentBackBuffer]; }
 
 	D3D12_VIEWPORT				GetScreenViewport() { return mScreenViewport; }
+	Vector2						GetScreenSize() { return mOutputSize; }
 
 	D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView()
 	{

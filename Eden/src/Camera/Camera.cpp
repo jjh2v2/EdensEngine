@@ -13,7 +13,7 @@ Camera::Camera(int32 screenWidth, int32 screenHeight, float screenNear, float sc
 	mScreenNear = screenNear;
 	mScreenFar = screenFar;
 
-	//D3DXMatrixPerspectiveFovLH(&mProjectionMatrix, mFieldOfView, mScreenAspectRatio, screenNear, screenFar);
+	D3DXMatrixPerspectiveFovLH(&mProjectionMatrix, mFieldOfView, mScreenAspectRatio, screenNear, screenFar);
 }
 
 Camera::~Camera()
@@ -73,7 +73,7 @@ void Camera::SetRotation(Vector3 rotation)
 
 void Camera::RebuildMatrices()
 {
-	/*D3DXVECTOR3 up(0.0f, 1.0f, 0.0f);
+	D3DXVECTOR3 up(0.0f, 1.0f, 0.0f);
 	D3DXVECTOR3 position = mPosition.AsD3DVector3();
 	D3DXVECTOR3 lookAt(0.0f, 0.0f, 1.0f);
 	float yaw = mRotation.Y * MathHelper::Radian();

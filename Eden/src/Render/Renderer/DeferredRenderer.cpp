@@ -5,16 +5,71 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 	mGraphicsManager = graphicsManager;
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
 	direct3DManager->WaitForGPU();
-
-	//we need to be able to make these bigger
+	
+	//need to be able to make these bigger
 	mGBufferTextureDescHeap = new RenderPassDescriptorHeap(direct3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true);
 	mGBufferCBVDescHeap = new RenderPassDescriptorHeap(direct3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true);
 	mGBufferPerFrameDescHeap = new RenderPassDescriptorHeap(direct3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 16, true);
 	mGBufferSamplerDescHeap = new RenderPassDescriptorHeap(direct3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 16, true);
+
+	Vector2 screenSize = direct3DManager->GetScreenSize();
+	Direct3DContextManager *contextManager = direct3DManager->GetContextManager();
+	RenderTarget *gbufferAlbedoTarget   = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
+	RenderTarget *gbufferNormalsTarget  = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
+	RenderTarget *gbufferMaterialTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
+	mGBufferTargets.Add(gbufferAlbedoTarget);
+	mGBufferTargets.Add(gbufferNormalsTarget);
+	mGBufferTargets.Add(gbufferMaterialTarget);
+
+	mGBufferDepth = contextManager->CreateDepthStencilTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_D32_FLOAT_S8X24_UINT, 1, 1, 0);
+
+	mMesh = mGraphicsManager->GetMeshManager()->GetMesh("Sphere");
+	mShader = mGraphicsManager->GetShaderManager()->GetShaderTechnique("SimpleColor");
+	mSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_ANISO);
+	mTexture = mGraphicsManager->GetTextureManager()->GetTexture("DefaultPurple");
 }
 
 DeferredRenderer::~DeferredRenderer()
 {
+	Direct3DHeapManager *heapManager = mGraphicsManager->GetDirect3DManager()->GetContextManager()->GetHeapManager();
+
+	for (uint32 targetIndex = 0; targetIndex < mGBufferTargets.CurrentSize(); targetIndex++)
+	{
+		RenderTarget *currentTarget = mGBufferTargets[targetIndex];
+		heapManager->FreeRTVDescriptorHeapHandle(currentTarget->GetRenderTargetViewHandle());
+		heapManager->FreeSRVDescriptorHeapHandle(currentTarget->GetShaderResourceViewHandle());
+		RenderTarget::UAVHandle uavHandle = currentTarget->GetUnorderedAccessViewHandle();
+
+		if (uavHandle.HasUAV)
+		{
+			heapManager->FreeSRVDescriptorHeapHandle(uavHandle.Handle);
+		}
+
+		uint16 targetArraySize = currentTarget->GetArraySize() - 1;
+		for (uint16 rtvArrayIndex = 0; rtvArrayIndex < targetArraySize; rtvArrayIndex++)
+		{
+			heapManager->FreeRTVDescriptorHeapHandle(currentTarget->GetRenderTargetViewHandle(rtvArrayIndex));
+		}
+
+		delete currentTarget;
+	}
+
+	{
+		heapManager->FreeDSVDescriptorHeapHandle(mGBufferDepth->GetDepthStencilViewHandle());
+		heapManager->FreeDSVDescriptorHeapHandle(mGBufferDepth->GetReadOnlyDepthStencilViewHandle());
+		heapManager->FreeSRVDescriptorHeapHandle(mGBufferDepth->GetShaderResourceViewHandle());
+
+		uint16 targetArraySize = mGBufferDepth->GetArraySize() - 1;
+		for (uint16 dsvArrayIndex = 0; dsvArrayIndex < targetArraySize; dsvArrayIndex++)
+		{
+			heapManager->FreeDSVDescriptorHeapHandle(mGBufferDepth->GetDepthStencilViewHandle(dsvArrayIndex));
+			heapManager->FreeDSVDescriptorHeapHandle(mGBufferDepth->GetReadOnlyDepthStencilViewHandle(dsvArrayIndex));
+		}
+
+		delete mGBufferDepth;
+		mGBufferDepth = NULL;
+	}
+
 	delete mGBufferTextureDescHeap;
 	delete mGBufferCBVDescHeap;
 	delete mGBufferPerFrameDescHeap;

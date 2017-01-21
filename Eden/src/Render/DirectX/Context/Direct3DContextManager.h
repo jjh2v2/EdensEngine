@@ -17,6 +17,7 @@ public:
 	UploadContext *GetUploadContext() { return mUploadContext; }
 
 	RenderTarget *CreateRenderTarget(uint32 width, uint32 height, DXGI_FORMAT format, bool hasUAV, uint16 arraySize, uint32 sampleCount, uint32 quality);
+	DepthStencilTarget *CreateDepthStencilTarget(uint32 width, uint32 height, DXGI_FORMAT format, uint16 arraySize, uint32 sampleCount, uint32 quality);
 	VertexBuffer *CreateVertexBuffer(void* vertexData, uint32 vertexStride, uint32 bufferSize);
 	IndexBuffer *CreateIndexBuffer(void* indexData, uint32 bufferSize);
 	ConstantBuffer *CreateConstantBuffer(uint32 bufferSize);

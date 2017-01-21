@@ -11,6 +11,8 @@ public:
 	ShaderManager(ID3D12Device *device);
 	~ShaderManager();
 	
+	ShaderTechnique *GetShaderTechnique(std::string shaderName) { return mShaderTechniqueLookup[shaderName]; }
+
 private:
 	void LoadAllShaders(ID3D12Device *device);
 	ShaderTechnique *LoadShader(ID3D12Device *device, const char *fileName);

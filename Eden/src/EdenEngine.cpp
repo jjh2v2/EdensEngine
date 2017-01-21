@@ -11,8 +11,7 @@ EdenEngine::EdenEngine()
 	mDeferredRenderer = new DeferredRenderer(mGraphicsManager);
 
 	//TDA: change input manager when screen size changes, and get rid of the initialize function by moving the throw if failed to a common function
-	mInputManager = new InputManager();
-	mInputManager->Initialize(mEngineWindow->GetEngineModuleHandle(), mEngineWindow->GetEngineWindowHandle(), 1920, 1080);
+	mInputManager = new InputManager(mEngineWindow->GetEngineModuleHandle(), mEngineWindow->GetEngineWindowHandle(), 1920, 1080);
 }
 
 EdenEngine::~EdenEngine()
