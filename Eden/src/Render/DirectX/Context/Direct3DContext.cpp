@@ -256,13 +256,24 @@ GraphicsContext::~GraphicsContext()
 
 void GraphicsContext::SetRootSignature(const RootSignatureInfo &rootSignature)
 {
-	if (rootSignature.RootSignature == mCurrentComputeRootSignature)
+	if (rootSignature.RootSignature == mCurrentGraphicsRootSignature)
 	{
 		return;
 	}
 
-	mCurrentComputeRootSignature = rootSignature.RootSignature;
-	mCommandList->SetGraphicsRootSignature(mCurrentComputeRootSignature);
+	mCurrentGraphicsRootSignature = rootSignature.RootSignature;
+	mCommandList->SetGraphicsRootSignature(mCurrentGraphicsRootSignature);
+}
+
+void GraphicsContext::SetRootSignature(ID3D12RootSignature *rootSignature)
+{
+	if (rootSignature == mCurrentGraphicsRootSignature)
+	{
+		return;
+	}
+
+	mCurrentGraphicsRootSignature = rootSignature;
+	mCommandList->SetGraphicsRootSignature(mCurrentGraphicsRootSignature);
 }
 
 void GraphicsContext::SetRenderTargets(uint32 numRenderTargets, const D3D12_CPU_DESCRIPTOR_HANDLE renderTargets[])
@@ -367,6 +378,11 @@ void GraphicsContext::SetVertexBuffer(uint32 slot, VertexBuffer *vertexBuffer)
 void GraphicsContext::ClearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE target, float color[4])
 {
 	mCommandList->ClearRenderTargetView(target, color, 0, NULL);
+}
+
+void GraphicsContext::ClearDepthStencilTarget(D3D12_CPU_DESCRIPTOR_HANDLE target, float depth, uint8 stencil)
+{
+	mCommandList->ClearDepthStencilView(target, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, depth, stencil, 0, NULL);
 }
 
 void GraphicsContext::Draw(uint32 vertexCount, uint32 vertexStartOffset /* = 0 */)

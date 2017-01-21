@@ -68,6 +68,7 @@ public:
 	//void ResolveQueryData(ID3D12QueryHeap* QueryHeap, D3D12_QUERY_TYPE Type, uint32 StartIndex, uint32 NumQueries, ID3D12Resource* DestinationBuffer, uint3264 DestinationBufferOffset);
 
 	void SetRootSignature(const RootSignatureInfo &rootSignature);
+	void SetRootSignature(ID3D12RootSignature *rootSignature);
 
 	void SetRenderTargets(uint32 numRenderTargets, const D3D12_CPU_DESCRIPTOR_HANDLE renderTargets[]);
 	void SetRenderTargets(uint32 numRenderTargets, const D3D12_CPU_DESCRIPTOR_HANDLE renderTargets[], D3D12_CPU_DESCRIPTOR_HANDLE depthStencil);
@@ -95,6 +96,7 @@ public:
 	void SetVertexBuffer(uint32 slot, VertexBuffer *vertexBuffer);
 
 	void ClearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE target, float color[4]);
+	void ClearDepthStencilTarget(D3D12_CPU_DESCRIPTOR_HANDLE target, float depth, uint8 stencil);
 
 	void Draw(uint32 vertexCount, uint32 vertexStartOffset = 0);
 	void DrawIndexed(uint32 indexCount, uint32 startIndexLocation = 0, int32 baseVertexLocation = 0);

@@ -27,5 +27,5 @@ private:
 	DynamicArray<Texture*> mTextures;
 	ManifestLoader mManifestLoader;
 
-	Texture *mWhiteTexture;
+	Texture *mWhiteTexture; //TDA: Actually use this
 };

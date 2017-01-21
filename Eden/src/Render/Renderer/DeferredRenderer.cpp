@@ -95,6 +95,23 @@ void DeferredRenderer::Render()
 	// Record drawing commands.
 	float color[4] = {0.392156899f, 0.584313750f, 0.929411829f - blueSub, 1.000000000f};
 	graphicsContext->ClearRenderTarget(direct3DManager->GetRenderTargetView(), color);
+	graphicsContext->ClearDepthStencilTarget(mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle(), 0.0f, 0);
+
+	{
+		graphicsContext->SetRenderTarget(backBuffer->GetRenderTargetViewHandle().GetCPUHandle(), mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle());
+
+		graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mGBufferCBVDescHeap->GetHeap()); //combine these
+		graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, mGBufferSamplerDescHeap->GetHeap());
+
+		graphicsContext->SetVertexBuffer(0, mMesh->GetVertexBuffer());
+		graphicsContext->SetIndexBuffer(mMesh->GetIndexBuffer());
+		graphicsContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		ShaderPipelinePermutation permutation(Render_Standard, Target_Standard_BackBuffer);
+		ShaderPSO *shaderPSO = mShader->GetShader(permutation);
+		graphicsContext->SetPipelineState(shaderPSO);
+		graphicsContext->SetRootSignature(shaderPSO->GetRootSignature());
+	}
 
 	graphicsContext->TransitionResource((*backBuffer), D3D12_RESOURCE_STATE_PRESENT, true);
 

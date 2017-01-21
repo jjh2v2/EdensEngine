@@ -34,6 +34,8 @@ ShaderPSO::ShaderPSO(ID3D12Device* device, Shader *shader, ShaderPipelineRenderS
 	pipelineStateDesc.SampleDesc.Count = 1;
 
 	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateGraphicsPipelineState(&pipelineStateDesc, IID_PPV_ARGS(&mPipelineState)));
+
+	mRootSignature = rootSignature;
 }
 
 ShaderPSO::~ShaderPSO()

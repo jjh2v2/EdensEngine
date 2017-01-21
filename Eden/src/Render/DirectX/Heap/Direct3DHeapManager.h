@@ -10,12 +10,12 @@ public:
 	DescriptorHeapHandle GetNewRTVDescriptorHeapHandle() { return mRTVDescriptorHeap->GetNewHeapHandle(); }
 	DescriptorHeapHandle GetNewSRVDescriptorHeapHandle() { return mSRVDescriptorHeap->GetNewHeapHandle(); }
 	DescriptorHeapHandle GetNewDSVDescriptorHeapHandle() { return mDSVDescriptorHeap->GetNewHeapHandle(); }
-	DescriptorHeapHandle GetNewSamplerDescriptorHeapHandle() { return mRTVDescriptorHeap->GetNewHeapHandle(); }
+	DescriptorHeapHandle GetNewSamplerDescriptorHeapHandle() { return mSamplerDescriptorHeap->GetNewHeapHandle(); }
 
 	void FreeRTVDescriptorHeapHandle(DescriptorHeapHandle handle) { mRTVDescriptorHeap->FreeHeapHandle(handle); }
 	void FreeSRVDescriptorHeapHandle(DescriptorHeapHandle handle) { mSRVDescriptorHeap->FreeHeapHandle(handle); }
 	void FreeDSVDescriptorHeapHandle(DescriptorHeapHandle handle) { mDSVDescriptorHeap->FreeHeapHandle(handle); }
-	void FreeSamplerDescriptorHeapHandle(DescriptorHeapHandle handle) { mRTVDescriptorHeap->FreeHeapHandle(handle); }
+	void FreeSamplerDescriptorHeapHandle(DescriptorHeapHandle handle) { mSamplerDescriptorHeap->FreeHeapHandle(handle); }
 
 	DynamicDescriptorHeap *GetRTVDescriptorHeap() { return mRTVDescriptorHeap; }
 	DynamicDescriptorHeap *GetSRVDescriptorHeap() { return mSRVDescriptorHeap; }

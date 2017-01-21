@@ -35,6 +35,7 @@ void TextureManager::LoadAllTextures()
 		mTextureLookup.insert(std::pair<std::string, TextureLookup>(justFileName, textureLookup));
 	}
 
+	//TDA: remove these, load on demand properly
 	{
 		WCHAR *convertedString = StringConverter::StringToWCHARAlloc(mTextureLookup["MageDiffuseFire"].TextureFilePath);
 		Texture *texture = LoadTexture(convertedString);
@@ -49,7 +50,13 @@ void TextureManager::LoadAllTextures()
 		mTextures.Add(texture);
 		delete[] convertedString;
 	}
-	
+	{
+		WCHAR *convertedString = StringConverter::StringToWCHARAlloc(mTextureLookup["DefaultPurple"].TextureFilePath);
+		Texture *texture = LoadTexture(convertedString);
+		mTextureLookup["DefaultPurple"].TextureRef = texture;
+		mTextures.Add(texture);
+		delete[] convertedString;
+	}
 }
 
 Texture *TextureManager::LoadTexture(WCHAR *filePath)

@@ -59,6 +59,9 @@ public:
 	void RecalculateBounds();
 	Box GetBounds(){return mMeshBounds;}
 
+	VertexBuffer *GetVertexBuffer() { return mVertexBuffer; }
+	IndexBuffer *GetIndexBuffer() { return mIndexBuffer; }
+
 protected:
 
 	VertexBuffer *mVertexBuffer;
