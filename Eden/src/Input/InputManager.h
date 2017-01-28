@@ -26,7 +26,7 @@ enum KeyboardKey
 class InputManager
 {
 public:
-	InputManager(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeight);
+	InputManager(HINSTANCE hinstance, HWND hwnd, int32 screenWidth, int32 screenHeight);
 	~InputManager();
 
 	bool Update();
@@ -36,7 +36,7 @@ public:
 		return mMousePosition;
 	}
 
-	void GetMouseChange(int& mouseX, int& mouseY)
+	void GetMouseChange(int32& mouseX, int32& mouseY)
 	{
 		mouseX = mMouseChangeX;
 		mouseY = mMouseChangeY;
@@ -74,11 +74,11 @@ private:
 	bool mMouseButtons[4];
 	DIMOUSESTATE mMouseState;
 
-	int mScreenWidth;
-	int	mScreenHeight;
+	int32 mScreenWidth;
+	int32 mScreenHeight;
 	Vector2 mMousePosition;
-	int mMouseChangeX;
-	int mMouseChangeY;
+	int32 mMouseChangeX;
+	int32 mMouseChangeY;
 
 	bool mWasLeftMouseDownLastFrame;
 	bool mWasRightMouseDownLastFrame;

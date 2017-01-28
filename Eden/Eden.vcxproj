@@ -138,6 +138,7 @@
     <ClInclude Include="src\Asset\Texture\Filters.h" />
     <ClInclude Include="src\Asset\Texture\scoped.h" />
     <ClInclude Include="src\Camera\Camera.h" />
+    <ClInclude Include="src\Camera\CameraManager.h" />
     <ClInclude Include="src\Core\Animation\AnimatedValue.h" />
     <ClInclude Include="src\Core\Animation\AnimatedValueKey.h" />
     <ClInclude Include="src\Core\Containers\DynamicArray.h" />
@@ -193,6 +194,8 @@
     <ClInclude Include="src\Render\Texture\Sampler\SamplerManager.h" />
     <ClInclude Include="src\Render\Texture\Texture.h" />
     <ClInclude Include="src\Render\Texture\TextureManager.h" />
+    <ClInclude Include="src\Scene\Scene.h" />
+    <ClInclude Include="src\Scene\SceneManager.h" />
     <ClInclude Include="src\Util\File\FileUtil.h" />
     <ClInclude Include="src\Util\Math\MathHelper.h" />
     <ClInclude Include="src\Util\Math\RandomGen.h" />
@@ -219,6 +222,7 @@
     <ClCompile Include="src\Asset\Texture\DirectXTexUtil.cpp" />
     <ClCompile Include="src\Asset\Texture\DirectXTexWIC.cpp" />
     <ClCompile Include="src\Camera\Camera.cpp" />
+    <ClCompile Include="src\Camera\CameraManager.cpp" />
     <ClCompile Include="src\Core\Animation\AnimatedValue.cpp" />
     <ClCompile Include="src\Core\Platform\PlatformCore.cpp" />
     <ClCompile Include="src\Core\Threading\Job.cpp" />
@@ -255,6 +259,8 @@
     <ClCompile Include="src\Render\Texture\Sampler\SamplerManager.cpp" />
     <ClCompile Include="src\Render\Texture\Texture.cpp" />
     <ClCompile Include="src\Render\Texture\TextureManager.cpp" />
+    <ClCompile Include="src\Scene\Scene.cpp" />
+    <ClCompile Include="src\Scene\SceneManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\Asset\Texture\DirectXTex.inl" />

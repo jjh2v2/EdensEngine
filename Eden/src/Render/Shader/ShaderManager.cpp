@@ -25,6 +25,7 @@ void ShaderManager::LoadAllShaders(ID3D12Device *device)
 {
 	mManifestLoader.LoadManifest(ApplicationSpecification::ShaderManifestFileLocation);
 
+	//TDA: need to clean this up so I'm not manually entering permutations
 	DynamicArray<std::string, false> &fileNames = mManifestLoader.GetFileNames();
 	for (uint32 i = 0; i < fileNames.CurrentSize(); i++)
 	{

@@ -34,7 +34,7 @@ public:
 		return val;
 	}
 
-	static int Clamp(int val, int min, int max)
+	static int32 Clamp(int32 val, int32 min, int32 max)
 	{
 		if(val < min)
 		{
@@ -83,12 +83,12 @@ public:
 		return a < b ? a : b;
 	}
 
-	static int Max(int a, int b)
+	static int32 Max(int32 a, int32 b)
 	{
 		return a > b ? a : b;
 	}
 
-	static int Min(int a, int b)
+	static int32 Min(int32 a, int32 b)
 	{
 		return a < b ? a : b;
 	}
@@ -105,13 +105,13 @@ public:
 
 	static float Ceil(float val)
 	{
-		int x = (int) val;
+		int32 x = (int32) val;
 		return ((float)x < val) ? x + 1.0f : x;
 	}
 
 	static float Round(float val)
 	{
-		int rounded = (int)(val - 0.5f);
+		int32 rounded = (int32)(val - 0.5f);
 		return (float)rounded;
 	}
 
@@ -120,7 +120,7 @@ public:
 		return (1.0f - t) * a + t * b;
 	}
 
-	static float Pow(float x, int p)
+	static float Pow(float x, int32 p)
 	{
 		return (float)pow(x, p);
 	}
@@ -130,7 +130,7 @@ public:
 		return (float)pow(x, p);
 	}
 
-	static int TruncateFloatToInt(float f)
+	static int32 TruncateFloatToInt(float f)
 	{
 		return (int)f;
 	}
@@ -145,7 +145,7 @@ public:
 		return fabs(a - b) < epsilon;
 	}
 
-	static int RandRange(int min, int max)
+	static int32 RandRange(int32 min, int32 max)
 	{
 		std::uniform_int_distribution<int> distribution(min, max);
 		return distribution(gRandomGeneratorEngine);

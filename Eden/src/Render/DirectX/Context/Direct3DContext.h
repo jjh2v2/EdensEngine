@@ -56,17 +56,6 @@ public:
 	GraphicsContext(ID3D12Device *device);
 	virtual ~GraphicsContext();
 
-	//void ClearUAV(GPUBuffer& Target);
-	//void ClearUAV(ColorBuffer& Target);
-	//void ClearColor(ColorBuffer& Target);
-	//void ClearDepth(DepthBuffer& Target);
-	//void ClearStencil(DepthBuffer& Target);
-	//void ClearDepthAndStencil(DepthBuffer& Target);
-
-	//void BeginQuery(ID3D12QueryHeap* QueryHeap, D3D12_QUERY_TYPE Type, uint32 HeapIndex);
-	//void EndQuery(ID3D12QueryHeap* QueryHeap, D3D12_QUERY_TYPE Type, uint32 HeapIndex);
-	//void ResolveQueryData(ID3D12QueryHeap* QueryHeap, D3D12_QUERY_TYPE Type, uint32 StartIndex, uint32 NumQueries, ID3D12Resource* DestinationBuffer, uint3264 DestinationBufferOffset);
-
 	void SetRootSignature(const RootSignatureInfo &rootSignature);
 	void SetRootSignature(ID3D12RootSignature *rootSignature);
 
@@ -87,8 +76,6 @@ public:
 	void SetPipelineState(ShaderPSO *pipeline);
 	void SetConstants(uint32 index, uint32 numConstants, const void *bufferData);
 	void SetRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer);
-	//void SetUnorderedAccessView(uint32 index, GPUBuffer &unorderedAccessView, uint64 offset = 0);
-
 	void SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle);
 
 	void SetIndexBuffer(IndexBuffer *indexBuffer);
@@ -103,7 +90,6 @@ public:
 		uint32 startVertexLocation = 0, uint32 startInstanceLocation = 0);
 	void DrawIndexedInstanced(uint32 indexCountPerInstance, uint32 instanceCount, uint32 startIndexLocation,
 		int32 baseVertexLocation, uint32 startInstanceLocation);
-	//void DrawIndirect(GPUBuffer& argumentBuffer, size_t argumentBufferOffset = 0);
 
 private:
 };

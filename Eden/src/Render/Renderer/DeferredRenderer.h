@@ -1,7 +1,7 @@
 #pragma once
 #include "Render/Renderer/DeferredRenderer.h"
 #include "Render/Graphics/GraphicsManager.h"
-#include "Camera/Camera.h"
+#include "Scene/Scene.h"
 
 struct MatrixBufferTest
 {
@@ -16,20 +16,18 @@ public:
 	DeferredRenderer(GraphicsManager *graphicsManager);
 	~DeferredRenderer();
 
+	void SetActiveScene(Scene *scene) { mActiveScene = scene; }
 	void Render();
 
 private:
 	GraphicsManager *mGraphicsManager;
+	Scene *mActiveScene;
 
 	DynamicArray<RenderTarget*> mGBufferTargets;
 	DepthStencilTarget *mGBufferDepth;
 
-	RenderPassDescriptorHeap *mGBufferTextureDescHeap;
 	RenderPassDescriptorHeap *mGBufferCBVDescHeap;
-	RenderPassDescriptorHeap *mGBufferPerFrameDescHeap;
 	RenderPassDescriptorHeap *mGBufferSamplerDescHeap;
-
-	Camera *mCamera;
 
 	DescriptorHeapHandle mMatrixBufferStart;
 	DescriptorHeapHandle mTextureStart;

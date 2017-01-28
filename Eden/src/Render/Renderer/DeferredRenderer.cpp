@@ -7,9 +7,7 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 	direct3DManager->WaitForGPU();
 	
 	//need to be able to make these bigger
-	mGBufferTextureDescHeap = new RenderPassDescriptorHeap(direct3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true);
 	mGBufferCBVDescHeap = new RenderPassDescriptorHeap(direct3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true);
-	mGBufferPerFrameDescHeap = new RenderPassDescriptorHeap(direct3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 16, true);
 	mGBufferSamplerDescHeap = new RenderPassDescriptorHeap(direct3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 16, true);
 
 	Vector2 screenSize = direct3DManager->GetScreenSize();
@@ -27,35 +25,8 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 	mShader = mGraphicsManager->GetShaderManager()->GetShaderTechnique("SimpleColor");
 	mSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_ANISO);
 	mTexture = mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire");
-
-	mCamera = new Camera((uint32)screenSize.X, (uint32)screenSize.Y, 0.1f, 1000.0f, MathHelper::Radian() * 60.0f);
-	mCamera->RebuildMatrices();
-	mCamera->SetPosition(Vector3(0, 0, -5));
 	
 	mMatrixConstantBuffer = contextManager->CreateConstantBuffer(sizeof(MatrixBufferTest));
-	D3DXMATRIX modelMatrix, positionMatrix, rotationMatrix, scalarMatrix;
-	D3DXMatrixIdentity(&positionMatrix);
-	D3DXMatrixIdentity(&rotationMatrix);
-	D3DXMatrixIdentity(&scalarMatrix);
-	D3DXMatrixIdentity(&modelMatrix);
-	D3DXMatrixTranslation(&positionMatrix, 0, -5, 20);
-	D3DXMatrixRotationYawPitchRoll(&rotationMatrix, MathHelper::Radian() * 180.0f, 0, 0);//Rotation.Y, Rotation.X, Rotation.Z);
-	D3DXMatrixScaling(&scalarMatrix, 1, 1, 1);
-	D3DXMatrixMultiply(&modelMatrix, &modelMatrix, &scalarMatrix);
-	D3DXMatrixMultiply(&modelMatrix, &modelMatrix, &rotationMatrix);
-	D3DXMatrixMultiply(&modelMatrix, &modelMatrix, &positionMatrix);
-
-	MatrixBufferTest camBuff;
-	camBuff.worldMatrix = modelMatrix;
-	camBuff.viewMatrix = mCamera->GetViewMatrix();
-	camBuff.projectionMatrix = mCamera->GetReverseProjectionMatrix();
-
-	MatrixBufferTest camBuff2;
-	D3DXMatrixTranspose(&camBuff2.worldMatrix, &camBuff.worldMatrix);
-	D3DXMatrixTranspose(&camBuff2.viewMatrix, &camBuff.viewMatrix);
-	D3DXMatrixTranspose(&camBuff2.projectionMatrix, &camBuff.projectionMatrix);
-
-	mMatrixConstantBuffer->SetConstantBufferData(&camBuff2, sizeof(MatrixBufferTest));
 
 	mMatrixBufferStart = mGBufferCBVDescHeap->GetHeapHandleBlock(1);
 	mTextureStart = mGBufferCBVDescHeap->GetHeapHandleBlock(1);
@@ -64,31 +35,6 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mMatrixBufferStart.GetCPUHandle(), mMatrixConstantBuffer->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mTextureStart.GetCPUHandle(), mTexture->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mSamplerStart.GetCPUHandle(), mSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-
-
-	/*{
-		// Define the geometry for a triangle.
-		MeshVertexData triangleVertices[3];
-		triangleVertices[0].Position = Vector4(0.0f, 0.25f * (1920.0f / 1080.0f), 0.0f, 1.0f);
-		triangleVertices[0].Color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-		triangleVertices[0].TexCoord = Vector4(0.5f, 0.0f, 0.5f, 0.0f);
-
-		triangleVertices[1].Position = Vector4(0.25f, -0.25f * (1920.0f / 1080.0f), 0.0f, 1.0f);
-		triangleVertices[1].Color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-		triangleVertices[1].TexCoord = Vector4(0.0f, 1.0f, 0.0f, 1.0f);
-
-		triangleVertices[2].Position = Vector4(-0.25f, -0.25f * (1920.0f / 1080.0f), 0.0f, 1.0f);
-		triangleVertices[2].Color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-		triangleVertices[2].TexCoord = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-
-		DynamicArray<MeshVertexData> meshData;
-		DynamicArray<uint32> indexSplits;
-		meshData.Add(triangleVertices[0]);
-		meshData.Add(triangleVertices[1]);
-		meshData.Add(triangleVertices[2]);
-
-		//mMesh = new Mesh(direct3DManager, meshData.CurrentSize(), meshData.CurrentSize(), meshData.GetInnerArrayCopy(), indexSplits);
-	}*/
 	
 	direct3DManager->WaitForGPU();
 }
@@ -134,14 +80,42 @@ DeferredRenderer::~DeferredRenderer()
 		mGBufferDepth = NULL;
 	}
 
-	delete mGBufferTextureDescHeap;
+	heapManager->FreeSRVDescriptorHeapHandle(mMatrixConstantBuffer->GetConstantBufferViewHandle());
+	delete mMatrixConstantBuffer;
+	
 	delete mGBufferCBVDescHeap;
-	delete mGBufferPerFrameDescHeap;
 	delete mGBufferSamplerDescHeap;
 }
 
 void DeferredRenderer::Render()
 {
+	{
+		D3DXMATRIX modelMatrix, positionMatrix, rotationMatrix, scalarMatrix;
+		D3DXMatrixIdentity(&positionMatrix);
+		D3DXMatrixIdentity(&rotationMatrix);
+		D3DXMatrixIdentity(&scalarMatrix);
+		D3DXMatrixIdentity(&modelMatrix);
+		D3DXMatrixTranslation(&positionMatrix, 0, -5, 20);
+		D3DXMatrixRotationYawPitchRoll(&rotationMatrix, MathHelper::Radian() * 180.0f, 0, 0);//Rotation.Y, Rotation.X, Rotation.Z);
+		D3DXMatrixScaling(&scalarMatrix, 1, 1, 1);
+		D3DXMatrixMultiply(&modelMatrix, &modelMatrix, &scalarMatrix);
+		D3DXMatrixMultiply(&modelMatrix, &modelMatrix, &rotationMatrix);
+		D3DXMatrixMultiply(&modelMatrix, &modelMatrix, &positionMatrix);
+
+		MatrixBufferTest camBuff;
+		camBuff.worldMatrix = modelMatrix;
+		camBuff.viewMatrix = mActiveScene->GetMainCamera()->GetViewMatrix();
+		camBuff.projectionMatrix = mActiveScene->GetMainCamera()->GetReverseProjectionMatrix();
+
+		MatrixBufferTest camBuff2;
+		D3DXMatrixTranspose(&camBuff2.worldMatrix, &camBuff.worldMatrix);
+		D3DXMatrixTranspose(&camBuff2.viewMatrix, &camBuff.viewMatrix);
+		D3DXMatrixTranspose(&camBuff2.projectionMatrix, &camBuff.projectionMatrix);
+
+		mMatrixConstantBuffer->SetConstantBufferData(&camBuff2, sizeof(MatrixBufferTest));
+	}
+
+
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
 	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
 

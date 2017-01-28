@@ -4,6 +4,7 @@
 #include "Render/Graphics/GraphicsManager.h"
 #include "Render/Renderer/DeferredRenderer.h"
 #include "Input/InputManager.h"
+#include "Scene/SceneManager.h"
 
 class EdenEngine
 {
@@ -20,6 +21,7 @@ private:
 	GraphicsManager *mGraphicsManager;
 	DeferredRenderer *mDeferredRenderer;
 	InputManager *mInputManager;
+	SceneManager *mSceneManager;
 
 	EdenEngineWindow *mEngineWindow;
 	GameTimer *mGameTimer;

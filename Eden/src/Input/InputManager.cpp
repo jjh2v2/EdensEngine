@@ -1,6 +1,6 @@
 #include "InputManager.h"
 
-InputManager::InputManager(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeight)
+InputManager::InputManager(HINSTANCE hinstance, HWND hwnd, int32 screenWidth, int32 screenHeight)
 {
 	mDirectInput = NULL;
 	mKeyboard = NULL;
@@ -156,13 +156,13 @@ void InputManager::ProcessInput()
 	mMouseChangeX = mMouseState.lX;
 	mMouseChangeY = mMouseState.lY;
 
-	mMousePosition.X = (float)MathHelper::Clamp((int)mMousePosition.X, 0, mScreenWidth);
-	mMousePosition.Y = (float)MathHelper::Clamp((int)mMousePosition.Y, 0, mScreenHeight);
+	mMousePosition.X = (float)MathHelper::Clamp((int32)mMousePosition.X, 0, mScreenWidth);
+	mMousePosition.Y = (float)MathHelper::Clamp((int32)mMousePosition.Y, 0, mScreenHeight);
 
 	mWasLeftMouseDownLastFrame = mMouseButtons[LEFT_MOUSE_BUTTON];
 	mWasRightMouseDownLastFrame = mMouseButtons[RIGHT_MOUSE_BUTTON];
 
-	for ( int i = 0; i < 4; i++ )
+	for (int32 i = 0; i < 4; i++ )
 	{
 		if ( mMouseState.rgbButtons[i] &0x80 )
 		{
@@ -245,7 +245,7 @@ bool InputManager::IsKeyboardKeyPressed(KeyboardKey key)
 	return isKeyDown;
 }
 
-bool InputManager::IsKeyDown(int key)
+bool InputManager::IsKeyDown(int32 key)
 {
 	return (mKeyboardState[key] & 0x80) != 0;
 }

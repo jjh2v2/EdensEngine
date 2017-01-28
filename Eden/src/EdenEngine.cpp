@@ -10,12 +10,18 @@ EdenEngine::EdenEngine()
 	mGraphicsManager->InitializeGraphicsResources();
 	mDeferredRenderer = new DeferredRenderer(mGraphicsManager);
 
-	//TDA: change input manager when screen size changes, and get rid of the initialize function by moving the throw if failed to a common function
+	//TDA: change input manager when screen size changes
 	mInputManager = new InputManager(mEngineWindow->GetEngineModuleHandle(), mEngineWindow->GetEngineWindowHandle(), 1920, 1080);
+
+	mSceneManager = new SceneManager(mGraphicsManager, mInputManager);
+	mDeferredRenderer->SetActiveScene(mSceneManager->GetActiveScene());
 }
 
 EdenEngine::~EdenEngine()
 {
+	delete mSceneManager;
+	mSceneManager = NULL;
+
 	delete mInputManager;
 	mInputManager = NULL;
 
@@ -39,7 +45,7 @@ void EdenEngine::Run()
 	{
 		mGameTimer->Frame();
 		float frameTime = mGameTimer->GetTime();
-		int FPS = mGameTimer->GetFPS();
+		int32 FPS = mGameTimer->GetFPS();
 
 		if (mEngineWindow->DidScreenChange())
 		{
@@ -60,6 +66,16 @@ void EdenEngine::OnScreenChanged()
 bool EdenEngine::Update(float delta)
 {
 	mInputManager->Update();
+	if (mInputManager->GetRightClickDown())
+	{
+		mEngineWindow->ShowWindowCursor(false);
+	}
+	else if (mInputManager->GetRightClickUp())
+	{
+		mEngineWindow->ShowWindowCursor(true);
+	}
+
+	mSceneManager->Update(delta);
 	return true;
 }
 

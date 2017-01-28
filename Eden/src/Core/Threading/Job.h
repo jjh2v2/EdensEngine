@@ -32,5 +32,5 @@ public:
 
 private:
 	DynamicArray<Job *> mJobs;
-	volatile bool mJobsCompleted;
+	volatile bool mJobsCompleted; //TDA: Replace this. Volatile isn't the right answer for this
 };

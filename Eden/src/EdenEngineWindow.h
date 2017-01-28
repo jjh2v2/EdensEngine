@@ -16,12 +16,15 @@ public:
 	HINSTANCE GetEngineModuleHandle() { return mModuleHandle; }
 	Vector2 GetWindowDimensions();
 
+	void ShowWindowCursor(bool show);
+
 private:
 	LPCSTR mApplicationName;
 	HINSTANCE mModuleHandle;
 	HWND mWindowHandle;
 	bool  mIsFullScreen;
 	Rect<int32> mScreenRect;
+	bool mIsShowingCursor;
 };
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);

@@ -47,7 +47,7 @@ public:
 		mTimerStartTime = currentTime;
 	}
 
-	int GetFPS()
+	int32 GetFPS()
 	{
 		return mFramesPerSecond;
 	}
@@ -58,8 +58,8 @@ public:
 	}
 
 private:
-	int mFramesPerSecond;
-	int mFPSCounter;
+	int32 mFramesPerSecond;
+	int32 mFPSCounter;
 	unsigned long mFPSStartTime;
 
 	int64 mTimerFrequency;

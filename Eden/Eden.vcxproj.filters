@@ -133,6 +133,9 @@
     <Filter Include="Source Files\Render\Texture\Sampler">
       <UniqueIdentifier>{ec09656b-75b2-4c80-b91d-410a88bb6847}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Scene">
+      <UniqueIdentifier>{ee29ccc1-113c-4bf0-9c58-44a7b139609c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -339,6 +342,15 @@
     <ClInclude Include="src\Render\Texture\Sampler\SamplerManager.h">
       <Filter>Source Files\Render\Texture\Sampler</Filter>
     </ClInclude>
+    <ClInclude Include="src\Camera\CameraManager.h">
+      <Filter>Source Files\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Scene\Scene.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Scene\SceneManager.h">
+      <Filter>Source Files\Scene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -508,6 +520,15 @@
     </ClCompile>
     <ClCompile Include="src\Render\Texture\Sampler\SamplerManager.cpp">
       <Filter>Source Files\Render\Texture\Sampler</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Camera\CameraManager.cpp">
+      <Filter>Source Files\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Scene\Scene.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Scene\SceneManager.cpp">
+      <Filter>Source Files\Scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

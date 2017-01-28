@@ -53,7 +53,9 @@ EdenEngineWindow::EdenEngineWindow(int32 screenWidth, int32 screenHeight, bool f
 	ShowWindow(mWindowHandle, SW_SHOW);
 	SetForegroundWindow(mWindowHandle);
 	SetFocus(mWindowHandle);
+
 	ShowCursor(true);
+	mIsShowingCursor = true;
 }
 
 EdenEngineWindow::~EdenEngineWindow()
@@ -121,6 +123,22 @@ Vector2 EdenEngineWindow::GetWindowDimensions()
 		(float)mScreenRect.Height);
 }
 
+void EdenEngineWindow::ShowWindowCursor(bool show)
+{
+	if (mIsShowingCursor != show)
+	{
+		ShowCursor(show); //have to do this twice because this function is silly
+		ShowCursor(show);
+
+		if (show)
+		{
+			SetCursorPos((int)mScreenRect.X + mScreenRect.Width / 2, (int)mScreenRect.Y + mScreenRect.Height / 2);
+		}
+
+		mIsShowingCursor = show;
+	}
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 {
 	switch (umessage)
@@ -143,4 +161,3 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 		}
 	}
 }
-

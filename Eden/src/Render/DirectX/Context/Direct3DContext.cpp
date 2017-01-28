@@ -18,8 +18,6 @@ Direct3DContext::Direct3DContext(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE c
 
 	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateCommandList(1, commandType, mCommandAllocator, NULL, IID_PPV_ARGS(&mCommandList)));
 	mCommandList->SetName(L"Direct3DContext::mCommandList");
-	//Direct3DUtils::ThrowIfHRESULTFailed(mCommandList->Close());
-	//Direct3DUtils::ThrowIfHRESULTFailed(mCommandList->Reset(mCommandAllocator, NULL));
 
 	for (uint32 i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; i++)
 	{
@@ -351,13 +349,6 @@ void GraphicsContext::SetRootConstantBuffer(uint32 index, ConstantBuffer *consta
 	mCommandList->SetGraphicsRootConstantBufferView(index, constantBuffer->GetGpuAddress());
 }
 
-//void GraphicsContext::SetTexture(uint32 index, Texture *texture, uint64 offset /*= 0*/)
-//{
-//	mCommandList->SetGraphicsRootShaderResourceView(index, texture->GetTextureResource()->GetGpuAddress() + offset);
-//}
-
-//TDA: Alex, you need to create descriptor heaps and copy into them so they're contiguous for the descriptor tables
-
 void GraphicsContext::SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle)
 {
 	mCommandList->SetGraphicsRootDescriptorTable(index, handle);
@@ -398,24 +389,15 @@ void GraphicsContext::DrawIndexed(uint32 indexCount, uint32 startIndexLocation /
 void GraphicsContext::DrawInstanced(uint32 vertexCountPerInstance, uint32 instanceCount, uint32 startVertexLocation /* = 0 */, uint32 startInstanceLocation /* = 0 */)
 {
 	FlushResourceBarriers();
-	//m_DynamicDescriptorHeap.CommitGraphicsRootDescriptorTables(m_CommandList);
 	mCommandList->DrawInstanced(vertexCountPerInstance, instanceCount, startVertexLocation, startInstanceLocation);
 }
 
 void GraphicsContext::DrawIndexedInstanced(uint32 indexCountPerInstance, uint32 instanceCount, uint32 startIndexLocation, int32 baseVertexLocation, uint32 startInstanceLocation)
 {
 	FlushResourceBarriers();
-	//m_DynamicDescriptorHeap.CommitGraphicsRootDescriptorTables(m_CommandList);
 	mCommandList->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
-//void GraphicsContext::DrawIndirect(GPUBuffer& argumentBuffer, size_t argumentBufferOffset /* = 0 */)
-//{
-	//FlushResourceBarriers();
-	//m_DynamicDescriptorHeap.CommitGraphicsRootDescriptorTables(m_CommandList);
-	//mCommandList->ExecuteIndirect(Graphics::DrawIndirectCommandSignature.GetSignature(), 1, ArgumentBuffer.GetResource(),
-	//	(UINT64)ArgumentBufferOffset, nullptr, 0);
-//}
 
 UploadContext::UploadContext(ID3D12Device *device)
 	:Direct3DContext(device, D3D12_COMMAND_LIST_TYPE_COPY)
