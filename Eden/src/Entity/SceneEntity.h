@@ -15,6 +15,9 @@ public:
 	void SetRotation(Vector3 rotation) { mRotation = rotation; }
 	void SetScale(Vector3 scale) { mScale = scale; }
 
+	void Update();
+	void Render();
+
 private:
 	Mesh *mMesh;
 	Material *mMaterial;

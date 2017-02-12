@@ -249,6 +249,7 @@
     <ClCompile Include="src\Render\Mesh\Mesh.cpp" />
     <ClCompile Include="src\Render\Mesh\MeshManager.cpp" />
     <ClCompile Include="src\Render\Renderer\DeferredRenderer.cpp" />
+    <ClCompile Include="src\Render\Shader\Definitions\ConstantBufferDefinitions.cpp" />
     <ClCompile Include="src\Render\Shader\RootSignature\RootSignatureManager.cpp" />
     <ClCompile Include="src\Render\Shader\Shader.cpp" />
     <ClCompile Include="src\Render\Shader\ShaderManager.cpp" />

@@ -65,6 +65,16 @@ public:
 		return result;
 	}
 
+	bool operator==(const Vector2 &rhs)
+	{
+		return MathHelper::FloatsAreEqual(X, rhs.X) && MathHelper::FloatsAreEqual(Y, rhs.Y);
+	}
+
+	bool operator!=(const Vector2 &rhs)
+	{
+		return !MathHelper::FloatsAreEqual(X, rhs.X) || !MathHelper::FloatsAreEqual(Y, rhs.Y);
+	}
+
 	float X;
 	float Y;
 private:

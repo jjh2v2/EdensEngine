@@ -58,6 +58,18 @@ public:
 		return result;
 	}
 
+	bool operator==(const Color &rhs)
+	{
+		return MathHelper::FloatsAreEqual(R, rhs.R) && MathHelper::FloatsAreEqual(G, rhs.G)
+			&& MathHelper::FloatsAreEqual(B, rhs.B) && MathHelper::FloatsAreEqual(A, rhs.A);
+	}
+
+	bool operator!=(const Color &rhs)
+	{
+		return !MathHelper::FloatsAreEqual(R, rhs.R) || !MathHelper::FloatsAreEqual(G, rhs.G)
+			|| !MathHelper::FloatsAreEqual(B, rhs.B) || !MathHelper::FloatsAreEqual(A, rhs.A);
+	}
+
 	float R;
 	float G;
 	float B;

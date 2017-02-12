@@ -4,19 +4,20 @@
 #include "Render/Buffer/GPUResource.h"
 #include "Render/Texture/Texture.h"
 #include "Render/DirectX/Heap/DescriptorHeap.h"
+#include "Core/Containers/DynamicArray.h"
 
 class Material
 {
 public:
-	Material(ID3D12Device *device, MaterialBuffer initialConstants, ConstantBuffer *constantBuffer, DynamicArray<Texture*> &textures);
+	Material(ID3D12Device *device, ConstantBuffer *constantBuffer, DynamicArray<Texture*> &textures);
 	~Material();
 
-	void CommitConstantBufferChanges(); //TDA: This needs to go in favor of a change-based system
-	MaterialBuffer *GetMaterialBuffer() { return &mConstants; }
+	void CommitConstantBufferChanges();
+	MaterialBuffer *GetMaterialBuffer() { return &mMaterialBuffer; }
 
 private:
 	ShaderTechnique *mShaderTechnique;
 	ConstantBuffer *mConstantBuffer;
-	MaterialBuffer mConstants;
+	MaterialBuffer mMaterialBuffer;
 	DynamicArray<Texture*> mTextures;
 };

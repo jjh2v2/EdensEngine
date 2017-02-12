@@ -1,16 +1,13 @@
 #include "Render/Material/Material.h"
 
-Material::Material(ID3D12Device *device, MaterialBuffer initialConstants, ConstantBuffer *constantBuffer, DynamicArray<Texture*> &textures)
+Material::Material(ID3D12Device *device, ConstantBuffer *constantBuffer, DynamicArray<Texture*> &textures)
 {
-	mConstants = initialConstants;
 	mConstantBuffer = constantBuffer;
 	
 	for (uint32 i = 0; i < textures.CurrentSize(); i++)
 	{
 		mTextures.Add(textures[i]);
 	}
-
-	CommitConstantBufferChanges();
 }
 
 Material::~Material()
@@ -20,5 +17,9 @@ Material::~Material()
 
 void Material::CommitConstantBufferChanges()
 {
-	mConstantBuffer->SetConstantBufferData(mConstantBuffer, sizeof(ConstantBuffer));
+	if (mMaterialBuffer.GetIsDirty())
+	{
+		mConstantBuffer->SetConstantBufferData(&mMaterialBuffer.GetMaterialConstants(), sizeof(MaterialConstants));
+		mMaterialBuffer.SetIsDirty(false);
+	}
 }

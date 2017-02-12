@@ -21,26 +21,14 @@ public:
 		return (uint32)((valueToAlign + alignment) & ~alignment);
 	}
 
-	static float Clamp(float val, float min, float max)
+	template <class T>
+	static T Clamp(T val, T min, T max)
 	{
-		if(val < min)
+		if (val < min)
 		{
 			val = min;
 		}
-		if(val > max)
-		{
-			val = max;
-		}
-		return val;
-	}
-
-	static int32 Clamp(int32 val, int32 min, int32 max)
-	{
-		if(val < min)
-		{
-			val = min;
-		}
-		if(val > max)
+		if (val > max)
 		{
 			val = max;
 		}
@@ -63,44 +51,16 @@ public:
 		return length == 0 ? D3DXVECTOR3(0,0,0) : D3DXVECTOR3(vector3.x/length, vector3.y/length, vector3.y/length);
 	}
 
-	static size_t MaxSize(size_t a, size_t b)
+	template <class T>
+	static T Max(T a, T b)
 	{
 		return a > b ? a : b;
 	}
 
-	static size_t MinSize(size_t a, size_t b)
+	template <class T>
+	static T Min(T a, T b)
 	{
 		return a < b ? a : b;
-	}
-
-	static float Max(float a, float b)
-	{
-		return a > b ? a : b;
-	}
-
-	static float Min(float a, float b)
-	{
-		return a < b ? a : b;
-	}
-
-	static int32 Max(int32 a, int32 b)
-	{
-		return a > b ? a : b;
-	}
-
-	static int32 Min(int32 a, int32 b)
-	{
-		return a < b ? a : b;
-	}
-
-	static uint64 Min(uint64 a, uint64 b)
-	{
-		return a < b ? a : b;
-	}
-
-	static uint64 Max(uint64 a, uint64 b)
-	{
-		return a > b ? a : b;
 	}
 
 	static float Ceil(float val)

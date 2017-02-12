@@ -72,6 +72,12 @@ public:
 		return result;
 	}
 
+	Vector3 operator-(const Vector3 &rhs)
+	{
+		Vector3 result(X - rhs.X, Y - rhs.Y, Z - rhs.Z);
+		return result;
+	}
+
 	Vector3& operator+=(const Vector3 &rhs)
 	{
 		X += rhs.X;
@@ -80,10 +86,22 @@ public:
 		return *this;
 	}
 
-	Vector3 operator-(const Vector3 &rhs)
+	Vector3& operator-=(const Vector3 &rhs)
 	{
-		Vector3 result(X - rhs.X, Y - rhs.Y, Z - rhs.Z);
-		return result;
+		X -= rhs.X;
+		Y -= rhs.Y;
+		Z -= rhs.Z;
+		return *this;
+	}
+
+	bool operator==(const Vector3 &rhs)
+	{
+		return MathHelper::FloatsAreEqual(X, rhs.X) && MathHelper::FloatsAreEqual(Y, rhs.Y) && MathHelper::FloatsAreEqual(Z, rhs.Z);
+	}
+
+	bool operator!=(const Vector3 &rhs)
+	{
+		return !MathHelper::FloatsAreEqual(X, rhs.X) || !MathHelper::FloatsAreEqual(Y, rhs.Y) || !MathHelper::FloatsAreEqual(Z, rhs.Z);
 	}
 
 	Vector3 operator*(const float &rhs)

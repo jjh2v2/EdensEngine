@@ -54,6 +54,12 @@ public:
 		return result;
 	}
 
+	Vector4 operator-(const Vector4 &rhs)
+	{
+		Vector4 result(X - rhs.X, Y - rhs.Y, Z - rhs.Z, W - rhs.W);
+		return result;
+	}
+
 	Vector4 operator+=(const Vector4 &rhs)
 	{
 		X += rhs.X;
@@ -63,10 +69,25 @@ public:
 		return *this;
 	}
 
-	Vector4 operator-(const Vector4 &rhs)
+	Vector4 operator-=(const Vector4 &rhs)
 	{
-		Vector4 result(X - rhs.X, Y - rhs.Y, Z - rhs.Z, W - rhs.W);
-		return result;
+		X -= rhs.X;
+		Y -= rhs.Y;
+		Z -= rhs.Z;
+		W -= rhs.W;
+		return *this;
+	}
+
+	bool operator==(const Vector4 &rhs)
+	{
+		return MathHelper::FloatsAreEqual(X, rhs.X) && MathHelper::FloatsAreEqual(Y, rhs.Y)
+			&& MathHelper::FloatsAreEqual(Z, rhs.Z) && MathHelper::FloatsAreEqual(W, rhs.W);
+	}
+
+	bool operator!=(const Vector4 &rhs)
+	{
+		return !MathHelper::FloatsAreEqual(X, rhs.X) || !MathHelper::FloatsAreEqual(Y, rhs.Y)
+			|| !MathHelper::FloatsAreEqual(Z, rhs.Z) || !MathHelper::FloatsAreEqual(W, rhs.W);
 	}
 
 	Vector4 operator*(const float &rhs)

@@ -23,6 +23,7 @@
 #define BARRIER_LIMIT						16
 #define UPLOAD_BUFFER_ALIGNMENT				512									//upload buffers need to be 512 aligned
 
+
 typedef int8_t      int8;
 typedef int16_t		int16;
 typedef int32_t		int32;
