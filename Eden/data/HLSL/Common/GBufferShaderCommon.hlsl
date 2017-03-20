@@ -1,4 +1,6 @@
-struct VertexInput
+#include "../Common/ShaderCommon.hlsl"
+
+struct GBufferVertexInput
 {
     float4 position  : POSITION;
     float4 texCoord0 : TEXCOORD0;
@@ -49,13 +51,4 @@ Texture2D NormalMap : register(t1);
 SamplerState NormalMapSampler : register(s1);
 Texture2D RoughMetalMap : register(t2);
 SamplerState RoughMetalMapSampler : register(s2);
-
-float2 EncodeSphereMap(float3 n)
-{
-    float oneMinusZ = 1.0f - n.z;
-    float p = sqrt(n.x * n.x + n.y * n.y + oneMinusZ * oneMinusZ);
-	p = max(p, 0.00001);
-
-    return n.xy * rcp(p) * 0.5f + 0.5f;
-}
 

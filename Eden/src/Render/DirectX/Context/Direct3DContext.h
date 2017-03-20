@@ -6,6 +6,7 @@
 #include "Core/Misc/Color.h"
 #include "Render/Shader/RootSignature/RootSignatureManager.h"
 #include "Render/Texture/Texture.h"
+#include "Render/DirectX/Heap/DescriptorHeap.h"
 
 #define VALID_COMPUTE_QUEUE_RESOURCE_STATES \
 	( D3D12_RESOURCE_STATE_UNORDERED_ACCESS \
@@ -28,6 +29,7 @@ public:
 	void BindDescriptorHeaps();
 	void SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, ID3D12DescriptorHeap *heap);
 	void SetDescriptorHeaps(uint32 numHeaps, D3D12_DESCRIPTOR_HEAP_TYPE heapTypes[], ID3D12DescriptorHeap *heaps[]);
+	void CopyDescriptors(uint32 numDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE destinationStart, D3D12_CPU_DESCRIPTOR_HANDLE sourceStart, D3D12_DESCRIPTOR_HEAP_TYPE heapType);
 
 	void TransitionResource(GPUResource &resource, D3D12_RESOURCE_STATES newState, bool flushImmediate = false);
 	void BeginResourceTransition(GPUResource &resource, D3D12_RESOURCE_STATES newState, bool flushImmediate = false);
@@ -35,14 +37,16 @@ public:
 	void InsertAliasBarrier(GPUResource &before, GPUResource &after, bool flushImmediate = false);
 
 protected:
-	D3D12_COMMAND_LIST_TYPE mContextType;
-	ID3D12GraphicsCommandList* mCommandList;
-	ID3D12CommandAllocator* mCommandAllocator;
+	ID3D12Device *mDevice;
 
-	ID3D12RootSignature* mCurrentGraphicsRootSignature;
-	ID3D12PipelineState* mCurrentGraphicsPipelineState;
-	ID3D12RootSignature* mCurrentComputeRootSignature;
-	ID3D12PipelineState* mCurrentComputePipelineState;
+	D3D12_COMMAND_LIST_TYPE mContextType;
+	ID3D12GraphicsCommandList *mCommandList;
+	ID3D12CommandAllocator *mCommandAllocator;
+
+	ID3D12RootSignature *mCurrentGraphicsRootSignature;
+	ID3D12PipelineState *mCurrentGraphicsPipelineState;
+	ID3D12RootSignature *mCurrentComputeRootSignature;
+	ID3D12PipelineState *mCurrentComputePipelineState;
 
 	D3D12_RESOURCE_BARRIER mResourceBarrierBuffer[16];
 	uint32 mNumBarriersToFlush;
@@ -104,9 +108,9 @@ struct Direct3DUploadInfo
 		UploadID = 0;
 	}
 
-	void* CPUAddress;
+	void *CPUAddress;
 	uint64 ResourceOffset;
-	ID3D12Resource* Resource;
+	ID3D12Resource *Resource;
 	uint64 UploadID;
 };
 
@@ -170,4 +174,25 @@ private:
 	Direct3DUpload mUploads[MAX_GPU_UPLOADS];
 	uint64 mUploadSubmissionStart;
 	uint64 mUploadSubmissionUsed;
+};
+
+class RenderPassContext
+{
+public:
+	RenderPassContext(GraphicsContext *context, RenderPassDescriptorHeap *cbvHeap, ShaderPipelinePermutation permutation)
+		:mGraphicsContext(context)
+		,mCBVHeap(cbvHeap)
+		,mPermutation(permutation)
+	{
+		
+	}
+
+	GraphicsContext *GetGraphicsContext() { return mGraphicsContext; }
+	RenderPassDescriptorHeap *GetCBVHeap() { return mCBVHeap; }
+	ShaderPipelinePermutation GetShaderPipelinePermutation() { return mPermutation; }
+
+private:
+	GraphicsContext *mGraphicsContext;
+	RenderPassDescriptorHeap *mCBVHeap;
+	ShaderPipelinePermutation mPermutation;
 };

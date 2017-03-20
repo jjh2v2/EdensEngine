@@ -16,7 +16,7 @@ public:
 	void SetScale(Vector3 scale) { mScale = scale; }
 
 	void Update();
-	void Render();
+	void Render(RenderPassContext *renderPassContext);
 
 private:
 	Mesh *mMesh;

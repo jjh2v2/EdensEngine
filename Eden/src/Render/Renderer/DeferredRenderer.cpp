@@ -35,8 +35,6 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mMatrixBufferStart.GetCPUHandle(), mMatrixConstantBuffer->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mTextureStart.GetCPUHandle(), mTexture->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mSamplerStart.GetCPUHandle(), mSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-	
-	direct3DManager->WaitForGPU();
 }
 
 DeferredRenderer::~DeferredRenderer()
@@ -115,7 +113,6 @@ void DeferredRenderer::Render()
 		mMatrixConstantBuffer->SetConstantBufferData(&camBuff2, sizeof(MatrixBufferTest));
 	}
 
-
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
 	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
 
@@ -126,27 +123,20 @@ void DeferredRenderer::Render()
 	BackBufferTarget *backBuffer = direct3DManager->GetBackBufferTarget();
 	graphicsContext->TransitionResource((*backBuffer), D3D12_RESOURCE_STATE_RENDER_TARGET, true);
 
-	static float blueSub = 0.0f;
-	if (blueSub < 0.9f)
-	{
-	//	blueSub += 0.0001f;
-	}
-
 	// Record drawing commands.
-	float color[4] = {0.392156899f, 0.584313750f, 0.929411829f - blueSub, 1.000000000f};
+	float color[4] = {0.392156899f, 0.584313750f, 0.929411829f, 1.000000000f};
 	graphicsContext->ClearRenderTarget(direct3DManager->GetRenderTargetView(), color);
 	graphicsContext->ClearDepthStencilTarget(mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle(), 0.0f, 0);
 
+	graphicsContext->SetRenderTarget(backBuffer->GetRenderTargetViewHandle().GetCPUHandle(), mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle());
+	graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mGBufferCBVDescHeap->GetHeap());
+	graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, mGBufferSamplerDescHeap->GetHeap());
+
 	{
-		graphicsContext->SetRenderTarget(backBuffer->GetRenderTargetViewHandle().GetCPUHandle(), mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle());
-		
 		ShaderPipelinePermutation permutation(Render_Standard, Target_Standard_BackBuffer);
 		ShaderPSO *shaderPSO = mShader->GetShader(permutation);
 		graphicsContext->SetPipelineState(shaderPSO);
 		graphicsContext->SetRootSignature(shaderPSO->GetRootSignature());
-
-		graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mGBufferCBVDescHeap->GetHeap()); //combine these
-		graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, mGBufferSamplerDescHeap->GetHeap());
 
 		graphicsContext->SetDescriptorTable(0, mTextureStart.GetGPUHandle());
 		graphicsContext->SetDescriptorTable(1, mSamplerStart.GetGPUHandle());

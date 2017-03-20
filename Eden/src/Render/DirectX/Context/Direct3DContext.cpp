@@ -2,6 +2,7 @@
 
 Direct3DContext::Direct3DContext(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE commandType)
 {
+	mDevice = device;
 	mContextType = commandType;
 	mCommandList = NULL;
 	mCommandAllocator = NULL;
@@ -126,6 +127,11 @@ void Direct3DContext::SetDescriptorHeaps(uint32 numHeaps, D3D12_DESCRIPTOR_HEAP_
 	{
 		BindDescriptorHeaps();
 	}
+}
+
+void Direct3DContext::CopyDescriptors(uint32 numDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE destinationStart, D3D12_CPU_DESCRIPTOR_HANDLE sourceStart, D3D12_DESCRIPTOR_HEAP_TYPE heapType)
+{
+	mDevice->CopyDescriptorsSimple(1, destinationStart, sourceStart, heapType);
 }
 
 void Direct3DContext::TransitionResource(GPUResource &resource, D3D12_RESOURCE_STATES newState, bool flushImmediate /* = false */)

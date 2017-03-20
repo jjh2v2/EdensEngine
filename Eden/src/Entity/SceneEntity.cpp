@@ -1,4 +1,5 @@
 #include "Entity/SceneEntity.h"
+#include "Render/DirectX/Context/Direct3DContext.h"
 
 SceneEntity::SceneEntity(Mesh *mesh, Material *material)
 {
@@ -19,8 +20,10 @@ void SceneEntity::Update()
 	
 }
 
-void SceneEntity::Render()
+void SceneEntity::Render(RenderPassContext *renderPassContext)
 {
+	GraphicsContext *graphicsContext = renderPassContext->GetGraphicsContext();
+
 	D3DXMATRIX modelMatrix, positionMatrix, rotationMatrix, scalarMatrix;
 	D3DXMatrixIdentity(&positionMatrix);
 	D3DXMatrixIdentity(&rotationMatrix);
@@ -35,4 +38,10 @@ void SceneEntity::Render()
 
 	mMaterial->GetMaterialBuffer()->SetWorldMatrix(modelMatrix);
 	mMaterial->CommitConstantBufferChanges();
+	mMaterial->ApplyMaterial(renderPassContext);
+
+	graphicsContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	graphicsContext->SetVertexBuffer(0, mMesh->GetVertexBuffer());
+	graphicsContext->SetIndexBuffer(mMesh->GetIndexBuffer());
+	graphicsContext->Draw(mMesh->GetVertexCount());
 }

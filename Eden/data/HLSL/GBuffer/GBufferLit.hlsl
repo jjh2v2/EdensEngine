@@ -1,6 +1,6 @@
 #include "../Common/GBufferShaderCommon.hlsl"
 
-GBufferVertexOutput GBufferLitVertexShader(VertexInput input)
+GBufferVertexOutput GBufferLitVertexShader(GBufferVertexInput input)
 {
     GBufferVertexOutput output;
     input.position.w = 1.0f;
@@ -33,18 +33,15 @@ GBufferPixelOutput GBufferLitPixelShader(GBufferVertexOutput input)
 	textureColor.rgb = pow(abs(textureColor.rgb), 2.2);	//gamma correction
 	float4 material = float4(0.0,0.0,0.0,0.0);
 	
-	float3 normal = float3(0,0,0); //see if there's a big enough visual difference to warrant correcting interpolated normals by normalizing in the pixel shader too
+	float3 normal = normalize(input.normal);
 	
 	if(poUsesNormalMap)
 	{
-		float4 bumpMap = (NormalMap.Sample(NormalMapSampler, modifiedTexCoord) * 2.0) - 1.0;
-		float3 viewSpaceBinormal = cross( input.normal.xyz, input.tangent );
-		float3x3 texSpace = float3x3(input.tangent, viewSpaceBinormal, input.normal);
-		normal = normalize(mul(bumpMap.xyz, texSpace));
-	}
-	else
-	{
-		normal = input.normal;
+		float4 normalMap = (NormalMap.Sample(NormalMapSampler, modifiedTexCoord) * 2.0) - 1.0;
+		input.tangent = normalize(input.tangent);
+		float3 viewSpaceBinormal = normalize(cross(normal, input.tangent));
+		float3x3 texSpace = float3x3(input.tangent, viewSpaceBinormal, normal);
+		normal = normalize(mul(normalMap.xyz, texSpace));
 	}
 
 	GBufferPixelOutput result;

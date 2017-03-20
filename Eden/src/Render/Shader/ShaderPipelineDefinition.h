@@ -37,7 +37,8 @@ enum ShaderBlendStateType
 enum ShaderTargetStateType
 {
 	Target_GBuffer = 0,
-	Target_Standard_BackBuffer = 1
+	Target_Standard_BackBuffer = 1,
+	Target_Single_16 = 2
 };
 
 enum ShaderRenderStateType

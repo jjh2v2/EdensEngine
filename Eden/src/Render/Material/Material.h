@@ -3,8 +3,11 @@
 #include "Render/Shader/Definitions/ConstantBufferDefinitions.h"
 #include "Render/Buffer/GPUResource.h"
 #include "Render/Texture/Texture.h"
+#include "Render/Texture/Sampler/Sampler.h"
 #include "Render/DirectX/Heap/DescriptorHeap.h"
 #include "Core/Containers/DynamicArray.h"
+
+class RenderPassContext;
 
 class Material
 {
@@ -14,6 +17,7 @@ public:
 
 	void CommitConstantBufferChanges();
 	MaterialBuffer *GetMaterialBuffer() { return &mMaterialBuffer; }
+	void ApplyMaterial(RenderPassContext *renderPassContext);
 
 private:
 	ShaderTechnique *mShaderTechnique;
