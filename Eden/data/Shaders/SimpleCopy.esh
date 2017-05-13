@@ -1,0 +1,6 @@
+VertexShader
+[Simple/SimpleCopy.hlsl]
+[SimpleCopyVertexShader]
+PixelShader
+[Simple/SimpleCopy.hlsl]
+[SimpleCopyPixelShader]

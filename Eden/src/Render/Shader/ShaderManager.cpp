@@ -47,6 +47,10 @@ void ShaderManager::LoadAllShaders(ID3D12Device *device)
 		ShaderPipelinePermutation permutation(Render_Standard, Target_Standard_BackBuffer);
 		mShaderTechniques[1]->AddAndCompilePermutation(device, permutation, mRootSignatureManager->GetRootSignature(RootSignatureType_Simple_Color).RootSignature);
 	}
+	{
+		ShaderPipelinePermutation permutation(Render_Standard_NoDepth, Target_Standard_BackBuffer_NoDepth);
+		mShaderTechniques[2]->AddAndCompilePermutation(device, permutation, mRootSignatureManager->GetRootSignature(RootSignatureType_Simple_Copy).RootSignature);
+	}
 }
 
 ShaderTechnique *ShaderManager::LoadShader(ID3D12Device *device, const char *fileName)

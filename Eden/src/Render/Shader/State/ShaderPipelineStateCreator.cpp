@@ -138,6 +138,9 @@ void ShaderPipelineStateCreator::BuildPipelineStates()
 	mPipelineRenderStateMap.insert(std::pair<ShaderRenderStateType, ShaderPipelineRenderState>(Render_Standard,
 		ShaderPipelineRenderState(mDepthStencilDescs[DepthStencil_WriteGreaterEqual], mRasterDescs[Raster_BackFaceCull], mBlendDescs[Blend_Disabled])));
 
+	mPipelineRenderStateMap.insert(std::pair<ShaderRenderStateType, ShaderPipelineRenderState>(Render_Standard_NoDepth,
+		ShaderPipelineRenderState(mDepthStencilDescs[DepthStencil_Disabled], mRasterDescs[Raster_BackFaceCull], mBlendDescs[Blend_Disabled])));
+
 	ShaderPipelineTargetState gbufferTarget;
 	gbufferTarget.NumRenderTargets = 3;
 	gbufferTarget.RenderTargetFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;	//albedo
@@ -154,10 +157,24 @@ void ShaderPipelineStateCreator::BuildPipelineStates()
 
 	mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_Standard_BackBuffer, standardSingleTarget));
 
+	ShaderPipelineTargetState standardSingleTargetNoDepth;
+	standardSingleTargetNoDepth.NumRenderTargets = 1;
+	standardSingleTargetNoDepth.RenderTargetFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	standardSingleTargetNoDepth.DepthStencilFormat = DXGI_FORMAT_UNKNOWN;
+
+	mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_Standard_BackBuffer_NoDepth, standardSingleTargetNoDepth));
+
 	ShaderPipelineTargetState single16Target;
-	gbufferTarget.NumRenderTargets = 1;
-	gbufferTarget.RenderTargetFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	gbufferTarget.DepthStencilFormat = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+	single16Target.NumRenderTargets = 1;
+	single16Target.RenderTargetFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	single16Target.DepthStencilFormat = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 
 	mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_Single_16, single16Target));
+
+	ShaderPipelineTargetState single16NoDepthTarget;
+	single16NoDepthTarget.NumRenderTargets = 1;
+	single16NoDepthTarget.RenderTargetFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	single16NoDepthTarget.DepthStencilFormat = DXGI_FORMAT_UNKNOWN;
+
+	mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_Single_16_NoDepth, single16NoDepthTarget));
 }

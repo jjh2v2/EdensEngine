@@ -28,13 +28,15 @@ void Material::CommitConstantBufferChanges()
 void Material::ApplyMaterial(RenderPassContext *renderPassContext)
 {
 	GraphicsContext *graphicsContext = renderPassContext->GetGraphicsContext();
-	RenderPassDescriptorHeap *cbvHeap = renderPassContext->GetCBVHeap();
+	RenderPassDescriptorHeap *cbvHeap = renderPassContext->GetCBVSRVHeap();
 	ShaderPSO *shaderPSO = mShaderTechnique->GetShader(renderPassContext->GetShaderPipelinePermutation());
 	uint32 numTextures = mTextures.CurrentSize();
 
 	DescriptorHeapHandle cbvHandle = cbvHeap->GetHeapHandleBlock(1);
 	DescriptorHeapHandle textureHandle = cbvHeap->GetHeapHandleBlock(numTextures);
 	D3D12_CPU_DESCRIPTOR_HANDLE currentTextureHandle = textureHandle.GetCPUHandle();
+
+	graphicsContext->CopyDescriptors(1, cbvHandle.GetCPUHandle(), mConstantBuffer->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	for (uint32 i = 0; i < numTextures; i++)
 	{

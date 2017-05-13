@@ -38,12 +38,15 @@ enum ShaderTargetStateType
 {
 	Target_GBuffer = 0,
 	Target_Standard_BackBuffer = 1,
-	Target_Single_16 = 2
+	Target_Standard_BackBuffer_NoDepth = 2,
+	Target_Single_16 = 3,
+	Target_Single_16_NoDepth = 4
 };
 
 enum ShaderRenderStateType
 {
-	Render_Standard = 0
+	Render_Standard = 0,
+	Render_Standard_NoDepth = 1
 };
 
 

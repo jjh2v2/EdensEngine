@@ -179,20 +179,20 @@ private:
 class RenderPassContext
 {
 public:
-	RenderPassContext(GraphicsContext *context, RenderPassDescriptorHeap *cbvHeap, ShaderPipelinePermutation permutation)
+	RenderPassContext(GraphicsContext *context, RenderPassDescriptorHeap *cbvSrvHeap, ShaderPipelinePermutation permutation)
 		:mGraphicsContext(context)
-		,mCBVHeap(cbvHeap)
+		,mCBVSRVHeap(cbvSrvHeap)
 		,mPermutation(permutation)
 	{
 		
 	}
 
 	GraphicsContext *GetGraphicsContext() { return mGraphicsContext; }
-	RenderPassDescriptorHeap *GetCBVHeap() { return mCBVHeap; }
+	RenderPassDescriptorHeap *GetCBVSRVHeap() { return mCBVSRVHeap; }
 	ShaderPipelinePermutation GetShaderPipelinePermutation() { return mPermutation; }
 
 private:
 	GraphicsContext *mGraphicsContext;
-	RenderPassDescriptorHeap *mCBVHeap;
+	RenderPassDescriptorHeap *mCBVSRVHeap;
 	ShaderPipelinePermutation mPermutation;
 };
