@@ -160,6 +160,9 @@ RenderTarget *Direct3DContextManager::CreateRenderTarget(uint32 width, uint32 he
 		targetDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 	}
 
+	//Make sure the target is cleared with ClearRenderTarget to the same value as the below (currently 0,0,0,0).
+	//Documentation: The clear values do not match those passed to resource creation. The clear operation is typically slower as a result; 
+	//but will still clear to the desired value.
 	D3D12_CLEAR_VALUE clearValue = {};
 	clearValue.Format = format;
 

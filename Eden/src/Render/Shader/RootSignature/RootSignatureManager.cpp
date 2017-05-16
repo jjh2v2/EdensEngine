@@ -51,7 +51,7 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 
 	{
 		//RootSignatureType_Simple_Copy
-		CD3DX12_DESCRIPTOR_RANGE ranges[3];
+		CD3DX12_DESCRIPTOR_RANGE ranges[2];
 		ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); //1 texture, t0
 		ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0); //1 sampler
 

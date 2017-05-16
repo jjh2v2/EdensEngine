@@ -362,14 +362,28 @@ void GraphicsContext::SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HAND
 
 void GraphicsContext::SetIndexBuffer(IndexBuffer *indexBuffer)
 {
-	D3D12_INDEX_BUFFER_VIEW indexBufferView = indexBuffer->GetIndexBufferView();
-	mCommandList->IASetIndexBuffer(&indexBufferView);
+	if (!indexBuffer)
+	{
+		mCommandList->IASetIndexBuffer(NULL);
+	}
+	else
+	{
+		D3D12_INDEX_BUFFER_VIEW indexBufferView = indexBuffer->GetIndexBufferView();
+		mCommandList->IASetIndexBuffer(&indexBufferView);
+	}
 }
 
 void GraphicsContext::SetVertexBuffer(uint32 slot, VertexBuffer *vertexBuffer)
 {
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView = vertexBuffer->GetVertexBufferView();
-	mCommandList->IASetVertexBuffers(slot, 1, &vertexBufferView);
+	if (!vertexBuffer)
+	{
+		mCommandList->IASetVertexBuffers(slot, 1, NULL);
+	}
+	else
+	{
+		D3D12_VERTEX_BUFFER_VIEW vertexBufferView = vertexBuffer->GetVertexBufferView();
+		mCommandList->IASetVertexBuffers(slot, 1, &vertexBufferView);
+	}
 }
 
 void GraphicsContext::ClearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE target, float color[4])

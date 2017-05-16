@@ -32,9 +32,15 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 	mTextureStart = mGBufferCBVDescHeap->GetHeapHandleBlock(1);
 	mSamplerStart = mGBufferSamplerDescHeap->GetHeapHandleBlock(1);
 
+	mCopyTextureStart = mGBufferCBVDescHeap->GetHeapHandleBlock(1);
+	mCopySamplerStart = mGBufferSamplerDescHeap->GetHeapHandleBlock(1);
+
 	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mMatrixBufferStart.GetCPUHandle(), mMatrixConstantBuffer->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mTextureStart.GetCPUHandle(), mTexture->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mSamplerStart.GetCPUHandle(), mSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
+	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mCopyTextureStart.GetCPUHandle(), gbufferAlbedoTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mCopySamplerStart.GetCPUHandle(), mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_POINT)->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 }
 
 DeferredRenderer::~DeferredRenderer()
@@ -123,17 +129,21 @@ void DeferredRenderer::Render()
 	BackBufferTarget *backBuffer = direct3DManager->GetBackBufferTarget();
 	graphicsContext->TransitionResource((*backBuffer), D3D12_RESOURCE_STATE_RENDER_TARGET, true);
 
+	graphicsContext->TransitionResource((*mGBufferTargets[0]), D3D12_RESOURCE_STATE_RENDER_TARGET, true);
+
 	// Record drawing commands.
-	float color[4] = {0.392156899f, 0.584313750f, 0.929411829f, 1.000000000f};
-	graphicsContext->ClearRenderTarget(direct3DManager->GetRenderTargetView(), color);
+	float blueColor[4] = {0.392156899f, 0.584313750f, 0.929411829f, 1.000000000f};
+	float blackColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	graphicsContext->ClearRenderTarget(direct3DManager->GetRenderTargetView(), blueColor);
+	graphicsContext->ClearRenderTarget(mGBufferTargets[0]->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
 	graphicsContext->ClearDepthStencilTarget(mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle(), 0.0f, 0);
 
-	graphicsContext->SetRenderTarget(backBuffer->GetRenderTargetViewHandle().GetCPUHandle(), mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle());
+	graphicsContext->SetRenderTarget(mGBufferTargets[0]->GetRenderTargetViewHandle().GetCPUHandle(), mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle());
 	graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mGBufferCBVDescHeap->GetHeap());
 	graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, mGBufferSamplerDescHeap->GetHeap());
 
 	{
-		ShaderPipelinePermutation permutation(Render_Standard, Target_Standard_BackBuffer);
+		ShaderPipelinePermutation permutation(Render_Standard, Target_Single_16);
 		ShaderPSO *shaderPSO = mShader->GetShader(permutation);
 		graphicsContext->SetPipelineState(shaderPSO);
 		graphicsContext->SetRootSignature(shaderPSO->GetRootSignature());
@@ -146,6 +156,27 @@ void DeferredRenderer::Render()
 		graphicsContext->SetVertexBuffer(0, mMesh->GetVertexBuffer());
 		graphicsContext->SetIndexBuffer(mMesh->GetIndexBuffer());
 		graphicsContext->Draw(mMesh->GetVertexCount());
+
+		//copy shader stage
+
+		graphicsContext->TransitionResource((*mGBufferTargets[0]), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
+
+		graphicsContext->SetRenderTarget(backBuffer->GetRenderTargetViewHandle().GetCPUHandle());
+
+		ShaderPipelinePermutation bbPermutation(Render_Standard_NoDepth, Target_Standard_BackBuffer_NoDepth);
+		ShaderPSO *copyShader = mGraphicsManager->GetShaderManager()->GetShaderTechnique("SimpleCopy")->GetShader(bbPermutation);
+		graphicsContext->SetPipelineState(copyShader);
+		graphicsContext->SetRootSignature(copyShader->GetRootSignature());
+
+		graphicsContext->SetDescriptorTable(0, mCopyTextureStart.GetGPUHandle());
+		graphicsContext->SetDescriptorTable(1, mCopySamplerStart.GetGPUHandle());
+
+		//graphicsContext->IASetInputLayout
+		graphicsContext->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+		graphicsContext->SetVertexBuffer(0, NULL);
+		graphicsContext->SetIndexBuffer(NULL);
+		graphicsContext->Draw(3);
+		
 	}
 
 	graphicsContext->TransitionResource((*backBuffer), D3D12_RESOURCE_STATE_PRESENT, true);

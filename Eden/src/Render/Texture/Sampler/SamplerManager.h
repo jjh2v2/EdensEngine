@@ -6,7 +6,8 @@
 
 enum SamplerType
 {
-	SAMPLER_DEFAULT_ANISO = 0
+	SAMPLER_DEFAULT_ANISO = 0,
+	SAMPLER_DEFAULT_POINT = 1
 };
 
 class SamplerManager

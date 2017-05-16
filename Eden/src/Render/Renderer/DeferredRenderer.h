@@ -32,6 +32,8 @@ private:
 	DescriptorHeapHandle mMatrixBufferStart;
 	DescriptorHeapHandle mTextureStart;
 	DescriptorHeapHandle mSamplerStart;
+	DescriptorHeapHandle mCopyTextureStart;
+	DescriptorHeapHandle mCopySamplerStart;
 	ConstantBuffer *mMatrixConstantBuffer;
 	ShaderTechnique *mShader;
 	Sampler *mSampler;

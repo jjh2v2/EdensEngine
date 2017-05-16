@@ -48,6 +48,10 @@ void ShaderManager::LoadAllShaders(ID3D12Device *device)
 		mShaderTechniques[1]->AddAndCompilePermutation(device, permutation, mRootSignatureManager->GetRootSignature(RootSignatureType_Simple_Color).RootSignature);
 	}
 	{
+		ShaderPipelinePermutation permutation(Render_Standard, Target_Single_16);
+		mShaderTechniques[1]->AddAndCompilePermutation(device, permutation, mRootSignatureManager->GetRootSignature(RootSignatureType_Simple_Color).RootSignature);
+	}
+	{
 		ShaderPipelinePermutation permutation(Render_Standard_NoDepth, Target_Standard_BackBuffer_NoDepth);
 		mShaderTechniques[2]->AddAndCompilePermutation(device, permutation, mRootSignatureManager->GetRootSignature(RootSignatureType_Simple_Copy).RootSignature);
 	}
