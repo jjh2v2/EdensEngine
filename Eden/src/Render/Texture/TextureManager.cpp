@@ -57,6 +57,20 @@ void TextureManager::LoadAllTextures()
 		mTextures.Add(texture);
 		delete[] convertedString;
 	}
+	{
+		WCHAR *convertedString = StringConverter::StringToWCHARAlloc(mTextureLookup["MageNormal"].TextureFilePath);
+		Texture *texture = LoadTexture(convertedString);
+		mTextureLookup["MageNormal"].TextureRef = texture;
+		mTextures.Add(texture);
+		delete[] convertedString;
+	}
+	{
+		WCHAR *convertedString = StringConverter::StringToWCHARAlloc(mTextureLookup["MageRoughMetal"].TextureFilePath);
+		Texture *texture = LoadTexture(convertedString);
+		mTextureLookup["MageRoughMetal"].TextureRef = texture;
+		mTextures.Add(texture);
+		delete[] convertedString;
+	}
 }
 
 Texture *TextureManager::LoadTexture(WCHAR *filePath)

@@ -11,6 +11,7 @@ struct CameraBuffer	//per frame
 	D3DXMATRIX projectionMatrix;
 };
 
+
 struct MaterialConstants
 {
 	MaterialConstants()
@@ -21,8 +22,8 @@ struct MaterialConstants
 		roughness = 1.0f;
 		metalness = 0.0f;
 		materialIntensity = 1.0f;
-		usesNormalMap = false;
-		usesRoughMetalMap = false;
+		usesNormalMap = 0;
+		usesRoughMetalMap = 0;
 	}
 
 	D3DXMATRIX worldMatrix;
@@ -31,8 +32,8 @@ struct MaterialConstants
 	float roughness;
 	float metalness;
 	float materialIntensity;
-	bool usesNormalMap;
-	bool usesRoughMetalMap;
+	uint32 usesNormalMap;
+	uint32 usesRoughMetalMap;
 };
 
 struct MaterialBuffer	//per object 
@@ -66,10 +67,10 @@ struct MaterialBuffer	//per object
 	float GetMaterialIntensity() { return mConstants.materialIntensity; }
 
 	void SetUsesNormalMap(const bool &usesNormalMap);
-	bool GetUsesNormalMap() { return mConstants.usesNormalMap; }
+	bool GetUsesNormalMap() { return mConstants.usesNormalMap != 0; }
 
 	void SetUsesRoughmetalMap(const bool &usesRoughMetalMap);
-	bool GetUsesRoughmetalMap() { return mConstants.usesRoughMetalMap; }
+	bool GetUsesRoughmetalMap() { return mConstants.usesRoughMetalMap != 0; }
 
 private:
 	bool mIsDirty;

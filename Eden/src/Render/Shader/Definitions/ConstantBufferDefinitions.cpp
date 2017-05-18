@@ -72,18 +72,20 @@ void MaterialBuffer::SetMaterialIntensity(const float &materialIntensity)
 
 void MaterialBuffer::SetUsesNormalMap(const bool &usesNormalMap)
 {
-	if (mConstants.usesNormalMap != usesNormalMap)
+	bool isUsingNormalMap = mConstants.usesNormalMap != 0;
+	if (isUsingNormalMap != usesNormalMap)
 	{
 		mIsDirty = true;
-		mConstants.usesNormalMap = usesNormalMap;
+		mConstants.usesNormalMap = usesNormalMap ? 1 : 0;
 	}
 }
 
 void MaterialBuffer::SetUsesRoughmetalMap(const bool &usesRoughMetalMap)
 {
-	if (mConstants.usesRoughMetalMap != usesRoughMetalMap)
+	bool isUsingRoughMetal = mConstants.usesRoughMetalMap != 0;
+	if (isUsingRoughMetal != usesRoughMetalMap)
 	{
 		mIsDirty = true;
-		mConstants.usesRoughMetalMap = usesRoughMetalMap;
+		mConstants.usesRoughMetalMap = usesRoughMetalMap ? 1 : 0;
 	}
 }

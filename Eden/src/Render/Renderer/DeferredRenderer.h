@@ -3,12 +3,14 @@
 #include "Render/Graphics/GraphicsManager.h"
 #include "Scene/Scene.h"
 
+/*
 struct MatrixBufferTest
 {
 	D3DXMATRIX worldMatrix;
 	D3DXMATRIX viewMatrix;
 	D3DXMATRIX projectionMatrix;
 };
+*/
 
 class DeferredRenderer
 {
@@ -29,12 +31,14 @@ private:
 	RenderPassDescriptorHeap *mGBufferCBVDescHeap;
 	RenderPassDescriptorHeap *mGBufferSamplerDescHeap;
 
-	DescriptorHeapHandle mMatrixBufferStart;
+	DescriptorHeapHandle mCameraBufferStart;
+	DescriptorHeapHandle mMaterialBufferStart;
 	DescriptorHeapHandle mTextureStart;
 	DescriptorHeapHandle mSamplerStart;
 	DescriptorHeapHandle mCopyTextureStart;
 	DescriptorHeapHandle mCopySamplerStart;
-	ConstantBuffer *mMatrixConstantBuffer;
+	ConstantBuffer *mCameraConstantBuffer;
+	ConstantBuffer *mMaterialConstantBuffer;
 	ShaderTechnique *mShader;
 	Sampler *mSampler;
 	Texture *mTexture;
