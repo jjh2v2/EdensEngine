@@ -23,7 +23,6 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 	mGBufferDepth = contextManager->CreateDepthStencilTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_D32_FLOAT_S8X24_UINT, 1, 1, 0);
 
 	mMesh = mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals");
-	mShader = mGraphicsManager->GetShaderManager()->GetShaderTechnique("GBufferLit");
 	mSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_ANISO);
 	mTexture = mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire");
 	
@@ -111,13 +110,24 @@ DeferredRenderer::~DeferredRenderer()
 	delete mGBufferSamplerDescHeap;
 }
 
+void DeferredRenderer::ClearGBuffer()
+{
+	GraphicsContext *graphicsContext = mGraphicsManager->GetDirect3DManager()->GetContextManager()->GetGraphicsContext();
+	float blackColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+	graphicsContext->TransitionResource((*mGBufferTargets[0]), D3D12_RESOURCE_STATE_RENDER_TARGET, false);
+	graphicsContext->TransitionResource((*mGBufferTargets[1]), D3D12_RESOURCE_STATE_RENDER_TARGET, false);
+	graphicsContext->TransitionResource((*mGBufferTargets[2]), D3D12_RESOURCE_STATE_RENDER_TARGET, true);
+
+	graphicsContext->ClearRenderTarget(mGBufferTargets[0]->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
+	graphicsContext->ClearRenderTarget(mGBufferTargets[1]->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
+	graphicsContext->ClearRenderTarget(mGBufferTargets[2]->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
+	graphicsContext->ClearDepthStencilTarget(mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle(), 0.0f, 0);
+}
+
 void DeferredRenderer::Render()
 {
 	{
-		//D3DXMatrixTranslation(&positionMatrix, );
-		//D3DXMatrixRotationYawPitchRoll(&rotationMatrix, MathHelper::Radian() * 180.0f, 0, 0);//Rotation.Y, Rotation.X, Rotation.Z);
-		//D3DXMatrixScaling(&scalarMatrix, 1, 1, 1);
-
 		CameraBuffer camBuff;
 		camBuff.viewMatrix = mActiveScene->GetMainCamera()->GetViewMatrix();
 		camBuff.projectionMatrix = mActiveScene->GetMainCamera()->GetReverseProjectionMatrix();
@@ -155,25 +165,11 @@ void DeferredRenderer::Render()
 
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
 	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
+	BackBufferTarget *backBuffer = direct3DManager->GetBackBufferTarget();
 
 	Vector2 screenSize = direct3DManager->GetScreenSize();
 	graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
 	graphicsContext->SetScissorRect(0, 0, (uint32)screenSize.X, (uint32)screenSize.Y);
-
-	BackBufferTarget *backBuffer = direct3DManager->GetBackBufferTarget();
-	graphicsContext->TransitionResource((*backBuffer), D3D12_RESOURCE_STATE_RENDER_TARGET, false);
-	graphicsContext->TransitionResource((*mGBufferTargets[0]), D3D12_RESOURCE_STATE_RENDER_TARGET, false);
-	graphicsContext->TransitionResource((*mGBufferTargets[1]), D3D12_RESOURCE_STATE_RENDER_TARGET, false);
-	graphicsContext->TransitionResource((*mGBufferTargets[2]), D3D12_RESOURCE_STATE_RENDER_TARGET, true);
-
-	// Record drawing commands.
-	float blueColor[4] = {0.392156899f, 0.584313750f, 0.929411829f, 1.000000000f};
-	float blackColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	graphicsContext->ClearRenderTarget(direct3DManager->GetRenderTargetView(), blueColor);
-	graphicsContext->ClearRenderTarget(mGBufferTargets[0]->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
-	graphicsContext->ClearRenderTarget(mGBufferTargets[1]->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
-	graphicsContext->ClearRenderTarget(mGBufferTargets[2]->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
-	graphicsContext->ClearDepthStencilTarget(mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle(), 0.0f, 0);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE gbufferRtvHandles[3] = {
 		mGBufferTargets[0]->GetRenderTargetViewHandle().GetCPUHandle(),
@@ -181,15 +177,15 @@ void DeferredRenderer::Render()
 		mGBufferTargets[2]->GetRenderTargetViewHandle().GetCPUHandle()
 	};
 
+	ClearGBuffer();
 
 	graphicsContext->SetRenderTargets(3, gbufferRtvHandles, mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle());
-	//graphicsContext->SetRenderTarget(mGBufferTargets[0]->GetRenderTargetViewHandle().GetCPUHandle(), mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle());
 	graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mGBufferCBVDescHeap->GetHeap());
 	graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, mGBufferSamplerDescHeap->GetHeap());
 
 	{
 		ShaderPipelinePermutation permutation(Render_Standard, Target_GBuffer);
-		ShaderPSO *shaderPSO = mShader->GetShader(permutation);			
+		ShaderPSO *shaderPSO = mGraphicsManager->GetShaderManager()->GetShaderTechnique("GBufferLit")->GetShader(permutation);
 		graphicsContext->SetPipelineState(shaderPSO);
 		graphicsContext->SetRootSignature(shaderPSO->GetRootSignature());
 
@@ -204,7 +200,8 @@ void DeferredRenderer::Render()
 		graphicsContext->Draw(mMesh->GetVertexCount());
 
 		//copy shader stage
-
+		
+		graphicsContext->TransitionResource((*backBuffer), D3D12_RESOURCE_STATE_RENDER_TARGET, false);
 		graphicsContext->TransitionResource((*mGBufferTargets[1]), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
 
 		graphicsContext->SetRenderTarget(backBuffer->GetRenderTargetViewHandle().GetCPUHandle());
@@ -217,7 +214,6 @@ void DeferredRenderer::Render()
 		graphicsContext->SetDescriptorTable(0, mCopyTextureStart.GetGPUHandle());
 		graphicsContext->SetDescriptorTable(1, mCopySamplerStart.GetGPUHandle());
 
-		//graphicsContext->IASetInputLayout
 		graphicsContext->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 		graphicsContext->SetVertexBuffer(0, NULL);
 		graphicsContext->SetIndexBuffer(NULL);

@@ -22,6 +22,8 @@ public:
 	void Render();
 
 private:
+	void ClearGBuffer();
+
 	GraphicsManager *mGraphicsManager;
 	Scene *mActiveScene;
 
@@ -39,7 +41,7 @@ private:
 	DescriptorHeapHandle mCopySamplerStart;
 	ConstantBuffer *mCameraConstantBuffer;
 	ConstantBuffer *mMaterialConstantBuffer;
-	ShaderTechnique *mShader;
+
 	Sampler *mSampler;
 	Texture *mTexture;
 	Mesh *mMesh;
