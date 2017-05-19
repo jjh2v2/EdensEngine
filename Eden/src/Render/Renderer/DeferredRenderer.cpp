@@ -162,7 +162,9 @@ void DeferredRenderer::Render()
 
 	BackBufferTarget *backBuffer = direct3DManager->GetBackBufferTarget();
 	graphicsContext->TransitionResource((*backBuffer), D3D12_RESOURCE_STATE_RENDER_TARGET, false);
-	graphicsContext->TransitionResource((*mGBufferTargets[0]), D3D12_RESOURCE_STATE_RENDER_TARGET, true);
+	graphicsContext->TransitionResource((*mGBufferTargets[0]), D3D12_RESOURCE_STATE_RENDER_TARGET, false);
+	graphicsContext->TransitionResource((*mGBufferTargets[1]), D3D12_RESOURCE_STATE_RENDER_TARGET, false);
+	graphicsContext->TransitionResource((*mGBufferTargets[2]), D3D12_RESOURCE_STATE_RENDER_TARGET, true);
 
 	// Record drawing commands.
 	float blueColor[4] = {0.392156899f, 0.584313750f, 0.929411829f, 1.000000000f};

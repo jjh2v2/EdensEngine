@@ -46,7 +46,7 @@ void EdenEngine::Run()
 		mGameTimer->Frame();
 		float frameTime = mGameTimer->GetTime();
 		int32 FPS = mGameTimer->GetFPS();
-
+		
 		if (mEngineWindow->DidScreenChange())
 		{
 			OnScreenChanged();
