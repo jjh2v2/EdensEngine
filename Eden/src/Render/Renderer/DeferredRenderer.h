@@ -3,14 +3,7 @@
 #include "Render/Graphics/GraphicsManager.h"
 #include "Scene/Scene.h"
 
-/*
-struct MatrixBufferTest
-{
-	D3DXMATRIX worldMatrix;
-	D3DXMATRIX viewMatrix;
-	D3DXMATRIX projectionMatrix;
-};
-*/
+#define GBufferTextureInputCount 3
 
 class DeferredRenderer
 {
@@ -23,6 +16,8 @@ public:
 
 private:
 	void ClearGBuffer();
+	void RenderGBuffer();
+	void CopyToBackBuffer(RenderTarget *renderTargetToCopy);
 
 	GraphicsManager *mGraphicsManager;
 	Scene *mActiveScene;
@@ -33,16 +28,12 @@ private:
 	RenderPassDescriptorHeap *mGBufferCBVDescHeap;
 	RenderPassDescriptorHeap *mGBufferSamplerDescHeap;
 
-	DescriptorHeapHandle mCameraBufferStart;
 	DescriptorHeapHandle mMaterialBufferStart;
 	DescriptorHeapHandle mTextureStart;
-	DescriptorHeapHandle mSamplerStart;
-	DescriptorHeapHandle mCopyTextureStart;
-	DescriptorHeapHandle mCopySamplerStart;
+
 	ConstantBuffer *mCameraConstantBuffer;
 	ConstantBuffer *mMaterialConstantBuffer;
 
-	Sampler *mSampler;
 	Texture *mTexture;
 	Mesh *mMesh;
 

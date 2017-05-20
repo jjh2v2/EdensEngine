@@ -23,40 +23,10 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 	mGBufferDepth = contextManager->CreateDepthStencilTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_D32_FLOAT_S8X24_UINT, 1, 1, 0);
 
 	mMesh = mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals");
-	mSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_ANISO);
 	mTexture = mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire");
 	
 	mCameraConstantBuffer = contextManager->CreateConstantBuffer(sizeof(CameraBuffer));
 	mMaterialConstantBuffer = contextManager->CreateConstantBuffer(sizeof(MaterialConstants));
-
-	mCameraBufferStart = mGBufferCBVDescHeap->GetHeapHandleBlock(1);
-	mMaterialBufferStart = mGBufferCBVDescHeap->GetHeapHandleBlock(1);
-	mTextureStart = mGBufferCBVDescHeap->GetHeapHandleBlock(3);
-	mSamplerStart = mGBufferSamplerDescHeap->GetHeapHandleBlock(3);
-
-	mCopyTextureStart = mGBufferCBVDescHeap->GetHeapHandleBlock(1);
-	mCopySamplerStart = mGBufferSamplerDescHeap->GetHeapHandleBlock(1);
-
-	D3D12_CPU_DESCRIPTOR_HANDLE textureOffsetHandle = mTextureStart.GetCPUHandle();
-	D3D12_CPU_DESCRIPTOR_HANDLE samplerOffsetHandle = mSamplerStart.GetCPUHandle();
-
-	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mCameraBufferStart.GetCPUHandle(), mCameraConstantBuffer->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mMaterialBufferStart.GetCPUHandle(), mMaterialConstantBuffer->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, textureOffsetHandle, mTexture->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	textureOffsetHandle.ptr += mGBufferCBVDescHeap->GetDescriptorSize();
-	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, textureOffsetHandle, mGraphicsManager->GetTextureManager()->GetTexture("MageNormal")->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	textureOffsetHandle.ptr += mGBufferCBVDescHeap->GetDescriptorSize();
-	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, textureOffsetHandle, mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal")->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	
-	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, samplerOffsetHandle, mSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-	samplerOffsetHandle.ptr += mGBufferSamplerDescHeap->GetDescriptorSize();
-	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, samplerOffsetHandle, mSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-	samplerOffsetHandle.ptr += mGBufferSamplerDescHeap->GetDescriptorSize();
-	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, samplerOffsetHandle, mSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-
-	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mCopyTextureStart.GetCPUHandle(), gbufferNormalsTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mCopySamplerStart.GetCPUHandle(), mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_POINT)->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 }
 
 DeferredRenderer::~DeferredRenderer()
@@ -84,6 +54,7 @@ DeferredRenderer::~DeferredRenderer()
 		delete currentTarget;
 	}
 
+	if(mGBufferDepth)
 	{
 		heapManager->FreeDSVDescriptorHeapHandle(mGBufferDepth->GetDepthStencilViewHandle());
 		heapManager->FreeDSVDescriptorHeapHandle(mGBufferDepth->GetReadOnlyDepthStencilViewHandle());
@@ -125,18 +96,116 @@ void DeferredRenderer::ClearGBuffer()
 	graphicsContext->ClearDepthStencilTarget(mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle(), 0.0f, 0);
 }
 
+void DeferredRenderer::RenderGBuffer()
+{
+	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
+	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
+	Vector2 screenSize = direct3DManager->GetScreenSize();
+
+	graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
+	graphicsContext->SetScissorRect(0, 0, (uint32)screenSize.X, (uint32)screenSize.Y);
+
+	// set up the default samplers
+	DescriptorHeapHandle gBufferSamplersHandle = mGBufferSamplerDescHeap->GetHeapHandleBlock(3);
+	D3D12_CPU_DESCRIPTOR_HANDLE gBufferSamplersHandleOffset = gBufferSamplersHandle.GetCPUHandle();
+	Sampler *defaultAnisoSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_ANISO);
+
+	for (uint32 i = 0; i < GBufferTextureInputCount; i++)
+	{
+		direct3DManager->GetDevice()->CopyDescriptorsSimple(1, gBufferSamplersHandleOffset, defaultAnisoSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+		gBufferSamplersHandleOffset.ptr += mGBufferSamplerDescHeap->GetDescriptorSize();
+	}
+
+	//set up the camera buffer
+	CameraBuffer cameraBuffer;
+	cameraBuffer.viewMatrix = mActiveScene->GetMainCamera()->GetViewMatrix();
+	cameraBuffer.projectionMatrix = mActiveScene->GetMainCamera()->GetReverseProjectionMatrix();
+	D3DXMatrixTranspose(&cameraBuffer.viewMatrix, &cameraBuffer.viewMatrix);
+	D3DXMatrixTranspose(&cameraBuffer.projectionMatrix, &cameraBuffer.projectionMatrix);
+
+	mCameraConstantBuffer->SetConstantBufferData(&cameraBuffer, sizeof(CameraBuffer));
+
+	DescriptorHeapHandle perFrameCameraHandle = mGBufferCBVDescHeap->GetHeapHandleBlock(1);
+	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, perFrameCameraHandle.GetCPUHandle(), mCameraConstantBuffer->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	//set up the render targets
+	D3D12_CPU_DESCRIPTOR_HANDLE gbufferRtvHandles[3] = {
+		mGBufferTargets[0]->GetRenderTargetViewHandle().GetCPUHandle(),
+		mGBufferTargets[1]->GetRenderTargetViewHandle().GetCPUHandle(),
+		mGBufferTargets[2]->GetRenderTargetViewHandle().GetCPUHandle()
+	};
+	graphicsContext->SetRenderTargets(3, gbufferRtvHandles, mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle());
+
+	//shader setup
+	ShaderPipelinePermutation permutation(Render_Standard, Target_GBuffer);
+	ShaderPSO *shaderPSO = mGraphicsManager->GetShaderManager()->GetShaderTechnique("GBufferLit")->GetShader(permutation);
+	graphicsContext->SetPipelineState(shaderPSO);
+	graphicsContext->SetRootSignature(shaderPSO->GetRootSignature());
+
+	graphicsContext->SetDescriptorTable(2, perFrameCameraHandle.GetGPUHandle());
+	graphicsContext->SetDescriptorTable(3, gBufferSamplersHandle.GetGPUHandle());
+}
+
+void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
+{
+	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
+	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
+	BackBufferTarget *backBuffer = direct3DManager->GetBackBufferTarget();
+
+	DescriptorHeapHandle copyTextureHandle = mGBufferCBVDescHeap->GetHeapHandleBlock(1);
+	DescriptorHeapHandle copySamplerHandle = mGBufferSamplerDescHeap->GetHeapHandleBlock(1);
+
+	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, copyTextureHandle.GetCPUHandle(), renderTargetToCopy->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, copySamplerHandle.GetCPUHandle(), mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_POINT)->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
+	graphicsContext->TransitionResource((*backBuffer), D3D12_RESOURCE_STATE_RENDER_TARGET, false);
+	graphicsContext->TransitionResource((*renderTargetToCopy), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
+
+	graphicsContext->SetRenderTarget(backBuffer->GetRenderTargetViewHandle().GetCPUHandle());
+
+	ShaderPipelinePermutation bbPermutation(Render_Standard_NoDepth, Target_Standard_BackBuffer_NoDepth);
+	ShaderPSO *copyShader = mGraphicsManager->GetShaderManager()->GetShaderTechnique("SimpleCopy")->GetShader(bbPermutation);
+	graphicsContext->SetPipelineState(copyShader);
+	graphicsContext->SetRootSignature(copyShader->GetRootSignature());
+
+	graphicsContext->SetDescriptorTable(0, copyTextureHandle.GetGPUHandle());
+	graphicsContext->SetDescriptorTable(1, copySamplerHandle.GetGPUHandle());
+
+	graphicsContext->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	graphicsContext->SetVertexBuffer(0, NULL);
+	graphicsContext->SetIndexBuffer(NULL);
+	graphicsContext->Draw(3);
+
+	graphicsContext->TransitionResource((*backBuffer), D3D12_RESOURCE_STATE_PRESENT, true);
+}
+
 void DeferredRenderer::Render()
 {
+	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
+	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
+
+	//Reset and set heaps
+	mGBufferCBVDescHeap->Reset();
+	mGBufferSamplerDescHeap->Reset();
+	graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mGBufferCBVDescHeap->GetHeap());
+	graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, mGBufferSamplerDescHeap->GetHeap());
+
 	{
-		CameraBuffer camBuff;
-		camBuff.viewMatrix = mActiveScene->GetMainCamera()->GetViewMatrix();
-		camBuff.projectionMatrix = mActiveScene->GetMainCamera()->GetReverseProjectionMatrix();
+		mMaterialBufferStart = mGBufferCBVDescHeap->GetHeapHandleBlock(1);
+		mTextureStart = mGBufferCBVDescHeap->GetHeapHandleBlock(3);
 
-		D3DXMatrixTranspose(&camBuff.viewMatrix, &camBuff.viewMatrix);
-		D3DXMatrixTranspose(&camBuff.projectionMatrix, &camBuff.projectionMatrix);
+		D3D12_CPU_DESCRIPTOR_HANDLE textureOffsetHandle = mTextureStart.GetCPUHandle();
 
-		mCameraConstantBuffer->SetConstantBufferData(&camBuff, sizeof(CameraBuffer));
+		direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mMaterialBufferStart.GetCPUHandle(), mMaterialConstantBuffer->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
+		direct3DManager->GetDevice()->CopyDescriptorsSimple(1, textureOffsetHandle, mTexture->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		textureOffsetHandle.ptr += mGBufferCBVDescHeap->GetDescriptorSize();
+		direct3DManager->GetDevice()->CopyDescriptorsSimple(1, textureOffsetHandle, mGraphicsManager->GetTextureManager()->GetTexture("MageNormal")->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		textureOffsetHandle.ptr += mGBufferCBVDescHeap->GetDescriptorSize();
+		direct3DManager->GetDevice()->CopyDescriptorsSimple(1, textureOffsetHandle, mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal")->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	}
+
+	{
 		D3DXMATRIX modelMatrix, positionMatrix, rotationMatrix, scalarMatrix;
 		D3DXMatrixIdentity(&positionMatrix);
 		D3DXMatrixIdentity(&rotationMatrix);
@@ -163,65 +232,23 @@ void DeferredRenderer::Render()
 		mMaterialConstantBuffer->SetConstantBufferData(&matConstants, sizeof(MaterialConstants));
 	}
 
-	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
-	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
-	BackBufferTarget *backBuffer = direct3DManager->GetBackBufferTarget();
-
-	Vector2 screenSize = direct3DManager->GetScreenSize();
-	graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
-	graphicsContext->SetScissorRect(0, 0, (uint32)screenSize.X, (uint32)screenSize.Y);
-
-	D3D12_CPU_DESCRIPTOR_HANDLE gbufferRtvHandles[3] = {
-		mGBufferTargets[0]->GetRenderTargetViewHandle().GetCPUHandle(),
-		mGBufferTargets[1]->GetRenderTargetViewHandle().GetCPUHandle(),
-		mGBufferTargets[2]->GetRenderTargetViewHandle().GetCPUHandle()
-	};
+	
 
 	ClearGBuffer();
 
-	graphicsContext->SetRenderTargets(3, gbufferRtvHandles, mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle());
-	graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mGBufferCBVDescHeap->GetHeap());
-	graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, mGBufferSamplerDescHeap->GetHeap());
+	RenderGBuffer();
 
 	{
-		ShaderPipelinePermutation permutation(Render_Standard, Target_GBuffer);
-		ShaderPSO *shaderPSO = mGraphicsManager->GetShaderManager()->GetShaderTechnique("GBufferLit")->GetShader(permutation);
-		graphicsContext->SetPipelineState(shaderPSO);
-		graphicsContext->SetRootSignature(shaderPSO->GetRootSignature());
-
 		graphicsContext->SetDescriptorTable(0, mTextureStart.GetGPUHandle());
 		graphicsContext->SetDescriptorTable(1, mMaterialBufferStart.GetGPUHandle());
-		graphicsContext->SetDescriptorTable(2, mCameraBufferStart.GetGPUHandle());
-		graphicsContext->SetDescriptorTable(3, mSamplerStart.GetGPUHandle());
 		
 		graphicsContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		graphicsContext->SetVertexBuffer(0, mMesh->GetVertexBuffer());
 		graphicsContext->SetIndexBuffer(mMesh->GetIndexBuffer());
 		graphicsContext->Draw(mMesh->GetVertexCount());
-
-		//copy shader stage
-		
-		graphicsContext->TransitionResource((*backBuffer), D3D12_RESOURCE_STATE_RENDER_TARGET, false);
-		graphicsContext->TransitionResource((*mGBufferTargets[1]), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
-
-		graphicsContext->SetRenderTarget(backBuffer->GetRenderTargetViewHandle().GetCPUHandle());
-
-		ShaderPipelinePermutation bbPermutation(Render_Standard_NoDepth, Target_Standard_BackBuffer_NoDepth);
-		ShaderPSO *copyShader = mGraphicsManager->GetShaderManager()->GetShaderTechnique("SimpleCopy")->GetShader(bbPermutation);
-		graphicsContext->SetPipelineState(copyShader);
-		graphicsContext->SetRootSignature(copyShader->GetRootSignature());
-
-		graphicsContext->SetDescriptorTable(0, mCopyTextureStart.GetGPUHandle());
-		graphicsContext->SetDescriptorTable(1, mCopySamplerStart.GetGPUHandle());
-
-		graphicsContext->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-		graphicsContext->SetVertexBuffer(0, NULL);
-		graphicsContext->SetIndexBuffer(NULL);
-		graphicsContext->Draw(3);
-		
 	}
 
-	graphicsContext->TransitionResource((*backBuffer), D3D12_RESOURCE_STATE_PRESENT, true);
+	CopyToBackBuffer(mGBufferTargets[1]);
 
 	graphicsContext->Flush(direct3DManager->GetContextManager()->GetQueueManager(), true);
 }

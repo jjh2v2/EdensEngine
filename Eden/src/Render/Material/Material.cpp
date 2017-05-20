@@ -1,7 +1,7 @@
 #include "Render/Material/Material.h"
 #include "Render/DirectX/Context/Direct3DContext.h"
 
-Material::Material(ID3D12Device *device, ConstantBuffer *constantBuffer, DynamicArray<Texture*> &textures)
+Material::Material(ConstantBuffer *constantBuffer, DynamicArray<Texture*> &textures)
 {
 	mConstantBuffer = constantBuffer;
 	
@@ -29,7 +29,6 @@ void Material::ApplyMaterial(RenderPassContext *renderPassContext)
 {
 	GraphicsContext *graphicsContext = renderPassContext->GetGraphicsContext();
 	RenderPassDescriptorHeap *cbvHeap = renderPassContext->GetCBVSRVHeap();
-	ShaderPSO *shaderPSO = mShaderTechnique->GetShader(renderPassContext->GetShaderPipelinePermutation());
 	uint32 numTextures = mTextures.CurrentSize();
 
 	DescriptorHeapHandle cbvHandle = cbvHeap->GetHeapHandleBlock(1);
@@ -46,6 +45,4 @@ void Material::ApplyMaterial(RenderPassContext *renderPassContext)
 
 	graphicsContext->SetDescriptorTable(0, textureHandle.GetGPUHandle());
 	graphicsContext->SetDescriptorTable(1, cbvHandle.GetGPUHandle());
-	graphicsContext->SetPipelineState(shaderPSO);
-	graphicsContext->SetRootSignature(shaderPSO->GetRootSignature());
 }

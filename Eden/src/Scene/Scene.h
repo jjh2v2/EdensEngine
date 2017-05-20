@@ -1,5 +1,6 @@
 #pragma once
 #include "Camera/CameraManager.h"
+#include "Entity/SceneEntity.h"
 
 class InputManager;
 class GraphicsManager;

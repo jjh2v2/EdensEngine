@@ -12,7 +12,7 @@ class RenderPassContext;
 class Material
 {
 public:
-	Material(ID3D12Device *device, ConstantBuffer *constantBuffer, DynamicArray<Texture*> &textures);
+	Material(ConstantBuffer *constantBuffer, DynamicArray<Texture*> &textures);
 	~Material();
 
 	void CommitConstantBufferChanges();
@@ -20,7 +20,6 @@ public:
 	void ApplyMaterial(RenderPassContext *renderPassContext);
 
 private:
-	ShaderTechnique *mShaderTechnique;
 	ConstantBuffer *mConstantBuffer;
 	MaterialBuffer mMaterialBuffer;
 	DynamicArray<Texture*> mTextures;
