@@ -22,6 +22,10 @@ public:
 	IndexBuffer *CreateIndexBuffer(void* indexData, uint32 bufferSize);
 	ConstantBuffer *CreateConstantBuffer(uint32 bufferSize);
 
+	void FreeRenderTarget(RenderTarget *renderTarget);
+	void FreeDepthStencilTarget(DepthStencilTarget *depthStencilTarget);
+	void FreeConstantBuffer(ConstantBuffer *constantBuffer);
+
 private:
 	ID3D12Device *mDevice;
 	Direct3DHeapManager *mHeapManager;

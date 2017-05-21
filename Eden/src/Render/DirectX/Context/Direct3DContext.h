@@ -88,6 +88,7 @@ public:
 	void ClearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE target, float color[4]);
 	void ClearDepthStencilTarget(D3D12_CPU_DESCRIPTOR_HANDLE target, float depth, uint8 stencil);
 
+	void DrawFullScreenTriangle();
 	void Draw(uint32 vertexCount, uint32 vertexStartOffset = 0);
 	void DrawIndexed(uint32 indexCount, uint32 startIndexLocation = 0, int32 baseVertexLocation = 0);
 	void DrawInstanced(uint32 vertexCountPerInstance, uint32 instanceCount,

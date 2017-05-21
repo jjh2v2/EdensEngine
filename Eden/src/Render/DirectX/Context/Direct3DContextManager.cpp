@@ -410,3 +410,45 @@ DepthStencilTarget *Direct3DContextManager::CreateDepthStencilTarget(uint32 widt
 
 	return newDepthStencilTarget;
 }
+
+void Direct3DContextManager::FreeRenderTarget(RenderTarget *renderTarget)
+{
+	mHeapManager->FreeRTVDescriptorHeapHandle(renderTarget->GetRenderTargetViewHandle());
+	mHeapManager->FreeSRVDescriptorHeapHandle(renderTarget->GetShaderResourceViewHandle());
+	RenderTarget::UAVHandle uavHandle = renderTarget->GetUnorderedAccessViewHandle();
+
+	if (uavHandle.HasUAV)
+	{
+		mHeapManager->FreeSRVDescriptorHeapHandle(uavHandle.Handle);
+	}
+
+	uint16 targetArraySize = renderTarget->GetArraySize() - 1;
+	for (uint16 rtvArrayIndex = 0; rtvArrayIndex < targetArraySize; rtvArrayIndex++)
+	{
+		mHeapManager->FreeRTVDescriptorHeapHandle(renderTarget->GetRenderTargetViewHandle(rtvArrayIndex));
+	}
+
+	delete renderTarget;
+}
+
+void Direct3DContextManager::FreeDepthStencilTarget(DepthStencilTarget *depthStencilTarget)
+{
+	mHeapManager->FreeDSVDescriptorHeapHandle(depthStencilTarget->GetDepthStencilViewHandle());
+	mHeapManager->FreeDSVDescriptorHeapHandle(depthStencilTarget->GetReadOnlyDepthStencilViewHandle());
+	mHeapManager->FreeSRVDescriptorHeapHandle(depthStencilTarget->GetShaderResourceViewHandle());
+
+	uint16 targetArraySize = depthStencilTarget->GetArraySize() - 1;
+	for (uint16 dsvArrayIndex = 0; dsvArrayIndex < targetArraySize; dsvArrayIndex++)
+	{
+		mHeapManager->FreeDSVDescriptorHeapHandle(depthStencilTarget->GetDepthStencilViewHandle(dsvArrayIndex));
+		mHeapManager->FreeDSVDescriptorHeapHandle(depthStencilTarget->GetReadOnlyDepthStencilViewHandle(dsvArrayIndex));
+	}
+
+	delete depthStencilTarget;
+}
+
+void Direct3DContextManager::FreeConstantBuffer(ConstantBuffer *constantBuffer)
+{
+	mHeapManager->FreeSRVDescriptorHeapHandle(constantBuffer->GetConstantBufferViewHandle());
+	delete constantBuffer;
+}

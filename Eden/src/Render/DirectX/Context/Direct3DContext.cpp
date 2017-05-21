@@ -396,6 +396,14 @@ void GraphicsContext::ClearDepthStencilTarget(D3D12_CPU_DESCRIPTOR_HANDLE target
 	mCommandList->ClearDepthStencilView(target, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, depth, stencil, 0, NULL);
 }
 
+void GraphicsContext::DrawFullScreenTriangle()
+{
+	SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	SetVertexBuffer(0, NULL);
+	SetIndexBuffer(NULL);
+	Draw(3);
+}
+
 void GraphicsContext::Draw(uint32 vertexCount, uint32 vertexStartOffset /* = 0 */)
 {
 	DrawInstanced(vertexCount, 1, vertexStartOffset, 0);

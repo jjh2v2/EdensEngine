@@ -52,51 +52,23 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 
 DeferredRenderer::~DeferredRenderer()
 {
-	Direct3DHeapManager *heapManager = mGraphicsManager->GetDirect3DManager()->GetContextManager()->GetHeapManager();
+	Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
 
 	for (uint32 targetIndex = 0; targetIndex < mGBufferTargets.CurrentSize(); targetIndex++)
 	{
-		RenderTarget *currentTarget = mGBufferTargets[targetIndex];
-		heapManager->FreeRTVDescriptorHeapHandle(currentTarget->GetRenderTargetViewHandle());
-		heapManager->FreeSRVDescriptorHeapHandle(currentTarget->GetShaderResourceViewHandle());
-		RenderTarget::UAVHandle uavHandle = currentTarget->GetUnorderedAccessViewHandle();
-
-		if (uavHandle.HasUAV)
-		{
-			heapManager->FreeSRVDescriptorHeapHandle(uavHandle.Handle);
-		}
-
-		uint16 targetArraySize = currentTarget->GetArraySize() - 1;
-		for (uint16 rtvArrayIndex = 0; rtvArrayIndex < targetArraySize; rtvArrayIndex++)
-		{
-			heapManager->FreeRTVDescriptorHeapHandle(currentTarget->GetRenderTargetViewHandle(rtvArrayIndex));
-		}
-
-		delete currentTarget;
+		contextManager->FreeRenderTarget(mGBufferTargets[targetIndex]);
 	}
+
+	mGBufferTargets.Clear();
 
 	if(mGBufferDepth)
 	{
-		heapManager->FreeDSVDescriptorHeapHandle(mGBufferDepth->GetDepthStencilViewHandle());
-		heapManager->FreeDSVDescriptorHeapHandle(mGBufferDepth->GetReadOnlyDepthStencilViewHandle());
-		heapManager->FreeSRVDescriptorHeapHandle(mGBufferDepth->GetShaderResourceViewHandle());
-
-		uint16 targetArraySize = mGBufferDepth->GetArraySize() - 1;
-		for (uint16 dsvArrayIndex = 0; dsvArrayIndex < targetArraySize; dsvArrayIndex++)
-		{
-			heapManager->FreeDSVDescriptorHeapHandle(mGBufferDepth->GetDepthStencilViewHandle(dsvArrayIndex));
-			heapManager->FreeDSVDescriptorHeapHandle(mGBufferDepth->GetReadOnlyDepthStencilViewHandle(dsvArrayIndex));
-		}
-
-		delete mGBufferDepth;
+		contextManager->FreeDepthStencilTarget(mGBufferDepth);
 		mGBufferDepth = NULL;
 	}
 
-	heapManager->FreeSRVDescriptorHeapHandle(mCameraConstantBuffer->GetConstantBufferViewHandle());
-	delete mCameraConstantBuffer;
-
-	//heapManager->FreeSRVDescriptorHeapHandle(mMaterialConstantBuffer->GetConstantBufferViewHandle());
-	//delete mMaterialConstantBuffer;
+	contextManager->FreeConstantBuffer(mCameraConstantBuffer);
+	mCameraConstantBuffer = NULL;
 	
 	delete mGBufferCBVDescHeap;
 	delete mGBufferSamplerDescHeap;
@@ -196,10 +168,7 @@ void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
 	graphicsContext->SetDescriptorTable(0, copyTextureHandle.GetGPUHandle());
 	graphicsContext->SetDescriptorTable(1, copySamplerHandle.GetGPUHandle());
 
-	graphicsContext->SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	graphicsContext->SetVertexBuffer(0, NULL);
-	graphicsContext->SetIndexBuffer(NULL);
-	graphicsContext->Draw(3);
+	graphicsContext->DrawFullScreenTriangle();
 
 	graphicsContext->TransitionResource((*backBuffer), D3D12_RESOURCE_STATE_PRESENT, true);
 }
@@ -219,7 +188,7 @@ void DeferredRenderer::Render()
 
 	RenderGBuffer();
 
-	CopyToBackBuffer(mGBufferTargets[1]);
+	CopyToBackBuffer(mGBufferTargets[2]);
 
 	graphicsContext->Flush(direct3DManager->GetContextManager()->GetQueueManager(), true);
 }
