@@ -28,13 +28,8 @@ private:
 	RenderPassDescriptorHeap *mGBufferCBVDescHeap;
 	RenderPassDescriptorHeap *mGBufferSamplerDescHeap;
 
-	DescriptorHeapHandle mMaterialBufferStart;
-	DescriptorHeapHandle mTextureStart;
-
 	ConstantBuffer *mCameraConstantBuffer;
-	ConstantBuffer *mMaterialConstantBuffer;
 
-	Texture *mTexture;
-	Mesh *mMesh;
-
+	SceneEntity *mSceneEntity;
+	SceneEntity *mSceneEntity2;
 };

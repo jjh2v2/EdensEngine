@@ -21,12 +21,33 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 	mGBufferTargets.Add(gbufferMaterialTarget);
 
 	mGBufferDepth = contextManager->CreateDepthStencilTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_D32_FLOAT_S8X24_UINT, 1, 1, 0);
-
-	mMesh = mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals");
-	mTexture = mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire");
 	
 	mCameraConstantBuffer = contextManager->CreateConstantBuffer(sizeof(CameraBuffer));
-	mMaterialConstantBuffer = contextManager->CreateConstantBuffer(sizeof(MaterialConstants));
+
+	{
+		DynamicArray<Texture*> textures;
+		textures.Add(mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire"));
+		textures.Add(mGraphicsManager->GetTextureManager()->GetTexture("MageNormal"));
+		textures.Add(mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal"));
+		Material *newMaterial = new Material(contextManager->CreateConstantBuffer(sizeof(MaterialConstants)), textures);
+		newMaterial->GetMaterialBuffer()->SetUsesNormalMap(true);
+		newMaterial->GetMaterialBuffer()->SetUsesRoughmetalMap(true);
+		mSceneEntity = new SceneEntity(mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals"), newMaterial);
+		mSceneEntity->SetPosition(Vector3(0, -5.0f, 20.0f));
+		mSceneEntity->SetRotation(Vector3(0, MathHelper::Radian() * 180.0f, 0));
+	}
+	{
+		DynamicArray<Texture*> textures;
+		textures.Add(mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire"));
+		textures.Add(mGraphicsManager->GetTextureManager()->GetTexture("MageNormal"));
+		textures.Add(mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal"));
+		Material *newMaterial = new Material(contextManager->CreateConstantBuffer(sizeof(MaterialConstants)), textures);
+		newMaterial->GetMaterialBuffer()->SetUsesNormalMap(true);
+		newMaterial->GetMaterialBuffer()->SetUsesRoughmetalMap(true);
+		mSceneEntity2 = new SceneEntity(mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals"), newMaterial);
+		mSceneEntity2->SetPosition(Vector3(10, -5.0f, 20.0f));
+		mSceneEntity2->SetRotation(Vector3(0, MathHelper::Radian() * 180.0f, 0));
+	}
 }
 
 DeferredRenderer::~DeferredRenderer()
@@ -74,8 +95,8 @@ DeferredRenderer::~DeferredRenderer()
 	heapManager->FreeSRVDescriptorHeapHandle(mCameraConstantBuffer->GetConstantBufferViewHandle());
 	delete mCameraConstantBuffer;
 
-	heapManager->FreeSRVDescriptorHeapHandle(mMaterialConstantBuffer->GetConstantBufferViewHandle());
-	delete mMaterialConstantBuffer;
+	//heapManager->FreeSRVDescriptorHeapHandle(mMaterialConstantBuffer->GetConstantBufferViewHandle());
+	//delete mMaterialConstantBuffer;
 	
 	delete mGBufferCBVDescHeap;
 	delete mGBufferSamplerDescHeap;
@@ -144,6 +165,10 @@ void DeferredRenderer::RenderGBuffer()
 
 	graphicsContext->SetDescriptorTable(2, perFrameCameraHandle.GetGPUHandle());
 	graphicsContext->SetDescriptorTable(3, gBufferSamplersHandle.GetGPUHandle());
+
+	RenderPassContext renderPassContext(graphicsContext, mGBufferCBVDescHeap);
+	mSceneEntity->Render(&renderPassContext);
+	mSceneEntity2->Render(&renderPassContext);
 }
 
 void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
@@ -190,63 +215,9 @@ void DeferredRenderer::Render()
 	graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mGBufferCBVDescHeap->GetHeap());
 	graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, mGBufferSamplerDescHeap->GetHeap());
 
-	{
-		mMaterialBufferStart = mGBufferCBVDescHeap->GetHeapHandleBlock(1);
-		mTextureStart = mGBufferCBVDescHeap->GetHeapHandleBlock(3);
-
-		D3D12_CPU_DESCRIPTOR_HANDLE textureOffsetHandle = mTextureStart.GetCPUHandle();
-
-		direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mMaterialBufferStart.GetCPUHandle(), mMaterialConstantBuffer->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-		direct3DManager->GetDevice()->CopyDescriptorsSimple(1, textureOffsetHandle, mTexture->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		textureOffsetHandle.ptr += mGBufferCBVDescHeap->GetDescriptorSize();
-		direct3DManager->GetDevice()->CopyDescriptorsSimple(1, textureOffsetHandle, mGraphicsManager->GetTextureManager()->GetTexture("MageNormal")->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		textureOffsetHandle.ptr += mGBufferCBVDescHeap->GetDescriptorSize();
-		direct3DManager->GetDevice()->CopyDescriptorsSimple(1, textureOffsetHandle, mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal")->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	}
-
-	{
-		D3DXMATRIX modelMatrix, positionMatrix, rotationMatrix, scalarMatrix;
-		D3DXMatrixIdentity(&positionMatrix);
-		D3DXMatrixIdentity(&rotationMatrix);
-		D3DXMatrixIdentity(&scalarMatrix);
-		D3DXMatrixIdentity(&modelMatrix);
-		D3DXMatrixTranslation(&positionMatrix, 0, -5, 20);
-		D3DXMatrixRotationYawPitchRoll(&rotationMatrix, MathHelper::Radian() * 180.0f, 0, 0);
-		D3DXMatrixScaling(&scalarMatrix, 1, 1, 1);
-		D3DXMatrixMultiply(&modelMatrix, &modelMatrix, &scalarMatrix);
-		D3DXMatrixMultiply(&modelMatrix, &modelMatrix, &rotationMatrix);
-		D3DXMatrixMultiply(&modelMatrix, &modelMatrix, &positionMatrix);
-		D3DXMatrixTranspose(&modelMatrix, &modelMatrix);
-
-		MaterialConstants matConstants;
-		matConstants.diffuseColor = Color(1.0f, 1.0f, 1.0f, 1.0f);
-		matConstants.materialIntensity = 1.0f;
-		matConstants.metalness = 0.0f;
-		matConstants.roughness = 1.0f;
-		matConstants.tiling = Vector2(1.0f, 1.0f);
-		matConstants.usesNormalMap = 1;
-		matConstants.usesRoughMetalMap = 1;
-		matConstants.worldMatrix = modelMatrix;
-
-		mMaterialConstantBuffer->SetConstantBufferData(&matConstants, sizeof(MaterialConstants));
-	}
-
-	
-
 	ClearGBuffer();
 
 	RenderGBuffer();
-
-	{
-		graphicsContext->SetDescriptorTable(0, mTextureStart.GetGPUHandle());
-		graphicsContext->SetDescriptorTable(1, mMaterialBufferStart.GetGPUHandle());
-		
-		graphicsContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		graphicsContext->SetVertexBuffer(0, mMesh->GetVertexBuffer());
-		graphicsContext->SetIndexBuffer(mMesh->GetIndexBuffer());
-		graphicsContext->Draw(mMesh->GetVertexCount());
-	}
 
 	CopyToBackBuffer(mGBufferTargets[1]);
 

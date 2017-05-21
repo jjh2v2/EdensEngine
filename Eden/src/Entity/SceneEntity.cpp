@@ -36,6 +36,8 @@ void SceneEntity::Render(RenderPassContext *renderPassContext)
 	D3DXMatrixMultiply(&modelMatrix, &modelMatrix, &rotationMatrix);
 	D3DXMatrixMultiply(&modelMatrix, &modelMatrix, &positionMatrix);
 
+	D3DXMatrixTranspose(&modelMatrix, &modelMatrix);
+
 	mMaterial->GetMaterialBuffer()->SetWorldMatrix(modelMatrix);
 	mMaterial->CommitConstantBufferChanges();
 	mMaterial->ApplyMaterial(renderPassContext);
