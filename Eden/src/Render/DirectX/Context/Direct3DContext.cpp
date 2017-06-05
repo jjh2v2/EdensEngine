@@ -54,19 +54,12 @@ uint64 Direct3DContext::Flush(Direct3DQueueManager *queueManager, bool waitForCo
 
 	Direct3DUtils::ThrowIfHRESULTFailed(mCommandAllocator->Reset());
 
-	// Reset the command list, keep the previous state
+	// Reset the command list
 	Direct3DUtils::ThrowIfHRESULTFailed(mCommandList->Reset(mCommandAllocator, NULL));
 
-	if (mCurrentGraphicsRootSignature)
-	{
-		mCommandList->SetGraphicsRootSignature(mCurrentGraphicsRootSignature);
-		mCommandList->SetPipelineState(mCurrentGraphicsPipelineState);
-	}
-	if (mCurrentComputeRootSignature)
-	{
-		mCommandList->SetComputeRootSignature(mCurrentComputeRootSignature);
-		mCommandList->SetPipelineState(mCurrentComputePipelineState);
-	}
+	//flush current state, rebind descriptor heaps
+	mCurrentGraphicsRootSignature = NULL;
+	mCurrentComputeRootSignature = NULL;
 
 	BindDescriptorHeaps();
 
@@ -570,7 +563,6 @@ bool UploadContext::AllocateUploadSubmission(uint64 size, uint64 &uploadIndex)
 	mUploads[newSubmissionId].UploadLocation = allocOffset;
 	mUploads[newSubmissionId].UploadSize = size;
 	mUploads[newSubmissionId].UploadPadding = padding;
-	mUploads[newSubmissionId].CommandAllocator = mCommandAllocator;
 	uploadIndex = newSubmissionId;
 
 	return true;

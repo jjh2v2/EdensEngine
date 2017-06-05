@@ -25,11 +25,10 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 	mCameraConstantBuffer = contextManager->CreateConstantBuffer(sizeof(CameraBuffer));
 
 	{
-		DynamicArray<Texture*> textures;
-		textures.Add(mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire"));
-		textures.Add(mGraphicsManager->GetTextureManager()->GetTexture("MageNormal"));
-		textures.Add(mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal"));
-		Material *newMaterial = new Material(contextManager->CreateConstantBuffer(sizeof(MaterialConstants)), textures);
+		Material *newMaterial = new Material(contextManager->CreateConstantBuffer(sizeof(MaterialConstants)));
+		newMaterial->SetTexture(MaterialTextureType_Diffuse, mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire"));
+		newMaterial->SetTexture(MaterialTextureType_Normal, mGraphicsManager->GetTextureManager()->GetTexture("MageNormal"));
+		newMaterial->SetTexture(MaterialTextureType_Roughmetal, mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal"));
 		newMaterial->GetMaterialBuffer()->SetUsesNormalMap(true);
 		newMaterial->GetMaterialBuffer()->SetUsesRoughmetalMap(true);
 		mSceneEntity = new SceneEntity(mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals"), newMaterial);
@@ -37,11 +36,10 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 		mSceneEntity->SetRotation(Vector3(0, MathHelper::Radian() * 180.0f, 0));
 	}
 	{
-		DynamicArray<Texture*> textures;
-		textures.Add(mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire"));
-		textures.Add(mGraphicsManager->GetTextureManager()->GetTexture("MageNormal"));
-		textures.Add(mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal"));
-		Material *newMaterial = new Material(contextManager->CreateConstantBuffer(sizeof(MaterialConstants)), textures);
+		Material *newMaterial = new Material(contextManager->CreateConstantBuffer(sizeof(MaterialConstants)));
+		newMaterial->SetTexture(MaterialTextureType_Diffuse, mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire"));
+		newMaterial->SetTexture(MaterialTextureType_Normal, mGraphicsManager->GetTextureManager()->GetTexture("MageNormal"));
+		newMaterial->SetTexture(MaterialTextureType_Roughmetal, mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal"));
 		newMaterial->GetMaterialBuffer()->SetUsesNormalMap(true);
 		newMaterial->GetMaterialBuffer()->SetUsesRoughmetalMap(true);
 		mSceneEntity2 = new SceneEntity(mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals"), newMaterial);
@@ -70,6 +68,19 @@ DeferredRenderer::~DeferredRenderer()
 	contextManager->FreeConstantBuffer(mCameraConstantBuffer);
 	mCameraConstantBuffer = NULL;
 	
+	{
+		Material *material = mSceneEntity->GetMaterial();
+		mGraphicsManager->GetDirect3DManager()->GetContextManager()->FreeConstantBuffer(material->GetConstantBuffer());
+		delete material;
+		delete mSceneEntity;
+	}
+	{
+		Material *material = mSceneEntity2->GetMaterial();
+		mGraphicsManager->GetDirect3DManager()->GetContextManager()->FreeConstantBuffer(material->GetConstantBuffer());
+		delete material;
+		delete mSceneEntity2;
+	}
+
 	delete mGBufferCBVDescHeap;
 	delete mGBufferSamplerDescHeap;
 }
@@ -138,7 +149,11 @@ void DeferredRenderer::RenderGBuffer()
 	graphicsContext->SetDescriptorTable(2, perFrameCameraHandle.GetGPUHandle());
 	graphicsContext->SetDescriptorTable(3, gBufferSamplersHandle.GetGPUHandle());
 
-	RenderPassContext renderPassContext(graphicsContext, mGBufferCBVDescHeap);
+	DynamicArray<MaterialTextureType> textureTypes;
+	textureTypes.Add(MaterialTextureType_Diffuse);
+	textureTypes.Add(MaterialTextureType_Normal);
+	textureTypes.Add(MaterialTextureType_Roughmetal);
+	RenderPassContext renderPassContext(graphicsContext, mGBufferCBVDescHeap, textureTypes);
 	mSceneEntity->Render(&renderPassContext);
 	mSceneEntity2->Render(&renderPassContext);
 }

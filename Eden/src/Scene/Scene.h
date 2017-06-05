@@ -18,6 +18,10 @@ public:
 	void Update(float delta);
 	
 private:
+	void FreeSceneEntity(SceneEntity *entity);
+
+	GraphicsManager *mGraphicsManager;
 	CameraManager *mCameraManager;
 
+	DynamicArray<SceneEntity*> mSceneEntities;
 };

@@ -8,6 +8,7 @@ public:
 	SceneEntity(Mesh *mesh, Material *material);
 	~SceneEntity();
 
+	Material *GetMaterial() { return mMaterial; }
 	Vector3 GetPosition() { return mPosition; }
 	Vector3 GetRotation() { return mPosition; }
 	Vector3 GetScale() { return mPosition; }

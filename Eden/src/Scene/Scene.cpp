@@ -4,12 +4,21 @@
 
 Scene::Scene(GraphicsManager *graphicsManager)
 {
-	mCameraManager = new CameraManager(graphicsManager->GetDirect3DManager()->GetScreenSize());
+	mGraphicsManager = graphicsManager;
+	mCameraManager = new CameraManager(mGraphicsManager->GetDirect3DManager()->GetScreenSize());
 }
 
 Scene::~Scene()
 {
 	delete mCameraManager;
+}
+
+void Scene::FreeSceneEntity(SceneEntity *entity)
+{
+	Material *material = entity->GetMaterial();
+	mGraphicsManager->GetDirect3DManager()->GetContextManager()->FreeConstantBuffer(material->GetConstantBuffer());
+	delete material;
+	delete entity;
 }
 
 void Scene::ApplyInput(InputManager *inputManager, float delta)

@@ -76,16 +76,19 @@ RootSignatureManager::~RootSignatureManager()
 		if (mRootSignatures[i].RootSignature)
 		{
 			mRootSignatures[i].RootSignature->Release();
+			mRootSignatures[i].RootSignature = NULL;
 		}
 
 		if (mRootSignatures[i].RootSignatureBlob)
 		{
 			mRootSignatures[i].RootSignatureBlob->Release();
+			mRootSignatures[i].RootSignatureBlob = NULL;
 		}
 
 		if (mRootSignatures[i].Error)
 		{
 			mRootSignatures[i].Error->Release();
+			mRootSignatures[i].Error = NULL;
 		}
 	}
 

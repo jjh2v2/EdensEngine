@@ -6,21 +6,24 @@
 #include "Render/Texture/Sampler/Sampler.h"
 #include "Render/DirectX/Heap/DescriptorHeap.h"
 #include "Core/Containers/DynamicArray.h"
+#include "Render/Shader/Definitions/MaterialDefinitions.h"
 
 class RenderPassContext;
 
 class Material
 {
 public:
-	Material(ConstantBuffer *constantBuffer, DynamicArray<Texture*> &textures);
+	Material(ConstantBuffer *constantBuffer);
 	~Material();
 
+	void SetTexture(MaterialTextureType textureType, Texture *texture);
 	void CommitConstantBufferChanges();
+	ConstantBuffer *GetConstantBuffer() { return mConstantBuffer; }
 	MaterialBuffer *GetMaterialBuffer() { return &mMaterialBuffer; }
 	void ApplyMaterial(RenderPassContext *renderPassContext);
 
 private:
 	ConstantBuffer *mConstantBuffer;
 	MaterialBuffer mMaterialBuffer;
-	DynamicArray<Texture*> mTextures;
+	Texture* mTextures[MaterialTextureType_Max];
 };

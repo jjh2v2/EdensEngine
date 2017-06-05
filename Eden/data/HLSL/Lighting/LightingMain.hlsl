@@ -181,76 +181,31 @@ SurfaceData ComputeSurfaceDataFromGBuffer(uint2 coords, float2 texCoord, float3 
     return data;
 }
 
-float3 CalculateSchlickFresnelReflectance(float3 viewDir, float3 half, float3 specular)
+float3 CalculateFresnelShlick(float3 specular, float3 viewDir, float3 half)
 {
-	return specular + (1.0 - specular) * pow(1.0 - (dot(half, viewDir)), 5.0);
+	return specular + (1.0 - specular) * pow(1.0 - dot(viewDir, half), 5.0);
 }
 
-float CalculateNormalDistributionPhong(float roughness, float3 surfaceNormal, float3 microfacetNormal)
-{
-    float roughnessActual = pow(2.0, roughness * 15.0);
-	float PI = 3.14159265f;
-	float result = ((roughnessActual + 2.0)/(2.0 * PI)) * pow(saturate(dot(surfaceNormal, microfacetNormal)), roughnessActual);
-	return result;
-}
-
-float CalculateNormalDistributionTrowReitz(float roughness, float3 surfaceNormal, float3 microfacetNormal)
+float CalculateNormalDistributionTW(float roughness, float NoH)
 {
 	float PI = 3.14159265f;
-	float roughnessActual = roughness * roughness;
-	
-	return pow(roughnessActual, 2.0) / (PI * pow( pow(dot(surfaceNormal, microfacetNormal), 2.0) 
-									   * (pow(roughnessActual, 2.0) - 1.0) + 1.0 , 2.0) + 0.0000001);
+	float roughnessSquared = roughness * roughness;
+	float denom = NoH * NoH * (roughnessSquared - 1.0) + 1.0;
+	return (roughnessSquared) / ((PI * denom * denom) + 0.00001); //the 0.00001 prevents light artifacts from close-to-zero values
 }
 
-float CalculateNormalDistributionGGX(float roughness, float NoH)
+float CalculateGeometryTermSmithGGX(float roughness, float nDotL, float nDotV)
 {
-	float PI = 3.14159265f;
-	float a2 = roughness * roughness;
-	float denom = (NoH * NoH) * (a2 - 1.0) + 1.0;
-	denom *= denom;
-
-	return a2 / (PI * denom);
-}
-
-float G1_Smith(float k, float NoV)
-{
-	return NoV / (NoV * (1.0 - k) + k);
-}
-
-float G_Smith(float r, float NoV, float NoL)
-{
-	float r2 = (r + 1) * (r + 1);
-	float k = r2 / 8.0;
-	return G1_Smith(k, NoV) * G1_Smith(k, NoL);
-}
-
-//F0 is specular color at normal incidence
-float3 F_Schlick(float3 f0, float VoH)
-{
-	return f0 + (1.0 - f0) * exp2((-5.55473 * VoH) - (6.98316 * VoH));
-
-	//float Fc = pow(1 - VoH, 5);
-	//return saturate(50.0 * f0) * Fc + (1 - Fc) * f0;
-}
-
-float CalculateGeometryTerm(float3 lightDirection, float3 half)
-{
-	return 1.0 / pow(dot(lightDirection, half), 2.0);
-}
-
-float CalculateSmithGGXGeometryTerm(float roughness, float nDotL, float nDotV)
-{
-	float roughnessActual = roughness * roughness;
-	float viewGeoTerm = nDotV + sqrt( (nDotV - nDotV * roughnessActual) * nDotV + roughnessActual );
-	float lightGeoTerm = nDotL + sqrt( (nDotL - nDotL * roughnessActual) * nDotL + roughnessActual );
+	float roughnessSquared = roughness * roughness;
+	float viewGeoTerm = nDotV + sqrt( (nDotV - nDotV * roughnessSquared) * nDotV + roughnessSquared );
+	float lightGeoTerm = nDotL + sqrt( (nDotL - nDotL * roughnessSquared) * nDotL + roughnessSquared );
 	
 	return rcp( viewGeoTerm * lightGeoTerm );
 }
 
-int RoughnessToMipLevel(float Roughness, int MipCount)
+int RoughnessToMipLevel(float roughness, int mipCount)
 {
-	return MipCount - 6 - 1.15 * log2(Roughness);
+	return mipCount - 6 - 1.15 * log2(roughness);
 }
 
 float3 ApproximateSpecularIBL(int MipLevels, float3 SpecularColor, float Roughness, float3 N, float3 V)
@@ -263,13 +218,6 @@ float3 ApproximateSpecularIBL(int MipLevels, float3 SpecularColor, float Roughne
 	PrefilteredColor = pow(PrefilteredColor, 2.2);
 	float2 EnvBRDF = saturate(EnvBRDFLookupTexture.Sample(gEnvironmentSampler, saturate(float2(Roughness, NoV))));
 	return PrefilteredColor * (SpecularColor * EnvBRDF.x + EnvBRDF.y);
-}
-
-float3 ComputePositionView2(float2 positionScreen, float zBuffer)
-{
-	float viewSpaceZ = mCameraProj._43 / (zBuffer - mCameraProj._33);
-	
-	return ComputePositionViewFromZ(positionScreen , viewSpaceZ);
 }
 
 float3 ApplyFog(float3 pixelColor, float distance, float3 viewDir)
@@ -285,7 +233,7 @@ float3 ApplyFog(float3 pixelColor, float distance, float3 viewDir)
 	return fogColor;
 }
 
-float4 LightShadowAccumulationDirLightPixelShader(VS_to_PS input) : SV_Target
+float4 LightingMainPixelShader(VS_to_PS input) : SV_Target
 {
     float3 lit = float3(0.0f, 0.0f, 0.0f);
 	float3 positionView = ComputePositionView(uint2(input.positionViewport.xy));
@@ -345,6 +293,7 @@ float4 LightShadowAccumulationDirLightPixelShader(VS_to_PS input) : SV_Target
 	float nDotL = saturate(dot(-lightDir.xyz, surface.normal));
 	
 	float roughness = surface.albedo.a;
+	float roughness *= roughness;
 	float metallic = surface.specular.a;
 	
     float3 skyDirection = float3(0.0f,1.0f,0.0f);

@@ -60,4 +60,8 @@ private:
 	Vector2	mOutputSize;
 	DisplayOrientation mNativeOrientation;
 	DisplayOrientation mCurrentOrientation;
+
+#if defined(_DEBUG)
+	ID3D12Debug *mDebugController;
+#endif
 };

@@ -7,6 +7,7 @@
 #include "Render/Shader/RootSignature/RootSignatureManager.h"
 #include "Render/Texture/Texture.h"
 #include "Render/DirectX/Heap/DescriptorHeap.h"
+#include "Render/Shader/Definitions/MaterialDefinitions.h"
 
 #define VALID_COMPUTE_QUEUE_RESOURCE_STATES \
 	( D3D12_RESOURCE_STATE_UNORDERED_ACCESS \
@@ -163,7 +164,6 @@ private:
 			IsUploading = false;
 		}
 
-		ID3D12CommandAllocator *CommandAllocator;
 		uint64 UploadLocation;
 		uint64 UploadSize;
 		uint64 UploadPadding;
@@ -180,17 +180,24 @@ private:
 class RenderPassContext
 {
 public:
-	RenderPassContext(GraphicsContext *context, RenderPassDescriptorHeap *cbvSrvHeap)
+	RenderPassContext(GraphicsContext *context, RenderPassDescriptorHeap *cbvSrvHeap, DynamicArray<MaterialTextureType> &renderPassTextures)
 		:mGraphicsContext(context)
 		,mCBVSRVHeap(cbvSrvHeap)
 	{
-		
+		for (uint32 i = 0; i < renderPassTextures.CurrentSize(); i++)
+		{
+			mRenderPassTextures.Add(renderPassTextures[i]);
+		}
 	}
 
 	GraphicsContext *GetGraphicsContext() { return mGraphicsContext; }
 	RenderPassDescriptorHeap *GetCBVSRVHeap() { return mCBVSRVHeap; }
 
+	MaterialTextureType GetRenderPassTextureType(uint32 index) { return mRenderPassTextures[index]; }
+	uint32 GetRenderPassTextureCount() { return mRenderPassTextures.CurrentSize(); }
+
 private:
 	GraphicsContext *mGraphicsContext;
 	RenderPassDescriptorHeap *mCBVSRVHeap;
+	DynamicArray<MaterialTextureType> mRenderPassTextures;
 };

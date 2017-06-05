@@ -1,4 +1,5 @@
 #include "Render/DirectX/Direct3DManager.h"
+#include <dxgidebug.h>
 
 Direct3DManager::Direct3DManager()
 {
@@ -24,6 +25,20 @@ Direct3DManager::~Direct3DManager()
 	delete mContextManager;
 	mContextManager = NULL;
 
+#ifdef _DEBUG
+	IDXGIDebug1* pDebug = nullptr;
+	if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&pDebug))))
+	{
+		pDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_SUMMARY);
+		pDebug->Release();
+	}
+#endif
+
+#if defined(_DEBUG)
+	mDebugController->Release();
+	mDebugController = NULL;
+#endif
+
 	mDevice->Release();
 	mDevice = NULL;
 
@@ -36,16 +51,10 @@ void Direct3DManager::InitializeDeviceResources()
 	
 #if defined(_DEBUG)
 	// If the project is in a debug build, enable debugging via SDK Layers.
-{
-	ID3D12Debug *debugController;
-	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
+	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&mDebugController))))
 	{
-		debugController->EnableDebugLayer();
+		mDebugController->EnableDebugLayer();
 	}
-
-	debugController->Release();
-	debugController = NULL;
-}
 #endif
 
 	Direct3DUtils::ThrowIfHRESULTFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mDXGIFactory)));

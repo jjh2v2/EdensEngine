@@ -351,6 +351,9 @@
     <ClInclude Include="src\Scene\SceneManager.h">
       <Filter>Source Files\Scene</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\Shader\Definitions\MaterialDefinitions.h">
+      <Filter>Source Files\Render\Shader\Definitions</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">

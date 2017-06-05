@@ -11,7 +11,6 @@ struct CameraBuffer	//per frame
 	D3DXMATRIX projectionMatrix;
 };
 
-
 struct MaterialConstants
 {
 	MaterialConstants()
