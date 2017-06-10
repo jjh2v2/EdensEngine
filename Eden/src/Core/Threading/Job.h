@@ -1,6 +1,7 @@
 #pragma once
 #include "Core/Containers/DynamicArray.h"
 #include "Core/Platform/PlatformCore.h"
+#include <atomic>
 
 class JobBatch;
 
@@ -32,5 +33,5 @@ public:
 
 private:
 	DynamicArray<Job *> mJobs;
-	volatile bool mJobsCompleted; //TDA: Replace this. Volatile isn't the right answer for this
+	std::atomic<bool> mJobsCompleted;
 };

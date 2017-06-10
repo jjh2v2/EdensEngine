@@ -52,7 +52,12 @@ public:
 		return mFramesPerSecond;
 	}
 
-	float GetTime()
+	float GetTimeSeconds()
+	{
+		return mTimerFrameTime / 1000.0f;
+	}
+
+	float GetTimeMilliseconds()
 	{
 		return mTimerFrameTime;
 	}

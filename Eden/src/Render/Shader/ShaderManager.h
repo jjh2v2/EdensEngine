@@ -11,13 +11,22 @@ public:
 	ShaderManager(ID3D12Device *device);
 	~ShaderManager();
 	
-	ShaderTechnique *GetShaderTechnique(std::string shaderName) { return mShaderTechniqueLookup[shaderName]; }
+	ShaderPSO *GetShader(std::string shaderName, ShaderPipelinePermutation permutation);
 
 private:
-	void LoadAllShaders(ID3D12Device *device);
-	ShaderTechnique *LoadShader(ID3D12Device *device, const char *fileName);
+	struct ShaderTechniqueInfo
+	{
+		ShaderTechnique *Technique;
+		RootSignatureType SignatureType;
+	};
 
-	std::map<std::string, ShaderTechnique*> mShaderTechniqueLookup;
+	void LoadAllShaders(ID3D12Device *device);
+	ShaderTechniqueInfo LoadShader(ID3D12Device *device, const char *fileName);
+	void PreloadExpectedPermutations();
+
+	ID3D12Device *mDevice;
+
+	std::map<std::string, ShaderTechniqueInfo> mShaderTechniqueLookup;
 	DynamicArray<ShaderTechnique*> mShaderTechniques;
 	ManifestLoader mManifestLoader;
 

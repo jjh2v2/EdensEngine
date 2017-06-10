@@ -1,13 +1,6 @@
 #pragma once
 #include "Render/Shader/ShaderPipelineDefinition.h"
 
-/*
-Remove any permutation references to the defines/macros because we're using cbuffer values for that now (also any defines should be done in separate #define shader files, rather than try to handle them in code)
-Also need to compile shaders separately from root signatures. We can reuse the same shader code and just pass it in to create a pipeline with 
-render target and render state settings.
-*/
-
-
 class Shader
 {
 public:

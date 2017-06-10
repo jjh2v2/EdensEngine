@@ -4,3 +4,5 @@ VertexShader
 PixelShader
 [GBuffer/GBufferLit.hlsl]
 [GBufferLitPixelShader]
+RootSignature
+[0]

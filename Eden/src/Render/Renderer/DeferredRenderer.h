@@ -32,4 +32,5 @@ private:
 
 	SceneEntity *mSceneEntity;
 	SceneEntity *mSceneEntity2;
+	SceneEntity *mSceneEntity3;
 };

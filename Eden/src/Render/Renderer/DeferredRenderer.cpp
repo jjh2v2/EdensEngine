@@ -46,6 +46,17 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 		mSceneEntity2->SetPosition(Vector3(10, -5.0f, 20.0f));
 		mSceneEntity2->SetRotation(Vector3(0, MathHelper::Radian() * 180.0f, 0));
 	}
+	{
+		Material *newMaterial = new Material(contextManager->CreateConstantBuffer(sizeof(MaterialConstants)));
+		newMaterial->SetTexture(MaterialTextureType_Diffuse, mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire"));
+		newMaterial->SetTexture(MaterialTextureType_Normal, mGraphicsManager->GetTextureManager()->GetTexture("MageNormal"));
+		newMaterial->SetTexture(MaterialTextureType_Roughmetal, mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal"));
+		newMaterial->GetMaterialBuffer()->SetUsesNormalMap(true);
+		newMaterial->GetMaterialBuffer()->SetUsesRoughmetalMap(true);
+		mSceneEntity3 = new SceneEntity(mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals"), newMaterial);
+		mSceneEntity3->SetPosition(Vector3(-10, -5.0f, 20.0f));
+		mSceneEntity3->SetRotation(Vector3(0, MathHelper::Radian() * 180.0f, 0));
+	}
 }
 
 DeferredRenderer::~DeferredRenderer()
@@ -79,6 +90,12 @@ DeferredRenderer::~DeferredRenderer()
 		mGraphicsManager->GetDirect3DManager()->GetContextManager()->FreeConstantBuffer(material->GetConstantBuffer());
 		delete material;
 		delete mSceneEntity2;
+	}
+	{
+		Material *material = mSceneEntity3->GetMaterial();
+		mGraphicsManager->GetDirect3DManager()->GetContextManager()->FreeConstantBuffer(material->GetConstantBuffer());
+		delete material;
+		delete mSceneEntity3;
 	}
 
 	delete mGBufferCBVDescHeap;
@@ -142,7 +159,7 @@ void DeferredRenderer::RenderGBuffer()
 
 	//shader setup
 	ShaderPipelinePermutation permutation(Render_Standard, Target_GBuffer);
-	ShaderPSO *shaderPSO = mGraphicsManager->GetShaderManager()->GetShaderTechnique("GBufferLit")->GetShader(permutation);
+	ShaderPSO *shaderPSO = mGraphicsManager->GetShaderManager()->GetShader("GBufferLit", permutation);
 	graphicsContext->SetPipelineState(shaderPSO);
 	graphicsContext->SetRootSignature(shaderPSO->GetRootSignature());
 
@@ -156,6 +173,7 @@ void DeferredRenderer::RenderGBuffer()
 	RenderPassContext renderPassContext(graphicsContext, mGBufferCBVDescHeap, textureTypes);
 	mSceneEntity->Render(&renderPassContext);
 	mSceneEntity2->Render(&renderPassContext);
+	mSceneEntity3->Render(&renderPassContext);
 }
 
 void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
@@ -176,7 +194,7 @@ void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
 	graphicsContext->SetRenderTarget(backBuffer->GetRenderTargetViewHandle().GetCPUHandle());
 
 	ShaderPipelinePermutation bbPermutation(Render_Standard_NoDepth, Target_Standard_BackBuffer_NoDepth);
-	ShaderPSO *copyShader = mGraphicsManager->GetShaderManager()->GetShaderTechnique("SimpleCopy")->GetShader(bbPermutation);
+	ShaderPSO *copyShader = mGraphicsManager->GetShaderManager()->GetShader("SimpleCopy", bbPermutation);
 	graphicsContext->SetPipelineState(copyShader);
 	graphicsContext->SetRootSignature(copyShader->GetRootSignature());
 
@@ -203,7 +221,7 @@ void DeferredRenderer::Render()
 
 	RenderGBuffer();
 
-	CopyToBackBuffer(mGBufferTargets[2]);
+	CopyToBackBuffer(mGBufferTargets[0]);
 
 	graphicsContext->Flush(direct3DManager->GetContextManager()->GetQueueManager(), true);
 }

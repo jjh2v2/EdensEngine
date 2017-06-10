@@ -112,9 +112,14 @@ public:
 		return Vector3(vector3[0], vector3[1], vector3[2]);
 	}
 
-	static int StringToInt(std::string &str)
+	static int32 StringToInt(std::string &str)
 	{
 		return atoi(str.c_str());
+	}
+
+	static uint32 StringToUint(std::string &str)
+	{
+		return (uint32)atoi(str.c_str());
 	}
 
 	static std::string IntToString(int val)

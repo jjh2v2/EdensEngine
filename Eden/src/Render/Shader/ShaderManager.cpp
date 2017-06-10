@@ -4,9 +4,11 @@
 
 ShaderManager::ShaderManager(ID3D12Device *device)
 {
+	mDevice = device;
+
 	ShaderPipelineStateCreator::BuildPipelineStates();
-	mRootSignatureManager = new RootSignatureManager(device);
-	LoadAllShaders(device);
+	mRootSignatureManager = new RootSignatureManager(mDevice);
+	LoadAllShaders(mDevice);
 }
 
 ShaderManager::~ShaderManager()
@@ -21,11 +23,25 @@ ShaderManager::~ShaderManager()
 	delete mRootSignatureManager;
 }
 
+ShaderPSO *ShaderManager::GetShader(std::string shaderName, ShaderPipelinePermutation permutation)
+{ 
+	ShaderTechniqueInfo techniqueInfo = mShaderTechniqueLookup[shaderName];
+
+	if (techniqueInfo.Technique->HasShader(permutation))
+	{
+		return techniqueInfo.Technique->GetShader(permutation);
+	}
+	else
+	{
+		techniqueInfo.Technique->AddAndCompilePermutation(mDevice, permutation, mRootSignatureManager->GetRootSignature(techniqueInfo.SignatureType).RootSignature);
+		return techniqueInfo.Technique->GetShader(permutation);
+	}
+}
+
 void ShaderManager::LoadAllShaders(ID3D12Device *device)
 {
 	mManifestLoader.LoadManifest(ApplicationSpecification::ShaderManifestFileLocation);
 
-	//TDA: need to clean this up so I'm not manually entering permutations
 	DynamicArray<std::string, false> &fileNames = mManifestLoader.GetFileNames();
 	for (uint32 i = 0; i < fileNames.CurrentSize(); i++)
 	{
@@ -33,32 +49,24 @@ void ShaderManager::LoadAllShaders(ID3D12Device *device)
 		size_t lastDot = fileNames[i].find_last_of(".");
 		std::string justFileName = fileNames[i].substr(lastSlash + 1, (lastDot - lastSlash) - 1);
 
-		ShaderTechnique *shaderTechnique = LoadShader(device, fileNames[i].c_str());
+		ShaderTechniqueInfo shaderTechniqueInfo = LoadShader(device, fileNames[i].c_str());
 
-		mShaderTechniqueLookup.insert(std::pair<std::string, ShaderTechnique*>(justFileName, shaderTechnique));
-		mShaderTechniques.Add(shaderTechnique);
+		mShaderTechniqueLookup.insert(std::pair<std::string, ShaderTechniqueInfo>(justFileName, shaderTechniqueInfo));
+		mShaderTechniques.Add(shaderTechniqueInfo.Technique);
 	}
 
-	{
-		ShaderPipelinePermutation permutation(Render_Standard, Target_GBuffer);
-		mShaderTechniques[0]->AddAndCompilePermutation(device, permutation, mRootSignatureManager->GetRootSignature(RootSignatureType_GBuffer).RootSignature);
-	}
-	{
-		ShaderPipelinePermutation permutation(Render_Standard, Target_Standard_BackBuffer);
-		mShaderTechniques[1]->AddAndCompilePermutation(device, permutation, mRootSignatureManager->GetRootSignature(RootSignatureType_Simple_Color).RootSignature);
-	}
-	{
-		ShaderPipelinePermutation permutation(Render_Standard, Target_Single_16);
-		mShaderTechniques[1]->AddAndCompilePermutation(device, permutation, mRootSignatureManager->GetRootSignature(RootSignatureType_Simple_Color).RootSignature);
-	}
-	{
-		ShaderPipelinePermutation permutation(Render_Standard_NoDepth, Target_Standard_BackBuffer_NoDepth);
-		mShaderTechniques[2]->AddAndCompilePermutation(device, permutation, mRootSignatureManager->GetRootSignature(RootSignatureType_Simple_Copy).RootSignature);
-	}
+	PreloadExpectedPermutations();
 }
 
-ShaderTechnique *ShaderManager::LoadShader(ID3D12Device *device, const char *fileName)
+void ShaderManager::PreloadExpectedPermutations()
 {
+	//TDA: Fill this in. Keep a list of shaders that should be preloaded with their permutations so that it's not on-demand.
+}
+
+ShaderManager::ShaderTechniqueInfo ShaderManager::LoadShader(ID3D12Device *device, const char *fileName)
+{
+	ShaderTechniqueInfo techniqueInfo;
+
 	ShaderPipelineDefinition pipelineDefinition;
 	pipelineDefinition.Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	std::ifstream file(fileName);
@@ -110,6 +118,8 @@ ShaderTechnique *ShaderManager::LoadShader(ID3D12Device *device, const char *fil
 			std::getline(file, line);
 			StringConverter::RemoveCharsFromString(line, removeChars);
 			pipelineDefinition.DSEntry = line;
+
+			std::getline(file, line);
 		}
 		if (strcmp(line.c_str(), "PixelShader") == 0)
 		{
@@ -123,6 +133,15 @@ ShaderTechnique *ShaderManager::LoadShader(ID3D12Device *device, const char *fil
 			std::getline(file, line);
 			StringConverter::RemoveCharsFromString(line, removeChars);
 			pipelineDefinition.PSEntry = line;
+
+			std::getline(file, line);
+		}
+		if (strcmp(line.c_str(), "RootSignature") == 0)
+		{
+			std::getline(file, line);
+			StringConverter::RemoveCharsFromString(line, removeChars);
+			uint32 rootSignatureID = StringConverter::StringToUint(line);
+			techniqueInfo.SignatureType = (RootSignatureType)rootSignatureID;
 		}
 	}
 
@@ -133,6 +152,7 @@ ShaderTechnique *ShaderManager::LoadShader(ID3D12Device *device, const char *fil
 	uint32 lastDot = (uint32)fileNameString.find_last_of(".");
 	pipelineDefinition.ShaderOutputName = fileNameString.substr(lastSlash + 1, (lastDot - lastSlash) - 1);
 
-	ShaderTechnique *newShaderTechnique = new ShaderTechnique(device, pipelineDefinition);
-	return newShaderTechnique;
+	techniqueInfo.Technique = new ShaderTechnique(device, pipelineDefinition);
+	
+	return techniqueInfo;
 }

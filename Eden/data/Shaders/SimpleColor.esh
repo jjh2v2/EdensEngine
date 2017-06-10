@@ -4,3 +4,5 @@ VertexShader
 PixelShader
 [Simple/SimpleColor.hlsl]
 [SimpleColorPixelShader]
+RootSignature
+[1]

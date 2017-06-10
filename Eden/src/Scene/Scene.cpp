@@ -24,37 +24,39 @@ void Scene::FreeSceneEntity(SceneEntity *entity)
 void Scene::ApplyInput(InputManager *inputManager, float delta)
 {
 	Camera *mainCamera = mCameraManager->GetMainCamera();
+	const float cameraSpeedPerSecond = 20.0f;
+	const float cameraDelta = cameraSpeedPerSecond * delta;
 
 	if (inputManager->IsKeyboardKeyPressed(KeyboardKey_W))
 	{
-		mainCamera->MoveForward(delta);
+		mainCamera->MoveForward(cameraDelta);
 		if (inputManager->IsKeyboardKeyPressed(KeyboardKey_LeftShift))
 		{
-			mainCamera->MoveForward(delta);
+			mainCamera->MoveForward(cameraDelta);
 		}
 	}
 	if (inputManager->IsKeyboardKeyPressed(KeyboardKey_S))
 	{
-		mainCamera->MoveBackward(delta);
+		mainCamera->MoveBackward(cameraDelta);
 		if (inputManager->IsKeyboardKeyPressed(KeyboardKey_LeftShift))
 		{
-			mainCamera->MoveBackward(delta);
+			mainCamera->MoveBackward(cameraDelta);
 		}
 	}
 	if (inputManager->IsKeyboardKeyPressed(KeyboardKey_A))
 	{
-		mainCamera->MoveLeft(delta);
+		mainCamera->MoveLeft(cameraDelta);
 		if (inputManager->IsKeyboardKeyPressed(KeyboardKey_LeftShift))
 		{
-			mainCamera->MoveLeft(delta);
+			mainCamera->MoveLeft(cameraDelta);
 		}
 	}
 	if (inputManager->IsKeyboardKeyPressed(KeyboardKey_D))
 	{
-		mainCamera->MoveRight(delta);
+		mainCamera->MoveRight(cameraDelta);
 		if (inputManager->IsKeyboardKeyPressed(KeyboardKey_LeftShift))
 		{
-			mainCamera->MoveRight(delta);
+			mainCamera->MoveRight(cameraDelta);
 		}
 	}
 
@@ -63,7 +65,7 @@ void Scene::ApplyInput(InputManager *inputManager, float delta)
 		int32 mouseMoveX;
 		int32 mouseMoveY;
 		inputManager->GetMouseChange(mouseMoveX, mouseMoveY);
-		mCameraManager->GetMainCamera()->MouseMove(mouseMoveX, mouseMoveY, delta);
+		mCameraManager->GetMainCamera()->MouseMove(mouseMoveX, mouseMoveY, cameraDelta);
 	}
 }
 

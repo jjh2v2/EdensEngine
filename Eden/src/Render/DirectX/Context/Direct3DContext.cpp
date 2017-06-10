@@ -447,7 +447,7 @@ UploadContext::UploadContext(ID3D12Device *device)
 		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mUploadBuffer.BufferResource)));	//TDA: Nvidia warns to not use generic read, check if this is really necessary, or if we can use a set of flags instead
 
 	D3D12_RANGE readRange = {};
-	Direct3DUtils::ThrowIfHRESULTFailed(mUploadBuffer.BufferResource->Map(0, &readRange, reinterpret_cast<void**>(&mUploadBuffer.BufferAddress))); //TDA: do I need to unmap this in the destructor? Answer: sort of, depends. You only need to unmap when you're done with the resource
+	Direct3DUtils::ThrowIfHRESULTFailed(mUploadBuffer.BufferResource->Map(0, &readRange, reinterpret_cast<void**>(&mUploadBuffer.BufferAddress)));
 	mUploadBuffer.BufferStart = 0;
 	mUploadBuffer.BufferUsed = 0;
 	mUploadSubmissionStart = 0;
@@ -456,6 +456,9 @@ UploadContext::UploadContext(ID3D12Device *device)
 
 UploadContext::~UploadContext()
 {
+	D3D12_RANGE range = {};
+	mUploadBuffer.BufferResource->Unmap(0, &range);
+
 	if (mUploadBuffer.BufferResource)
 	{
 		mUploadBuffer.BufferResource->Release();

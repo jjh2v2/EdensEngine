@@ -3,8 +3,6 @@
 #include "Core/Containers/DynamicArray.h"
 #include "Render/DirectX/Heap/DescriptorHeapHandle.h"
 
-//TDA: Alex this should be swapped to uint64's possibly?
-
 class DescriptorHeap
 {
 public:
@@ -45,7 +43,7 @@ private:
 	uint32 mActiveHandleCount;
 };
 
-//To do: need to assess and grow these heaps on the fly based on the scene
+//TDA need to assess and grow these heaps on the fly based on the scene
 class RenderPassDescriptorHeap : public DescriptorHeap
 {
 public:

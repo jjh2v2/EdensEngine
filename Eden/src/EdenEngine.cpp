@@ -44,7 +44,6 @@ void EdenEngine::Run()
 	while (!shouldExit)
 	{
 		mGameTimer->Frame();
-		float frameTime = mGameTimer->GetTime();
 		int32 FPS = mGameTimer->GetFPS();
 		
 		if (mEngineWindow->DidScreenChange())
@@ -53,7 +52,7 @@ void EdenEngine::Run()
 		}
 
 		//TDA: Use timer for update time
-		shouldExit = mEngineWindow->ShouldQuit() || !Update(0.0167f) || !Render() || mInputManager->IsKeyboardKeyPressed(KeyboardKey_Escape);
+		shouldExit = mEngineWindow->ShouldQuit() || !Update(mGameTimer->GetTimeSeconds()) || !Render() || mInputManager->IsKeyboardKeyPressed(KeyboardKey_Escape);
 	}
 }
 

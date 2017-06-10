@@ -3,8 +3,7 @@
 //TDA: Serialize root signatures to files
 RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 {
-	//D3D notes say that performance is best if ranges are ordered from most frequent to least frequently changed
-
+	//Performance is best if ranges are ordered from most frequent to least frequently changed
 	{
 		//RootSignatureType_GBuffer
 		CD3DX12_DESCRIPTOR_RANGE ranges[4];
@@ -15,7 +14,7 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 
 		CD3DX12_ROOT_PARAMETER rootParameters[4];
 		rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
-		rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);		//TDA: Any way to | just pixel + vertex together? Answer: need to place deny flags here somewhere
+		rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);
 		rootParameters[2].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_VERTEX);
 		rootParameters[3].InitAsDescriptorTable(1, &ranges[3], D3D12_SHADER_VISIBILITY_PIXEL);
 
