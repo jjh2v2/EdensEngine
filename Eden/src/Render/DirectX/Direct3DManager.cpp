@@ -97,8 +97,6 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 		{
 			// If the device was removed for any reason, a new device and swap chain will need to be created.
 			mDeviceRemoved = true;
-
-			// Do not continue execution of this method. DeviceResources will be destroyed and re-created.
 			return;
 		}
 		else
@@ -226,6 +224,8 @@ void Direct3DManager::ReleaseSwapChainDependentResources()
 		delete mBackBuffers[bufferIndex];
 		mBackBuffers[bufferIndex] = NULL;
 	}
+
+	mBackBuffers.Clear();
 }
 
 void Direct3DManager::BuildSwapChainDependentResources()
@@ -254,6 +254,8 @@ void Direct3DManager::BuildSwapChainDependentResources()
 		swprintf_s(name, L"Backbuffer Target %d", bufferIndex);
 		mBackBuffers[bufferIndex]->GetResource()->SetName(name);
 	}
+
+	mCurrentBackBuffer = 0;
 }
 
 void Direct3DManager::WaitForGPU()

@@ -52,12 +52,14 @@ public:
 
 	bool IsLeftMouseDown();
 	bool IsRightMouseDown();
-	bool IsKeyDown(int key);
+	bool IsKeyDown(int32 key);
 	
 	bool GetLeftClickDown();
 	bool GetLeftClickUp();
 	bool GetRightClickDown();
 	bool GetRightClickUp();
+
+	void OnScreenChanged(int32 screenWidth, int32 screenHeight);
 
 private:
 	void AttemptAcquireMouse();

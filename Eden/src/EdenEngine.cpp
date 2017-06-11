@@ -10,7 +10,6 @@ EdenEngine::EdenEngine()
 	mGraphicsManager->InitializeGraphicsResources();
 	mDeferredRenderer = new DeferredRenderer(mGraphicsManager);
 
-	//TDA: change input manager when screen size changes
 	mInputManager = new InputManager(mEngineWindow->GetEngineModuleHandle(), mEngineWindow->GetEngineWindowHandle(), 1920, 1080);
 
 	mSceneManager = new SceneManager(mGraphicsManager, mInputManager);
@@ -51,7 +50,6 @@ void EdenEngine::Run()
 			OnScreenChanged();
 		}
 
-		//TDA: Use timer for update time
 		shouldExit = mEngineWindow->ShouldQuit() || !Update(mGameTimer->GetTimeSeconds()) || !Render() || mInputManager->IsKeyboardKeyPressed(KeyboardKey_Escape);
 	}
 }
@@ -59,7 +57,10 @@ void EdenEngine::Run()
 void EdenEngine::OnScreenChanged()
 {
 	//TDA: handle vsync and fullscreen changes
-	mGraphicsManager->GetDirect3DManager()->CreateWindowDependentResources(mEngineWindow->GetWindowDimensions(), mEngineWindow->GetEngineWindowHandle());
+	Vector2 screenDimensions = mEngineWindow->GetWindowDimensions();
+
+	mGraphicsManager->GetDirect3DManager()->CreateWindowDependentResources(screenDimensions, mEngineWindow->GetEngineWindowHandle());
+	mInputManager->OnScreenChanged((int32)screenDimensions.X, (int32)screenDimensions.Y);
 }
 
 bool EdenEngine::Update(float delta)

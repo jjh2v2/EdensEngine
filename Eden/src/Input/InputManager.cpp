@@ -48,6 +48,12 @@ InputManager::~InputManager()
 	}
 }
 
+void InputManager::OnScreenChanged(int32 screenWidth, int32 screenHeight)
+{
+	mScreenWidth = screenWidth;
+	mScreenHeight = screenHeight;
+}
+
 void InputManager::AttemptAcquireMouse()
 {
 	if (mMouse)
