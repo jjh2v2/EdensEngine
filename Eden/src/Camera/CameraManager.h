@@ -9,6 +9,8 @@ public:
 	CameraManager(Vector2 screenSize);
 	~CameraManager();
 
+	void OnScreenChanged(Vector2 screenSize);
+
 	Camera *GetMainCamera() { return mMainCamera; }
 	void Update(float delta);
 

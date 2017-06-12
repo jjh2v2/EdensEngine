@@ -11,6 +11,8 @@ public:
 	Scene(GraphicsManager *graphicsManager);
 	~Scene();
 
+	void OnScreenChanged(Vector2 screenSize);
+
 	CameraManager *GetCameraManager() { return mCameraManager; }
 	Camera *GetMainCamera() { return mCameraManager->GetMainCamera(); }
 	

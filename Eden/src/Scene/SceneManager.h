@@ -9,6 +9,8 @@ public:
 	SceneManager(GraphicsManager *graphicsManager, InputManager *inputManager);
 	~SceneManager();
 
+	void OnScreenChanged(Vector2 screenSize);
+
 	void Update(float delta);
 	Scene *GetActiveScene() { return mActiveScene; }
 

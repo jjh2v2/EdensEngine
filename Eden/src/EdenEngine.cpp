@@ -61,6 +61,7 @@ void EdenEngine::OnScreenChanged()
 
 	mGraphicsManager->GetDirect3DManager()->CreateWindowDependentResources(screenDimensions, mEngineWindow->GetEngineWindowHandle());
 	mInputManager->OnScreenChanged((int32)screenDimensions.X, (int32)screenDimensions.Y);
+	mSceneManager->OnScreenChanged(screenDimensions);
 }
 
 bool EdenEngine::Update(float delta)

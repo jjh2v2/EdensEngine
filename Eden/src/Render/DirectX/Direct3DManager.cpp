@@ -160,15 +160,15 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 
 		DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
 		ZeroMemory(&swapChainDesc, sizeof(swapChainDesc));
-		swapChainDesc.Width = lround(mOutputSize.X);	// Match the size of the window.
+		swapChainDesc.Width = lround(mOutputSize.X);
 		swapChainDesc.Height = lround(mOutputSize.Y);
-		swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;			// This is the most common swap chain format.
+		swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 		swapChainDesc.Stereo = false;
-		swapChainDesc.SampleDesc.Count = 1;							// Don't use multi-sampling.
+		swapChainDesc.SampleDesc.Count = 1;
 		swapChainDesc.SampleDesc.Quality = 0;
 		swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		swapChainDesc.BufferCount = BACK_BUFFER_COUNT;					// Use triple-buffering to minimize latency.
-		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;	// All Windows Universal apps must use _FLIP_ SwapEffects
+		swapChainDesc.BufferCount = BACK_BUFFER_COUNT;
+		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 		swapChainDesc.Flags = 0;
 		swapChainDesc.Scaling = DXGI_SCALING_NONE;
 		swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;

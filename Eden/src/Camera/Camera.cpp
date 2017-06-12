@@ -6,16 +6,22 @@ Camera::Camera(CameraScreenSettings screenSettings, float moveSpeed, float moveS
 	mRotation = Vector3(0, 0, 0);
 	mMoveSpeed = moveSpeed;
 	mMoveSensitivity = moveSensitivity;
-	mScreenSettings = screenSettings;
 
-	D3DXMatrixPerspectiveFovLH(&mProjectionMatrix, mScreenSettings.FieldOfView, mScreenSettings.AspectRatio, mScreenSettings.Near, mScreenSettings.Far);
-	D3DXMatrixPerspectiveFovLH(&mReverseProjectionMatrix, mScreenSettings.FieldOfView, mScreenSettings.AspectRatio, mScreenSettings.Far, mScreenSettings.Near);
-	RebuildViewMatrix();
+	OnScreenChanged(screenSettings);
 }
 
 Camera::~Camera()
 {
 
+}
+
+void Camera::OnScreenChanged(CameraScreenSettings screenSettings)
+{
+	mScreenSettings = screenSettings;
+
+	D3DXMatrixPerspectiveFovLH(&mProjectionMatrix, mScreenSettings.FieldOfView, mScreenSettings.AspectRatio, mScreenSettings.Near, mScreenSettings.Far);
+	D3DXMatrixPerspectiveFovLH(&mReverseProjectionMatrix, mScreenSettings.FieldOfView, mScreenSettings.AspectRatio, mScreenSettings.Far, mScreenSettings.Near);
+	RebuildViewMatrix();
 }
 
 void Camera::MoveForward(float speedMult)

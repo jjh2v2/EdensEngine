@@ -28,6 +28,8 @@ public:
 	Camera(CameraScreenSettings screenSettings, float moveSpeed, float moveSensitivity);
 	~Camera();
 
+	void OnScreenChanged(CameraScreenSettings screenSettings);
+
 	Vector3 GetPosition() { return mPosition; }
 	Vector3 GetRotation() { return mRotation; }
 	Vector3 GetDirection();

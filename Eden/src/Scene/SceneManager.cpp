@@ -17,6 +17,11 @@ SceneManager::~SceneManager()
 	}
 }
 
+void SceneManager::OnScreenChanged(Vector2 screenSize)
+{
+	mActiveScene->OnScreenChanged(screenSize);
+}
+
 void SceneManager::Update(float delta)
 {
 	mActiveScene->ApplyInput(mInputManager, delta);

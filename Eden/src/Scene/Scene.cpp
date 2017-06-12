@@ -13,6 +13,11 @@ Scene::~Scene()
 	delete mCameraManager;
 }
 
+void Scene::OnScreenChanged(Vector2 screenSize)
+{
+	mCameraManager->OnScreenChanged(screenSize);
+}
+
 void Scene::FreeSceneEntity(SceneEntity *entity)
 {
 	Material *material = entity->GetMaterial();
