@@ -10,16 +10,6 @@ Mesh::Mesh(Direct3DManager *direct3DManager, uint32 vertexCount, uint32 indexCou
 	mMeshVertices = meshData;
 	mMeshIndices = indices;
 
-	if (!mMeshIndices)
-	{
-		//TDA: Make this faster, it will slow mesh loading a lot
-		mMeshIndices = new uint64[mIndexCount];
-		for (uint32 i = 0; i < mIndexCount; i++)
-		{
-			mMeshIndices[i] = i;
-		}
-	}
-
 	for (uint32 i = 0; i < splits.CurrentSize(); i++)
 	{
 		mIndexSplits.Add(splits[i]);

@@ -443,8 +443,10 @@ UploadContext::UploadContext(ID3D12Device *device)
 	uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 	uploadBufferDesc.Alignment = 0;
 
+	//A note for reference in case I ever forget this, Microsoft + Nvidia warn against using the generic read state for performance
+	//It's better to give specific states and transition between them. That said, upload heaps are required to be in the generic read state.
 	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &uploadBufferDesc,
-		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mUploadBuffer.BufferResource)));	//TDA: Nvidia warns to not use generic read, check if this is really necessary, or if we can use a set of flags instead
+		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mUploadBuffer.BufferResource)));
 
 	D3D12_RANGE readRange = {};
 	Direct3DUtils::ThrowIfHRESULTFailed(mUploadBuffer.BufferResource->Map(0, &readRange, reinterpret_cast<void**>(&mUploadBuffer.BufferAddress)));

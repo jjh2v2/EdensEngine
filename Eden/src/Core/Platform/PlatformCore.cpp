@@ -8,7 +8,7 @@ char *ApplicationSpecification::MeshManifestFileLocation    = "../Eden/data/Mani
 char *ApplicationSpecification::MeshSerializationLocation   = "../Eden/data/Meshes/Serialized/";
 char *ApplicationSpecification::ShaderManifestFileLocation  = "../Eden/data/Manifests/ShaderManifest.emf";
 bool ApplicationSpecification::RebuildAllShaders = true;
-bool ApplicationSpecification::RebuildAllMeshes = true;
+bool ApplicationSpecification::RebuildAllMeshes = false;
 
 void Direct3DUtils::ThrowIfHRESULTFailed(HRESULT hr)
 {

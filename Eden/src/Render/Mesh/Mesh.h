@@ -47,7 +47,7 @@ struct MeshVertexData
 class Mesh
 {
 public:
-	Mesh(Direct3DManager *direct3DManager, uint32 vertexCount, uint32 indexCount, MeshVertexData *meshData, DynamicArray<uint32> &splits, uint64 *indices = NULL);
+	Mesh(Direct3DManager *direct3DManager, uint32 vertexCount, uint32 indexCount, MeshVertexData *meshData, DynamicArray<uint32> &splits, uint64 *indices);
 	virtual ~Mesh();
 	//virtual void Render(ID3D12DeviceContext* deviceContext, int subMeshIndex = 0);
 
@@ -56,6 +56,7 @@ public:
 	uint32 GetMeshSplitCount() { return mIndexSplits.CurrentSize(); }
 	uint32 GetMeshIndexSplitByIndex(uint32 index) { return mIndexSplits[index]; }
 	MeshVertexData *GetMeshData() { return mMeshVertices; }
+	uint64 *GetIndices() { return mMeshIndices; }
 
 	void RecalculateBounds();
 	Box GetBounds(){return mMeshBounds;}

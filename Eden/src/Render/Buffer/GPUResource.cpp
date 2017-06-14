@@ -124,7 +124,7 @@ ConstantBuffer::ConstantBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES u
 
 ConstantBuffer::~ConstantBuffer()
 {
-
+	mResource->Unmap(0, NULL);
 }
 
 void ConstantBuffer::SetConstantBufferData(const void* bufferData, uint32 bufferSize)

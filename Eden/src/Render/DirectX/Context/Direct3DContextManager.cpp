@@ -54,7 +54,7 @@ VertexBuffer *Direct3DContextManager::CreateVertexBuffer(void* vertexData, uint3
 
 	VertexBuffer *vertexBuffer = new VertexBuffer(vertexBufferResource, D3D12_RESOURCE_STATE_COPY_DEST, vertexStride, bufferSize);
 
-	mGraphicsContext->TransitionResource((*vertexBuffer), D3D12_RESOURCE_STATE_GENERIC_READ, true);
+	mGraphicsContext->TransitionResource((*vertexBuffer), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, true);
 
 	return vertexBuffer;
 }
@@ -96,7 +96,7 @@ IndexBuffer *Direct3DContextManager::CreateIndexBuffer(void* indexData, uint32 b
 
 	IndexBuffer *indexBuffer = new IndexBuffer(indexBufferResource, D3D12_RESOURCE_STATE_COPY_DEST, bufferSize);
 
-	mGraphicsContext->TransitionResource((*indexBuffer), D3D12_RESOURCE_STATE_GENERIC_READ, true);
+	mGraphicsContext->TransitionResource((*indexBuffer), D3D12_RESOURCE_STATE_INDEX_BUFFER, true);
 
 	return indexBuffer;
 }
