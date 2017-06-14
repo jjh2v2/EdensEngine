@@ -26,3 +26,10 @@ void GraphicsManager::InitializeGraphicsResources()
 	mMeshManager = new MeshManager();
 	mMeshManager->LoadAllMeshes(mDirect3DManager);
 }
+
+void GraphicsManager::FinalizeGraphicsForRemoval()
+{
+	//need to flush everything going on before we start destroying things
+	Direct3DContextManager *contextManager = mDirect3DManager->GetContextManager();
+	contextManager->GetGraphicsContext()->Flush(contextManager->GetQueueManager(), true);
+}

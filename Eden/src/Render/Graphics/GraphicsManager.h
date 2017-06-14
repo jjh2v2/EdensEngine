@@ -12,6 +12,7 @@ public:
 	~GraphicsManager();
 
 	void InitializeGraphicsResources();
+	void FinalizeGraphicsForRemoval();
 
 	Direct3DManager *GetDirect3DManager() { return mDirect3DManager; }
 	TextureManager *GetTextureManager() { return mTextureManager; }

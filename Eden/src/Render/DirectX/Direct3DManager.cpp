@@ -15,8 +15,7 @@ Direct3DManager::Direct3DManager()
 
 Direct3DManager::~Direct3DManager()
 {
-	WaitForGPU();
-
+	//GraphicsManager's FinalizeGraphicsForRemoval should be called before this, so all GPU work should be done
 	ReleaseSwapChainDependentResources();
 
 	mSwapChain->Release();
@@ -72,7 +71,7 @@ void Direct3DManager::InitializeDeviceResources()
 void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND windowHandle, bool vsync /*= false*/, bool fullScreen /*= false*/)
 {
 	// Wait until all previous GPU work is complete.
-	WaitForGPU();
+	mContextManager->GetGraphicsContext()->Flush(mContextManager->GetQueueManager(), true);
 
 	mOutputSize = screenSize;
 	mUseVsync = vsync;				//need to handle if vsync or fullscreen changes
@@ -213,7 +212,7 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 	// Set the 3D rendering viewport to target the entire window.
 	mScreenViewport = { 0.0f, 0.0f, mOutputSize.X, mOutputSize.Y, 0.0f, 1.0f };
 
-	WaitForGPU();
+	mContextManager->GetGraphicsContext()->Flush(mContextManager->GetQueueManager(), true);
 }
 
 void Direct3DManager::ReleaseSwapChainDependentResources()
@@ -256,12 +255,6 @@ void Direct3DManager::BuildSwapChainDependentResources()
 	}
 
 	mCurrentBackBuffer = 0;
-}
-
-void Direct3DManager::WaitForGPU()
-{
-	uint64 fenceValue = mContextManager->GetQueueManager()->GetGraphicsQueue()->IncrementFence();
-	mContextManager->GetQueueManager()->GetGraphicsQueue()->WaitForFence(fenceValue);
 }
 
 // Present the contents of the swap chain to the screen.

@@ -5,22 +5,14 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 {
 	mGraphicsManager = graphicsManager;
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
-	direct3DManager->WaitForGPU();
+	Direct3DContextManager *contextManager = direct3DManager->GetContextManager();
+	contextManager->GetGraphicsContext()->Flush(contextManager->GetQueueManager(), true);
 	
+	CreateTargets(direct3DManager->GetScreenSize());
+
 	//need to be able to make these bigger
 	mGBufferCBVDescHeap = new RenderPassDescriptorHeap(direct3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true);
 	mGBufferSamplerDescHeap = new RenderPassDescriptorHeap(direct3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 16, true);
-
-	Vector2 screenSize = direct3DManager->GetScreenSize();
-	Direct3DContextManager *contextManager = direct3DManager->GetContextManager();
-	RenderTarget *gbufferAlbedoTarget   = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
-	RenderTarget *gbufferNormalsTarget  = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
-	RenderTarget *gbufferMaterialTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
-	mGBufferTargets.Add(gbufferAlbedoTarget);
-	mGBufferTargets.Add(gbufferNormalsTarget);
-	mGBufferTargets.Add(gbufferMaterialTarget);
-
-	mGBufferDepth = contextManager->CreateDepthStencilTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_D32_FLOAT_S8X24_UINT, 1, 1, 0);
 	
 	mCameraConstantBuffer = contextManager->CreateConstantBuffer(sizeof(CameraBuffer));
 
@@ -61,21 +53,9 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 
 DeferredRenderer::~DeferredRenderer()
 {
+	FreeTargets();
+
 	Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
-
-	for (uint32 targetIndex = 0; targetIndex < mGBufferTargets.CurrentSize(); targetIndex++)
-	{
-		contextManager->FreeRenderTarget(mGBufferTargets[targetIndex]);
-	}
-
-	mGBufferTargets.Clear();
-
-	if(mGBufferDepth)
-	{
-		contextManager->FreeDepthStencilTarget(mGBufferDepth);
-		mGBufferDepth = NULL;
-	}
-
 	contextManager->FreeConstantBuffer(mCameraConstantBuffer);
 	mCameraConstantBuffer = NULL;
 	
@@ -100,6 +80,44 @@ DeferredRenderer::~DeferredRenderer()
 
 	delete mGBufferCBVDescHeap;
 	delete mGBufferSamplerDescHeap;
+}
+
+void DeferredRenderer::FreeTargets()
+{
+	Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
+
+	for (uint32 targetIndex = 0; targetIndex < mGBufferTargets.CurrentSize(); targetIndex++)
+	{
+		contextManager->FreeRenderTarget(mGBufferTargets[targetIndex]);
+	}
+
+	mGBufferTargets.Clear();
+
+	if (mGBufferDepth)
+	{
+		contextManager->FreeDepthStencilTarget(mGBufferDepth);
+		mGBufferDepth = NULL;
+	}
+}
+
+void DeferredRenderer::CreateTargets(Vector2 screenSize)
+{
+	Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
+
+	RenderTarget *gbufferAlbedoTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
+	RenderTarget *gbufferNormalsTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
+	RenderTarget *gbufferMaterialTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
+	mGBufferTargets.Add(gbufferAlbedoTarget);
+	mGBufferTargets.Add(gbufferNormalsTarget);
+	mGBufferTargets.Add(gbufferMaterialTarget);
+
+	mGBufferDepth = contextManager->CreateDepthStencilTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_D32_FLOAT_S8X24_UINT, 1, 1, 0);
+}
+
+void DeferredRenderer::OnScreenChanged(Vector2 screenSize)
+{
+	FreeTargets();
+	CreateTargets(screenSize);
 }
 
 void DeferredRenderer::ClearGBuffer()

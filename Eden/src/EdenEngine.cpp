@@ -18,6 +18,8 @@ EdenEngine::EdenEngine()
 
 EdenEngine::~EdenEngine()
 {
+	mGraphicsManager->FinalizeGraphicsForRemoval();
+
 	delete mSceneManager;
 	mSceneManager = NULL;
 
@@ -60,6 +62,7 @@ void EdenEngine::OnScreenChanged()
 	Vector2 screenDimensions = mEngineWindow->GetWindowDimensions();
 
 	mGraphicsManager->GetDirect3DManager()->CreateWindowDependentResources(screenDimensions, mEngineWindow->GetEngineWindowHandle());
+	mDeferredRenderer->OnScreenChanged(screenDimensions);
 	mInputManager->OnScreenChanged((int32)screenDimensions.X, (int32)screenDimensions.Y);
 	mSceneManager->OnScreenChanged(screenDimensions);
 }

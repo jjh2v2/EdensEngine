@@ -11,10 +11,14 @@ public:
 	DeferredRenderer(GraphicsManager *graphicsManager);
 	~DeferredRenderer();
 
+	void OnScreenChanged(Vector2 screenSize);
 	void SetActiveScene(Scene *scene) { mActiveScene = scene; }
 	void Render();
 
 private:
+	void FreeTargets();
+	void CreateTargets(Vector2 screenSize);
+
 	void ClearGBuffer();
 	void RenderGBuffer();
 	void CopyToBackBuffer(RenderTarget *renderTargetToCopy);

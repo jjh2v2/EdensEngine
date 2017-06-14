@@ -18,7 +18,6 @@ public:
 	~Direct3DManager();
 
 	void CreateWindowDependentResources(Vector2 screenSize, HWND windowHandle, bool vsync = false, bool fullScreen = false);
-	void WaitForGPU();
 	void Present();
 	
 	ID3D12Device				*GetDevice() { return mDevice; }
