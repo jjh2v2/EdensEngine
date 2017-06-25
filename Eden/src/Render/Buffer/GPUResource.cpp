@@ -129,6 +129,6 @@ ConstantBuffer::~ConstantBuffer()
 
 void ConstantBuffer::SetConstantBufferData(const void* bufferData, uint32 bufferSize)
 {
-	Application::Assert(bufferSize < mConstantBufferViewDesc.SizeInBytes);
+	Application::Assert(bufferSize <= mConstantBufferViewDesc.SizeInBytes);
 	memcpy(mMappedBuffer, bufferData, bufferSize);
 }

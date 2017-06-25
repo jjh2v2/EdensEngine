@@ -31,6 +31,8 @@ cbuffer GBufferPassPerFrameBuffer : register(b0)
 {
 	matrix pfViewMatrix;
     matrix pfProjectionMatrix;
+	matrix pfViewToLightProjMatrix;
+	matrix pfViewInvMatrix;
 };
 
 cbuffer GBufferPassPerObjectBuffer : register(b1)

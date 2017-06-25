@@ -173,39 +173,6 @@ void Direct3DContext::TransitionResource(GPUResource &resource, D3D12_RESOURCE_S
 	}
 }
 
-void Direct3DContext::BeginResourceTransition(GPUResource &resource, D3D12_RESOURCE_STATES newState, bool flushImmediate /* = false */)
-{
-	// If it's already transitioning, finish that transition
-	if (resource.GetTransitionState() != D3D12_GPU_RESOURCE_STATE_UNKNOWN)
-	{
-		TransitionResource(resource, resource.GetTransitionState());
-	}
-
-	D3D12_RESOURCE_STATES oldState = resource.GetUsageState();
-
-	if (oldState != newState)
-	{
-		Application::Assert(mNumBarriersToFlush < BARRIER_LIMIT);
-		D3D12_RESOURCE_BARRIER& barrierDesc = mResourceBarrierBuffer[mNumBarriersToFlush];
-		mNumBarriersToFlush++;
-
-		barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		barrierDesc.Transition.pResource = resource.GetResource();
-		barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		barrierDesc.Transition.StateBefore = oldState;
-		barrierDesc.Transition.StateAfter = newState;
-
-		barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY;
-
-		resource.SetTransitionState(newState);
-	}
-
-	if (flushImmediate || mNumBarriersToFlush == BARRIER_LIMIT)
-	{
-		FlushResourceBarriers();
-	}
-}
-
 void Direct3DContext::InsertUAVBarrier(GPUResource &resource, bool flushImmediate /* = false */)
 {
 	Application::Assert(mNumBarriersToFlush < 16);
@@ -249,17 +216,6 @@ GraphicsContext::GraphicsContext(ID3D12Device *device)
 GraphicsContext::~GraphicsContext()
 {
 
-}
-
-void GraphicsContext::SetRootSignature(const RootSignatureInfo &rootSignature)
-{
-	if (rootSignature.RootSignature == mCurrentGraphicsRootSignature)
-	{
-		return;
-	}
-
-	mCurrentGraphicsRootSignature = rootSignature.RootSignature;
-	mCommandList->SetGraphicsRootSignature(mCurrentGraphicsRootSignature);
 }
 
 void GraphicsContext::SetRootSignature(ID3D12RootSignature *rootSignature)
@@ -418,6 +374,80 @@ void GraphicsContext::DrawIndexedInstanced(uint32 indexCountPerInstance, uint32 
 	FlushResourceBarriers();
 	mCommandList->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
+
+ComputeContext::ComputeContext(ID3D12Device *device)
+    : Direct3DContext(device, D3D12_COMMAND_LIST_TYPE_COMPUTE)
+{
+
+}
+
+ComputeContext::~ComputeContext()
+{
+
+}
+
+void ComputeContext::SetRootSignature(ID3D12RootSignature *rootSignature)
+{
+    if (rootSignature == mCurrentComputeRootSignature)
+    {
+        return;
+    }
+
+    mCurrentComputeRootSignature = rootSignature;
+    mCommandList->SetComputeRootSignature(mCurrentComputeRootSignature);
+}
+
+void ComputeContext::SetPipelineState(ShaderPSO *pipeline)
+{
+    if (mCurrentComputePipelineState == pipeline->GetPipelineState())
+    {
+        return;
+    }
+
+    mCurrentComputePipelineState = pipeline->GetPipelineState();
+    mCommandList->SetPipelineState(mCurrentComputePipelineState);
+}
+
+void ComputeContext::SetConstants(uint32 index, uint32 numConstants, const void *bufferData)
+{
+    mCommandList->SetComputeRoot32BitConstants(index, numConstants, bufferData, 0);
+}
+
+void ComputeContext::SetRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer)
+{
+    mCommandList->SetComputeRootConstantBufferView(index, constantBuffer->GetGpuAddress());
+}
+
+void ComputeContext::SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle)
+{
+    mCommandList->SetComputeRootDescriptorTable(index, handle);
+}
+
+//TDA: fill this out when we have a buffer type for it
+/*
+void ComputeContext::ClearUAV(D3D12_GPU_DESCRIPTOR_HANDLE gpuHandleInCurrentHeap, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle, )
+{
+
+    mCommandList->ClearUnorderedAccessViewUint(gpuHandleInCurrentHeap, cpuHandle, )
+
+    // After binding a UAV, we can get a GPU handle that is required to clear it as a UAV (because it essentially runs
+    // a shader to set all of the values).
+    D3D12_GPU_DESCRIPTOR_HANDLE GpuVisibleHandle = m_DynamicDescriptorHeap.UploadDirect(Target.GetUAV());
+    const UINT ClearColor[4] = {};
+    m_CommandList->ClearUnorderedAccessViewUint(GpuVisibleHandle, Target.GetUAV(), Target.GetResource(), ClearColor, 0, nullptr);
+}
+
+void ComputeContext::ClearUAV(ColorBuffer& Target)
+{
+    // After binding a UAV, we can get a GPU handle that is required to clear it as a UAV (because it essentially runs
+    // a shader to set all of the values).
+    D3D12_GPU_DESCRIPTOR_HANDLE GpuVisibleHandle = m_DynamicDescriptorHeap.UploadDirect(Target.GetUAV());
+    CD3DX12_RECT ClearRect(0, 0, (LONG)Target.GetWidth(), (LONG)Target.GetHeight());
+
+    //TODO: My Nvidia card is not clearing UAVs with either Float or Uint variants.
+    const float* ClearColor = Target.GetClearColor().GetPtr();
+    m_CommandList->ClearUnorderedAccessViewFloat(GpuVisibleHandle, Target.GetUAV(), Target.GetResource(), ClearColor, 1, &ClearRect);
+}*/
 
 
 UploadContext::UploadContext(ID3D12Device *device)
@@ -608,7 +638,7 @@ Direct3DUploadInfo UploadContext::BeginUpload(uint64 size, Direct3DQueueManager 
 	Direct3DUploadInfo uploadInfo;
 	uploadInfo.Resource = mUploadBuffer.BufferResource;
 	uploadInfo.CPUAddress = mUploadBuffer.BufferAddress + submission.UploadLocation;
-	uploadInfo.ResourceOffset = submission.UploadLocation;
+	uploadInfo.UploadAddressOffset = submission.UploadLocation;
 	uploadInfo.UploadID = uploadIndex;
 
 	return uploadInfo;

@@ -15,6 +15,8 @@ cbuffer MatrixBuffer
 
 cbuffer LightBuffer
 {
+	float4 skyColor;
+    float4 groundColor;
 	float4 lightDir;
 	float4 lightColor;
 	float lightIntensity;
@@ -22,11 +24,6 @@ cbuffer LightBuffer
 	float brdfspecular;
 };
 
-cbuffer SkyColorBuffer
-{
-    float4 skyColor;
-    float4 groundColor;
-};
 
 Texture2D gGBufferTextures[4];
 StructuredBuffer<ShadowPartition> gPartitions;
@@ -36,19 +33,6 @@ Texture2D<float2> EnvBRDFLookupTexture;
 SamplerState gShadowSampler;
 SamplerState gEnvironmentSampler;
 
-
-float3 ApplyFog(float3 pixelColor, float distance, float3 viewDir)
-{
-	float b = 3.0f;
-	float fogAmount = 1.0 - exp( -distance * b );
-    float sunAmount = max(dot(viewDir, lightDir.xyz), 0.0);
-    float3 fogColor = lerp(pow(float3(0.5,0.6,0.7), 2.2), // bluish
-                           pow(float3(1.0,0.9,0.7), 2.2), // yellowish
-                           saturate(pow(sunAmount,8.0)));
-	
-	fogColor = lerp(pixelColor, fogColor, pow(fogAmount, 6.0) ;
-	return fogColor;
-}
 
 float4 LightingMainPixelShader(VS_to_PS input) : SV_Target
 {
@@ -100,22 +84,24 @@ float4 LightingMainPixelShader(VS_to_PS input) : SV_Target
 		discard;
 	}
 	
-	//hemispheric ambient
-    float ndotSky = (dot(surface.normal, float3(0.0f, 1.0f, 0.0f)) * 0.5f ) + 0.5f;
+	float3 reflection = reflect(-viewDir, surface.normal);
+	reflection = mul(reflection, (float3x3)mCameraViewInv);
+	
+	float nDotL = saturate(dot(-lightDir.xyz, surface.normal));
+	float nDotV = saturate(dot(surface.normal, viewDir));
+    float nDotSky = (dot(surface.normal, float3(0.0f, 1.0f, 0.0f)) * 0.5f ) + 0.5f;
     float3 ambientLight = ambientIntensity * lerp(pow(groundColor.rgb,2.2), pow(skyColor.rgb,2.2), ndotSky);
 	
 	float roughness = surface.albedo.a * surface.albedo.a;
 	float metallic = surface.specular.a;
 	float3 lightingOutput = float3(0.0f, 0.0f, 0.0f);
-    lightingOutput += ambientLight.rgb * lerp(surface.albedo.rgb, float3(0.05, 0.05, 0.05), metallic); 
-	lightingOutput += ApproximateSpecularIBL(11, lerp(float3(0.0f, 0.0f, 0.0f), surface.albedo.rgb, metallic), roughness, surface.normal, viewDir); 
-	
-	float nDotL = saturate(dot(-lightDir.xyz, surface.normal));
+    lightingOutput += ambientLight.rgb * lerp(surface.albedo.rgb, float3(0.05, 0.05, 0.05), metallic);  //hemispheric ambient
+	lightingOutput += CalculateSpecularIBL(11, lerp(float3(0.0f, 0.0f, 0.0f), surface.albedo.rgb, metallic), roughness, nDotV, reflection); 
 	
 	if(nDotL > 0.0f)
 	{
 		float3 half = normalize(viewDir + lightDir.xyz);
-		float nDotV = saturate(dot(surface.normal, viewDir));
+		
 		float3 surfaceSpec = lerp(float3(1.0, 1.0, 1.0), surface.albedo.rgb, metallic);
 		float specMetallic = max(metallic, 0.03);
 		

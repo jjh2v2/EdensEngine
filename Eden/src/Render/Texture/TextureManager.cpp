@@ -266,7 +266,7 @@ void TextureManager::ProcessUpload(TextureUpload &currentUpload, bool forceWait)
         src.pResource = currentUpload.UploadInfo.Resource;
         src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
         src.PlacedFootprint = currentUpload.Layouts[subResourceIdx];
-        src.PlacedFootprint.Offset += currentUpload.UploadInfo.ResourceOffset;
+        src.PlacedFootprint.Offset += currentUpload.UploadInfo.UploadAddressOffset;
         uploadContext->CopyTextureRegion(&dst, &src);
     }
 

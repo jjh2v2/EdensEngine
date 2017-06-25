@@ -156,9 +156,13 @@ void DeferredRenderer::RenderGBuffer()
 	}
 
 	//set up the camera buffer
+    D3DXMATRIX identity;
+    D3DXMatrixIdentity(&identity);
 	CameraBuffer cameraBuffer;
 	cameraBuffer.viewMatrix = mActiveScene->GetMainCamera()->GetViewMatrix();
 	cameraBuffer.projectionMatrix = mActiveScene->GetMainCamera()->GetReverseProjectionMatrix();
+    cameraBuffer.viewToLightProjMatrix = identity;  //TDA need to fill these out
+    cameraBuffer.viewInvMatrix = identity;
 	D3DXMatrixTranspose(&cameraBuffer.viewMatrix, &cameraBuffer.viewMatrix);
 	D3DXMatrixTranspose(&cameraBuffer.projectionMatrix, &cameraBuffer.projectionMatrix);
 

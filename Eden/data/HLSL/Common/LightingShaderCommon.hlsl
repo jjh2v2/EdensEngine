@@ -69,14 +69,23 @@ int RoughnessToMipLevel(float roughness, int mipCount)
 	return mipCount - 6 - 1.15 * log2(roughness);
 }
 
-float3 ApproximateSpecularIBL(int MipLevels, float3 SpecularColor, float Roughness, float3 N, float3 V)
+float3 CalculateSpecularIBL(int MipLevels, float3 SpecularColor, float Roughness, float nDotV, float3 Reflection)
 {
-	float NoV = abs(dot(N, V));
-	float3 R = reflect(-V, N);
-	R = mul(R, (float3x3)mCameraViewInv);
-	
-	float3 PrefilteredColor = gEnvironmentMap.SampleLevel(gEnvironmentSampler, R, MipLevels - RoughnessToMipLevel(Roughness, MipLevels)).rgb;
+	float3 PrefilteredColor = gEnvironmentMap.SampleLevel(gEnvironmentSampler, Reflection, MipLevels - RoughnessToMipLevel(Roughness, MipLevels)).rgb;
 	PrefilteredColor = pow(PrefilteredColor, 2.2);
-	float2 EnvBRDF = saturate(EnvBRDFLookupTexture.Sample(gEnvironmentSampler, saturate(float2(Roughness, NoV))));
+	float2 EnvBRDF = saturate(EnvBRDFLookupTexture.Sample(gEnvironmentSampler, saturate(float2(Roughness, nDotV))));
 	return PrefilteredColor * (SpecularColor * EnvBRDF.x + EnvBRDF.y);
+}
+
+float3 ApplyFog(float3 pixelColor, float distance, float3 viewDir, float3 lightDir)
+{
+	float b = 3.0f;
+	float fogAmount = 1.0 - exp( -distance * b );
+    float sunAmount = max(dot(viewDir, lightDir), 0.0);
+    float3 fogColor = lerp(pow(float3(0.5,0.6,0.7), 2.2), // bluish
+                           pow(float3(1.0,0.9,0.7), 2.2), // yellowish
+                           saturate(pow(sunAmount,8.0)));
+	
+	fogColor = lerp(pixelColor, fogColor, pow(fogAmount, 6.0) ;
+	return fogColor;
 }

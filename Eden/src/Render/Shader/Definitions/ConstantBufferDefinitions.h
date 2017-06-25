@@ -9,6 +9,8 @@ struct CameraBuffer	//per frame
 {
 	D3DXMATRIX viewMatrix;
 	D3DXMATRIX projectionMatrix;
+    D3DXMATRIX viewToLightProjMatrix;
+    D3DXMATRIX viewInvMatrix;
 };
 
 struct MaterialConstants

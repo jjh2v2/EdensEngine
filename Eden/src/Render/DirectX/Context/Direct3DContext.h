@@ -33,7 +33,6 @@ public:
 	void CopyDescriptors(uint32 numDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE destinationStart, D3D12_CPU_DESCRIPTOR_HANDLE sourceStart, D3D12_DESCRIPTOR_HEAP_TYPE heapType);
 
 	void TransitionResource(GPUResource &resource, D3D12_RESOURCE_STATES newState, bool flushImmediate = false);
-	void BeginResourceTransition(GPUResource &resource, D3D12_RESOURCE_STATES newState, bool flushImmediate = false);
 	void InsertUAVBarrier(GPUResource &resource, bool flushImmediate = false);
 	void InsertAliasBarrier(GPUResource &before, GPUResource &after, bool flushImmediate = false);
 
@@ -61,7 +60,6 @@ public:
 	GraphicsContext(ID3D12Device *device);
 	virtual ~GraphicsContext();
 
-	void SetRootSignature(const RootSignatureInfo &rootSignature);
 	void SetRootSignature(ID3D12RootSignature *rootSignature);
 
 	void SetRenderTargets(uint32 numRenderTargets, const D3D12_CPU_DESCRIPTOR_HANDLE renderTargets[]);
@@ -100,18 +98,40 @@ public:
 private:
 };
 
+class ComputeContext : public Direct3DContext
+{
+public:
+    ComputeContext(ID3D12Device *device);
+    virtual ~ComputeContext();
+
+    void SetRootSignature(ID3D12RootSignature *rootSignature);
+    void SetPipelineState(ShaderPSO *pipeline);
+    void SetConstants(uint32 index, uint32 numConstants, const void *bufferData);
+    void SetRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer);
+    void SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle);
+
+    void ClearUAV(GpuBuffer& Target);
+    void ClearUAV(ColorBuffer& Target);
+
+    void Dispatch(size_t groupCountX = 1, size_t groupCountY = 1, size_t groupCountZ = 1);
+    void Dispatch1D(size_t threadCountX, size_t groupSizeX = 64);
+    void Dispatch2D(size_t threadCountX, size_t threadCountY, size_t groupSizeX = 8, size_t groupSizeY = 8);
+    void Dispatch3D(size_t threadCountX, size_t threadCountY, size_t threadCountZ, size_t groupSizeX, size_t groupSizeY, size_t groupSizeZ);
+private:
+}
+
 struct Direct3DUploadInfo
 {
 	Direct3DUploadInfo()
 	{
 		CPUAddress = NULL;
-		ResourceOffset = 0;
+		UploadAddressOffset = 0;
 		Resource = NULL;
 		UploadID = 0;
 	}
 
 	void *CPUAddress;
-	uint64 ResourceOffset;
+	uint64 UploadAddressOffset;
 	ID3D12Resource *Resource;
 	uint64 UploadID;
 };
