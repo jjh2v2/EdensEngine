@@ -50,7 +50,7 @@ VertexBuffer *Direct3DContextManager::CreateVertexBuffer(void* vertexData, uint3
 	memcpy(uploadMem, vertexData, bufferSize);
 	mUploadContext->CopyResourceRegion(vertexBufferResource, 0, uploadInfo.Resource, uploadInfo.ResourceOffset, bufferSize);
 
-	mUploadContext->EndUpload(uploadInfo, mQueueManager);
+	mUploadContext->FlushUpload(uploadInfo, mQueueManager);
 
 	VertexBuffer *vertexBuffer = new VertexBuffer(vertexBufferResource, D3D12_RESOURCE_STATE_COPY_DEST, vertexStride, bufferSize);
 
@@ -92,7 +92,7 @@ IndexBuffer *Direct3DContextManager::CreateIndexBuffer(void* indexData, uint32 b
 	memcpy(uploadMem, indexData, bufferSize);
 	mUploadContext->CopyResourceRegion(indexBufferResource, 0, uploadInfo.Resource, uploadInfo.ResourceOffset, bufferSize);
 
-	mUploadContext->EndUpload(uploadInfo, mQueueManager);
+	mUploadContext->FlushUpload(uploadInfo, mQueueManager);
 
 	IndexBuffer *indexBuffer = new IndexBuffer(indexBufferResource, D3D12_RESOURCE_STATE_COPY_DEST, bufferSize);
 

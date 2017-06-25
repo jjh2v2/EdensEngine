@@ -21,6 +21,8 @@ public:
 
 	ID3D12CommandQueue* GetCommandQueue() { return mCommandQueue; }
 
+    uint64 PollCurrentFenceValue();
+    uint64 GetLastCompletedFence() { return mLastCompletedFenceValue; }
 	uint64 GetNextFenceValue() { return mNextFenceValue; }
 	ID3D12Fence* GetFence() { return mFence; }
 

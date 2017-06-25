@@ -29,6 +29,7 @@ public:
 	~Camera();
 
 	void OnScreenChanged(CameraScreenSettings screenSettings);
+    CameraScreenSettings GetScreenSettings() { return mScreenSettings; }
 
 	Vector3 GetPosition() { return mPosition; }
 	Vector3 GetRotation() { return mRotation; }

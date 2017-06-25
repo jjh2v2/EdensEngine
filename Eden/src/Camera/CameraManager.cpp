@@ -1,16 +1,15 @@
 #include "Camera/CameraManager.h"
 
-//TDA: Need to define a lot of these magic numbers
 CameraManager::CameraManager(Vector2 screenSize)
 {
 	Camera::CameraScreenSettings screenSettings;
 	screenSettings.Width = screenSize.X;
 	screenSettings.Height = screenSize.Y;
-	screenSettings.Near = 0.1f;
-	screenSettings.Far = 1000.0f;
+	screenSettings.Near = CAMERA_DEFAULT_NEAR;
+	screenSettings.Far = CAMERA_DEFAULT_FAR;
 	screenSettings.AspectRatio = screenSize.X / screenSize.Y;
-	screenSettings.FieldOfView = MathHelper::Radian() * 60.0f;
-	mMainCamera = new Camera(screenSettings, 0.5f, 200.0f);
+	screenSettings.FieldOfView = MathHelper::Radian() * CAMERA_DEFAULT_FOV;
+	mMainCamera = new Camera(screenSettings, CAMERA_DEFAULT_MOVE_SPEED, CAMERA_DEFAULT_MOVE_SENSITIVITY);
 }
 
 CameraManager::~CameraManager()
@@ -20,13 +19,10 @@ CameraManager::~CameraManager()
 
 void CameraManager::OnScreenChanged(Vector2 screenSize)
 {
-	Camera::CameraScreenSettings screenSettings;
-	screenSettings.Width = screenSize.X;
-	screenSettings.Height = screenSize.Y;
-	screenSettings.Near = 0.1f;
-	screenSettings.Far = 1000.0f;
-	screenSettings.AspectRatio = screenSize.X / screenSize.Y;
-	screenSettings.FieldOfView = MathHelper::Radian() * 60.0f;
+    Camera::CameraScreenSettings screenSettings = mMainCamera->GetScreenSettings();
+    screenSettings.Width = screenSize.X;
+    screenSettings.Height = screenSize.Y;
+    screenSettings.AspectRatio = screenSize.X / screenSize.Y;
 
 	mMainCamera->OnScreenChanged(screenSettings);
 }

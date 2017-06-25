@@ -1,5 +1,6 @@
 #include "Render/Material/Material.h"
 #include "Render/DirectX/Context/Direct3DContext.h"
+#include "Render/Texture/TextureManager.h"
 
 Material::Material(ConstantBuffer *constantBuffer)
 {
@@ -41,12 +42,14 @@ void Material::ApplyMaterial(RenderPassContext *renderPassContext)
 	for (uint32 i = 0; i < renderPassTextureCount; i++)
 	{
 		MaterialTextureType textureType = renderPassContext->GetRenderPassTextureType(i);
+        Texture *texture = mTextures[textureType];
 
-		if (mTextures[textureType])
+		if (!texture || !texture->GetIsReady())
 		{
-			graphicsContext->CopyDescriptors(1, currentTextureHandle, mTextures[textureType]->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            texture = TextureManager::GetDefaultTexture();
 		}
-		
+
+        graphicsContext->CopyDescriptors(1, currentTextureHandle, texture->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		currentTextureHandle.ptr += cbvHeap->GetDescriptorSize();
 	}
 

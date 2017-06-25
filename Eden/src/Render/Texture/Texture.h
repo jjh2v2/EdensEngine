@@ -24,6 +24,9 @@ public:
 	void SetIsCubeMap(bool isCubeMap) { mIsCubeMap = isCubeMap; }
 	bool GetIsCubeMap() { return mIsCubeMap; }
 
+    bool GetIsReady() { return mIsReady; }
+    void SetIsReady(bool isReady) { mIsReady = isReady; }
+
 private:
 	TextureResource* mTextureResource;
 
@@ -32,4 +35,5 @@ private:
 	uint32		mMipCount;
 	uint32		mArraySize;
 	bool		mIsCubeMap;
+    bool        mIsReady;
 };

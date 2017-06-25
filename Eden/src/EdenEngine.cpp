@@ -69,7 +69,9 @@ void EdenEngine::OnScreenChanged()
 
 bool EdenEngine::Update(float delta)
 {
+    mGraphicsManager->Update(delta);
 	mInputManager->Update();
+
 	if (mInputManager->GetRightClickDown())
 	{
 		mEngineWindow->ShowWindowCursor(false);

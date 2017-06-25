@@ -22,7 +22,7 @@ ShaderPSO::ShaderPSO(ID3D12Device* device, Shader *shader, ShaderPipelineRenderS
 	pipelineStateDesc.BlendState = renderState.BlendDesc;
 	pipelineStateDesc.DepthStencilState = renderState.DepthStencilDesc;
 	pipelineStateDesc.SampleMask = UINT_MAX;
-	pipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; //TDA: need to be able to customize this
+	pipelineStateDesc.PrimitiveTopologyType = renderState.TopologyType;
 
 	pipelineStateDesc.NumRenderTargets = targetState.NumRenderTargets;
 	for (UINT i = 0; i < targetState.NumRenderTargets; i++)

@@ -33,3 +33,8 @@ void GraphicsManager::FinalizeGraphicsForRemoval()
 	Direct3DContextManager *contextManager = mDirect3DManager->GetContextManager();
 	contextManager->GetGraphicsContext()->Flush(contextManager->GetQueueManager(), true);
 }
+
+void GraphicsManager::Update(float deltaTime)
+{
+    mTextureManager->ProcessUploads();
+}

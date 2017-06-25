@@ -102,18 +102,21 @@ struct ShaderPipelineRenderState
 		DepthStencilDesc = CD3DX12_DEPTH_STENCIL_DESC{};
 		RasterDesc = CD3DX12_RASTERIZER_DESC{};
 		BlendDesc = CD3DX12_BLEND_DESC{};
+		TopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	}
 
-	ShaderPipelineRenderState(CD3DX12_DEPTH_STENCIL_DESC depthStencilDesc, CD3DX12_RASTERIZER_DESC rasterDesc, CD3DX12_BLEND_DESC blendDesc)
+	ShaderPipelineRenderState(CD3DX12_DEPTH_STENCIL_DESC depthStencilDesc, CD3DX12_RASTERIZER_DESC rasterDesc, CD3DX12_BLEND_DESC blendDesc, D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType)
 	{
 		DepthStencilDesc = depthStencilDesc;
 		RasterDesc = rasterDesc;
 		BlendDesc = blendDesc;
+		TopologyType = topologyType;
 	}
 
 	CD3DX12_DEPTH_STENCIL_DESC DepthStencilDesc;
 	CD3DX12_RASTERIZER_DESC	RasterDesc;
 	CD3DX12_BLEND_DESC BlendDesc;
+	D3D12_PRIMITIVE_TOPOLOGY_TYPE TopologyType;
 };
 
 struct ShaderPipelinePermutation

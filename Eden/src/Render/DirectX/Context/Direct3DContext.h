@@ -122,59 +122,61 @@ public:
 	UploadContext(ID3D12Device *device);
 	virtual ~UploadContext();
 	
+    uint32 GetNumUploadsAvailable() { return MAX_GPU_UPLOADS - mUploadSubmissionUsed; }
+
 	Direct3DUploadInfo BeginUpload(uint64 size, Direct3DQueueManager *queueManager);
 	void CopyTextureRegion(D3D12_TEXTURE_COPY_LOCATION *destination, D3D12_TEXTURE_COPY_LOCATION *source);
 	void CopyResourceRegion(ID3D12Resource *destination, uint64 destOffset, ID3D12Resource *source, uint64 sourceOffset, uint64 numBytes);
-	uint64 EndUpload(Direct3DUploadInfo& uploadInfo, Direct3DQueueManager *queueManager);
+	uint64 FlushUpload(Direct3DUploadInfo& uploadInfo, Direct3DQueueManager *queueManager, bool forceWait = false);
 	
 private:
+    struct UploadBuffer
+    {
+        UploadBuffer()
+        {
+            BufferResource = NULL;
+            BufferAddress = NULL;
+            BufferStart = 0;
+            BufferUsed = 0;
+        }
+
+        ID3D12Resource *BufferResource;
+        uint8 *BufferAddress;
+        uint64 BufferStart;
+        uint64 BufferUsed;
+    };
+
+    struct Direct3DUpload
+    {
+        Direct3DUpload()
+        {
+            Reset();
+        }
+
+        void Reset()
+        {
+            UploadLocation = 0;
+            UploadSize = 0;
+            UploadPadding = 0;
+            FenceValue = UINT64_MAX;
+            IsUploading = false;
+        }
+
+        uint64 UploadLocation;
+        uint64 UploadSize;
+        uint64 UploadPadding;
+        uint64 FenceValue;
+        bool   IsUploading;
+    };
+
+    bool ClearSubmissionIfFinished(Direct3DUpload &submission, Direct3DQueueManager *queueManager);
 	void ClearFinishedUploads(uint64 flushCount, Direct3DQueueManager *queueManager);
-	bool AllocateUploadSubmission(uint64 size, uint64 &uploadIndex);
+	bool CreateNewUpload(uint64 size, uint32 &uploadIndex);
 	
-
-	struct UploadBuffer
-	{
-		UploadBuffer()
-		{
-			BufferResource = NULL;
-			BufferAddress = NULL;
-			BufferStart = 0;
-			BufferUsed = 0;
-		}
-
-		ID3D12Resource *BufferResource;
-		uint8 *BufferAddress;
-		uint64 BufferStart;
-		uint64 BufferUsed;
-	};
-
-	struct Direct3DUpload
-	{
-		Direct3DUpload()
-		{
-			Reset();
-		}
-
-		void Reset()
-		{
-			UploadLocation = 0;
-			UploadSize = 0;
-			UploadPadding = 0;
-			FenceValue = UINT64_MAX;
-			IsUploading = false;
-		}
-
-		uint64 UploadLocation;
-		uint64 UploadSize;
-		uint64 UploadPadding;
-		uint64 FenceValue;
-		bool   IsUploading;
-	};
-
 	UploadBuffer mUploadBuffer;
 	Direct3DUpload mUploads[MAX_GPU_UPLOADS];
-	uint64 mUploadSubmissionStart;
-	uint64 mUploadSubmissionUsed;
+	uint32 mUploadSubmissionStart;
+	uint32 mUploadSubmissionUsed;
 };
 
 class RenderPassContext

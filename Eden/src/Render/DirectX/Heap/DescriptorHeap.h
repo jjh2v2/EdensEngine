@@ -43,7 +43,6 @@ private:
 	uint32 mActiveHandleCount;
 };
 
-//TDA need to assess and grow these heaps on the fly based on the scene
 class RenderPassDescriptorHeap : public DescriptorHeap
 {
 public:

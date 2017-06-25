@@ -13,6 +13,7 @@ public:
 
 	void InitializeGraphicsResources();
 	void FinalizeGraphicsForRemoval();
+    void Update(float deltaTime);
 
 	Direct3DManager *GetDirect3DManager() { return mDirect3DManager; }
 	TextureManager *GetTextureManager() { return mTextureManager; }

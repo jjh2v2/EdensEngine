@@ -43,11 +43,14 @@ uint64 Direct3DQueue::IncrementFence()
 	return mNextFenceValue++;
 }
 
+uint64 Direct3DQueue::PollCurrentFenceValue()
+{
+    mLastCompletedFenceValue = MathHelper::Max(mLastCompletedFenceValue, mFence->GetCompletedValue());
+    return mLastCompletedFenceValue;
+}
+
 bool Direct3DQueue::IsFenceComplete(uint64 fenceValue)
 {
-	// Avoid querying the fence value by testing against the last one seen.
-	// The max() is to protect against an unlikely race condition that could cause the last
-	// completed fence value to regress.
 	if (fenceValue > mLastCompletedFenceValue)
 	{
 		mLastCompletedFenceValue = MathHelper::Max(mLastCompletedFenceValue, mFence->GetCompletedValue());

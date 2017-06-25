@@ -468,49 +468,65 @@ UploadContext::~UploadContext()
 	}
 }
 
-void UploadContext::ClearFinishedUploads(uint64 flushCount, Direct3DQueueManager *queueManager)
+bool UploadContext::ClearSubmissionIfFinished(Direct3DUpload &submission, Direct3DQueueManager *queueManager)
 {
-	const uint64 start = mUploadSubmissionStart;
-	const uint64 numUsed = mUploadSubmissionUsed;
+    if (submission.IsUploading && queueManager->GetCopyQueue()->IsFenceComplete(submission.FenceValue))
+    {
+        mUploadSubmissionStart = (mUploadSubmissionStart + 1) % MAX_GPU_UPLOADS;
+        mUploadSubmissionUsed -= 1;
+        mUploadBuffer.BufferStart = (mUploadBuffer.BufferStart + submission.UploadPadding) % UPLOAD_BUFFER_SIZE;
+        Application::Assert(submission.UploadLocation == mUploadBuffer.BufferStart);
+        Application::Assert(mUploadBuffer.BufferStart + submission.UploadSize <= UPLOAD_BUFFER_SIZE);
+        mUploadBuffer.BufferStart = (mUploadBuffer.BufferStart + submission.UploadSize) % UPLOAD_BUFFER_SIZE;
+        mUploadBuffer.BufferUsed -= (submission.UploadSize + submission.UploadPadding);
+        submission.Reset();
 
-	uint64 numFlushed = 0;
+        if (mUploadBuffer.BufferUsed == 0)
+        {
+            mUploadBuffer.BufferStart = 0;
+        }
 
-	for (uint64 i = 0; i < numUsed; ++i)
-	{
-		Direct3DUpload &submission = mUploads[(start + i) % MAX_GPU_UPLOADS];
+        return true;
+    }
 
-		if (submission.IsUploading && !queueManager->GetCopyQueue()->IsFenceComplete(submission.FenceValue))
-		{
-			queueManager->GetCopyQueue()->WaitForFence(submission.FenceValue);
-		}
-		
-		if (submission.IsUploading && queueManager->GetCopyQueue()->IsFenceComplete(submission.FenceValue))
-		{
-			mUploadSubmissionStart = (mUploadSubmissionStart + 1) % MAX_GPU_UPLOADS;
-			mUploadSubmissionUsed -= 1;
-			mUploadBuffer.BufferStart = (mUploadBuffer.BufferStart + submission.UploadPadding) % UPLOAD_BUFFER_SIZE;
-			Application::Assert(submission.UploadLocation == mUploadBuffer.BufferStart);
-			Application::Assert(mUploadBuffer.BufferStart + submission.UploadSize <= UPLOAD_BUFFER_SIZE);
-			mUploadBuffer.BufferStart = (mUploadBuffer.BufferStart + submission.UploadSize) % UPLOAD_BUFFER_SIZE;
-			mUploadBuffer.BufferUsed -= (submission.UploadSize + submission.UploadPadding);
-			submission.Reset();
-
-			if (mUploadBuffer.BufferUsed == 0)
-			{
-				mUploadBuffer.BufferStart = 0;
-			}
-
-			numFlushed++;
-
-			if (numFlushed == flushCount)
-			{
-				break;
-			}
-		}
-	}
+    return false;
 }
 
-bool UploadContext::AllocateUploadSubmission(uint64 size, uint64 &uploadIndex)
+void UploadContext::ClearFinishedUploads(uint64 flushCount, Direct3DQueueManager *queueManager)
+{
+	const uint32 uploadStart = mUploadSubmissionStart;
+	const uint32 numUsedUploads = mUploadSubmissionUsed;
+	uint32 numFlushed = 0;
+
+    //clear pending free uploads first before waiting on anything
+	for (uint32 i = 0; i < numUsedUploads; ++i)
+	{
+		Direct3DUpload &submission = mUploads[(uploadStart + i) % MAX_GPU_UPLOADS];
+        numFlushed += ClearSubmissionIfFinished(submission, queueManager) ? 1 : 0;
+	}
+
+    //if we still need some uploads freed, wait for as many as we need to
+    if (numFlushed < flushCount)
+    {
+        for (uint32 i = 0; i < numUsedUploads; ++i)
+        {
+            Direct3DUpload &submission = mUploads[(uploadStart + i) % MAX_GPU_UPLOADS];
+            if (submission.IsUploading && !queueManager->GetCopyQueue()->IsFenceComplete(submission.FenceValue))
+            {
+                queueManager->GetCopyQueue()->WaitForFence(submission.FenceValue);
+            }
+
+            numFlushed += ClearSubmissionIfFinished(submission, queueManager) ? 1 : 0;
+
+            if (numFlushed == flushCount)
+            {
+                break;
+            }
+        }
+    }
+}
+
+bool UploadContext::CreateNewUpload(uint64 size, uint32 &uploadIndex)
 {
 	Application::Assert(mUploadSubmissionUsed <= MAX_GPU_UPLOADS);
 	if (mUploadSubmissionUsed == MAX_GPU_UPLOADS)
@@ -518,7 +534,7 @@ bool UploadContext::AllocateUploadSubmission(uint64 size, uint64 &uploadIndex)
 		return false;
 	}
 
-	const uint64 newSubmissionId = (mUploadSubmissionStart + mUploadSubmissionUsed) % MAX_GPU_UPLOADS;
+	const uint32 newSubmissionId = (mUploadSubmissionStart + mUploadSubmissionUsed) % MAX_GPU_UPLOADS;
 	Application::Assert(mUploads[newSubmissionId].UploadSize == 0);
 	Application::Assert(mUploadBuffer.BufferUsed <= UPLOAD_BUFFER_SIZE);
 
@@ -578,15 +594,15 @@ Direct3DUploadInfo UploadContext::BeginUpload(uint64 size, Direct3DQueueManager 
 	size = Application::Align(size, UPLOAD_BUFFER_ALIGNMENT);
 	Application::Assert(size <= UPLOAD_BUFFER_SIZE && size > 0);
 
-	uint64 uploadIndex = 0;
+	uint32 uploadIndex = 0;
 
 	ClearFinishedUploads(0, queueManager);
-	while (!AllocateUploadSubmission(size, uploadIndex))
+	while (!CreateNewUpload(size, uploadIndex))
 	{
 		ClearFinishedUploads(1, queueManager);
 	}
 
-	const uint64 submissionIdx = (mUploadSubmissionStart + (mUploadSubmissionUsed - 1)) % MAX_GPU_UPLOADS;
+	const uint32 submissionIdx = (mUploadSubmissionStart + (mUploadSubmissionUsed - 1)) % MAX_GPU_UPLOADS;
 	Direct3DUpload &submission = mUploads[submissionIdx];
 
 	Direct3DUploadInfo uploadInfo;
@@ -608,7 +624,7 @@ void UploadContext::CopyResourceRegion(ID3D12Resource *destination, uint64 destO
 	mCommandList->CopyBufferRegion(destination, destOffset, source, sourceOffset, numBytes);
 }
 
-uint64 UploadContext::EndUpload(Direct3DUploadInfo& uploadInfo, Direct3DQueueManager *queueManager)
+uint64 UploadContext::FlushUpload(Direct3DUploadInfo& uploadInfo, Direct3DQueueManager *queueManager, bool forceWait)
 {
 	uint64 uploadFence = Flush(queueManager, true);
 	mUploads[uploadInfo.UploadID].FenceValue = uploadFence;
