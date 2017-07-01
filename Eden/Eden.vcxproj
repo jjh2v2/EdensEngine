@@ -150,7 +150,6 @@
     <ClInclude Include="src\Core\Containers\DynamicArray.h" />
     <ClInclude Include="src\Core\Containers\List.h" />
     <ClInclude Include="src\Core\Containers\Pair.h" />
-    <ClInclude Include="src\Core\CPU\CPUTracker.h" />
     <ClInclude Include="src\Core\CPU\GameTimer.h" />
     <ClInclude Include="src\Core\Intrinsic\Intrinsics.h" />
     <ClInclude Include="src\Core\Misc\Axis.h" />

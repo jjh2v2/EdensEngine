@@ -1,7 +1,16 @@
 #include "EdenEngine.h"
+#include "Core/Threading/ThreadPoolManager.h"
 
 EdenEngine::EdenEngine()
 {
+    uint32 numThreads = CPUDeviceInfo::GetNumberOfLogicalCores();
+
+    int cpuinfo[4];
+    __cpuid(cpuinfo, 1);
+
+    bool hasHT = (cpuinfo[3] & (1 << 28)) > 0;
+
+
 	mEngineWindow = new EdenEngineWindow(1920, 1080, false);
 	mGameTimer = new GameTimer();
 

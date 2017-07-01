@@ -7,7 +7,7 @@
 #include <assert.h>
 #include <d3dcompiler.h>
 
-#define NUM_DEFAULT_WORKER_THREADS			8
+#define NUM_DEFAULT_LOGICAL_CORES           8
 #define BACK_BUFFER_COUNT					2
 #define RTV_DESCRIPTOR_HEAP_SIZE			64
 #define SRV_DESCRIPTOR_HEAP_SIZE			1024
@@ -58,4 +58,11 @@ class Application
 public:
 	static void Assert(bool param);
 	static uint64 Align(uint64 size, uint64 alignment);
+};
+
+class CPUDeviceInfo
+{
+public:
+    static uint32 GetNumberOfLogicalCores();
+private:
 };

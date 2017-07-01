@@ -13,27 +13,26 @@ public:
 	class WorkerThread
 	{
 	public:
-		WorkerThread(ThreadPool &s);
-
+		WorkerThread(ThreadPool &threadPool);
 		void operator()();
+
 	private:
-		ThreadPool &pool;
+		ThreadPool &mThreadPool;
 	};
 
 
-	ThreadPool(size_t threads);
+	ThreadPool(uint32 numThreads);
 	~ThreadPool();
 
 	void WaitForAll();
-
 	void AddSingleJob(Job *job);
 	void AddJobBatch(JobBatch *jobBatch);
 
-	std::vector<std::thread> workers;
-	std::deque<Job *> jobs;
+	std::vector<std::thread> mWorkerThreads;
+	std::deque<Job *> mJobs;
 
-	std::mutex queue_mutex;
-	std::mutex batch_mutex;
-	std::condition_variable condition;
-	std::atomic<bool> stop;
+	std::mutex mJobQueueMutex;
+	std::mutex mJobBatchMutex;
+	std::condition_variable mCondition;
+	std::atomic<bool> mStop;
 };

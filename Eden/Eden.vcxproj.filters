@@ -204,9 +204,6 @@
     <ClInclude Include="src\Util\Math\RandomGen.h">
       <Filter>Source Files\Util\Math</Filter>
     </ClInclude>
-    <ClInclude Include="src\Core\CPU\CPUTracker.h">
-      <Filter>Source Files\Core\CPU</Filter>
-    </ClInclude>
     <ClInclude Include="src\Core\CPU\GameTimer.h">
       <Filter>Source Files\Core\CPU</Filter>
     </ClInclude>

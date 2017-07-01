@@ -100,6 +100,11 @@ public:
 		return f - (float)TruncateFloatToInt(f);
 	}
 
+    static uint32 DivideByMultipleOf(uint32 x, uint32 y)
+    {
+        return (x + y - 1) / y;
+    }
+
 	static float FloatsAreEqual(float a, float b, float epsilon = FLT_EPSILON)
 	{
 		return fabs(a - b) < epsilon;

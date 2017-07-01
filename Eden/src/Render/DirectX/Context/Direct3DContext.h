@@ -110,15 +110,16 @@ public:
     void SetRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer);
     void SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle);
 
-    void ClearUAV(GpuBuffer& Target);
-    void ClearUAV(ColorBuffer& Target);
+//    void ClearUAV(GpuBuffer& Target);
+//    void ClearUAV(ColorBuffer& Target);
 
-    void Dispatch(size_t groupCountX = 1, size_t groupCountY = 1, size_t groupCountZ = 1);
-    void Dispatch1D(size_t threadCountX, size_t groupSizeX = 64);
-    void Dispatch2D(size_t threadCountX, size_t threadCountY, size_t groupSizeX = 8, size_t groupSizeY = 8);
-    void Dispatch3D(size_t threadCountX, size_t threadCountY, size_t threadCountZ, size_t groupSizeX, size_t groupSizeY, size_t groupSizeZ);
+    void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
+    void Dispatch1D(uint32 threadCountX, uint32 groupSizeX);
+    void Dispatch2D(uint32 threadCountX, uint32 threadCountY, uint32 groupSizeX, uint32 groupSizeY);
+    void Dispatch3D(uint32 threadCountX, uint32 threadCountY, uint32 threadCountZ, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ);
+
 private:
-}
+};
 
 struct Direct3DUploadInfo
 {

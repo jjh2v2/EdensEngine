@@ -7,18 +7,24 @@ public:
 	ThreadPoolManager();
 	~ThreadPoolManager();
 
-	void Initialize(uint32 numWorkerThreads);
+	void Initialize(uint32 numGeneralPurposeThreads, uint32 numBackgroundWorkerThreads);
 
 	static ThreadPoolManager *GetSingleton();
 	static void DestroySingleton();
 
-	ThreadPool *GetThreadPool()
+	ThreadPool *GetGeneralThreadPool()
 	{
-		return mThreadPool;
+		return mGeneralThreadPool;
 	}
+
+    ThreadPool *GetBackgroundThreadPool()
+    {
+        return mBackgroundThreadPool;
+    }
 
 private:
 	static ThreadPoolManager *mThreadPoolManager;
 
-	ThreadPool *mThreadPool;
+	ThreadPool *mGeneralThreadPool;
+    ThreadPool *mBackgroundThreadPool;
 };

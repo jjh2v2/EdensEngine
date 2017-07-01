@@ -1,6 +1,7 @@
 #include "Core/Platform/PlatformCore.h"
 #include <assert.h>
 #include <fstream>
+#include <thread>
 
 bool ApplicationSpecification::ForceAllTexturesToSRGB = false;
 char *ApplicationSpecification::TextureManifestFileLocation = "../Eden/data/Manifests/TextureManifest.emf";
@@ -49,3 +50,18 @@ void Application::Assert(bool param)
 {
 	return ((size + alignment - 1) / alignment) * alignment;
 }
+
+ uint32 CPUDeviceInfo::GetNumberOfLogicalCores()
+ {
+     //returning this for now because on my machine, both of the below (which are supposed to detect # of logical cores) return 4 for some reason
+     //even though I have a quad core machine with hyper thread capability.
+     return NUM_DEFAULT_LOGICAL_CORES;
+
+     /*
+     SYSTEM_INFO sysinfo;
+     GetSystemInfo(&sysinfo);
+     return (uint32)sysinfo.dwNumberOfProcessors;
+
+     uint32 reportedNumThreads = std::thread::hardware_concurrency();
+     return reportedNumThreads == 0 ? NUM_DEFAULT_WORKER_THREADS : reportedNumThreads;*/
+ }

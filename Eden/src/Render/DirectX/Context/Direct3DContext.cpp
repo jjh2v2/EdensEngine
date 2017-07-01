@@ -449,6 +449,26 @@ void ComputeContext::ClearUAV(ColorBuffer& Target)
     m_CommandList->ClearUnorderedAccessViewFloat(GpuVisibleHandle, Target.GetUAV(), Target.GetResource(), ClearColor, 1, &ClearRect);
 }*/
 
+void ComputeContext::Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
+{
+    FlushResourceBarriers();
+    mCommandList->Dispatch(groupCountX, groupCountY, groupCountZ);
+}
+
+void ComputeContext::Dispatch1D(uint32 threadCountX, uint32 groupSizeX)
+{
+    Dispatch(MathHelper::DivideByMultipleOf(threadCountX, groupSizeX), 1, 1);
+}
+
+void ComputeContext::Dispatch2D(uint32 threadCountX, uint32 threadCountY, uint32 groupSizeX, uint32 groupSizeY)
+{
+    Dispatch(MathHelper::DivideByMultipleOf(threadCountX, groupSizeX), MathHelper::DivideByMultipleOf(threadCountY, groupSizeY), 1);
+}
+
+void ComputeContext::Dispatch3D(uint32 threadCountX, uint32 threadCountY, uint32 threadCountZ, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ)
+{
+    Dispatch(MathHelper::DivideByMultipleOf(threadCountX, groupSizeX), MathHelper::DivideByMultipleOf(threadCountY, groupSizeY), MathHelper::DivideByMultipleOf(threadCountZ, groupSizeZ));
+}
 
 UploadContext::UploadContext(ID3D12Device *device)
 	:Direct3DContext(device, D3D12_COMMAND_LIST_TYPE_COPY)

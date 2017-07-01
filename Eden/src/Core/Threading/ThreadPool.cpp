@@ -1,7 +1,7 @@
 #include "Core/Threading/ThreadPool.h"
 
-ThreadPool::WorkerThread::WorkerThread(ThreadPool &s)
-	: pool(s) 
+ThreadPool::WorkerThread::WorkerThread(ThreadPool &threadPool)
+	: mThreadPool(threadPool)
 {
 }
 
@@ -12,28 +12,28 @@ void ThreadPool::WorkerThread::operator()()
 	while (true)
 	{
 		{
-			std::unique_lock<std::mutex> lock(pool.queue_mutex);
+			std::unique_lock<std::mutex> lock(mThreadPool.mJobQueueMutex);
 
-			// look for a work item
-			while (!pool.stop && pool.jobs.empty())
+			// wait for work if there isn't any right now
+			while (!mThreadPool.mStop && mThreadPool.mJobs.empty())
 			{
-				pool.condition.wait(lock);
+				mThreadPool.mCondition.wait(lock);
 			}
 
-			if (pool.stop && pool.jobs.empty()) // exit if the pool is stopped and we have no more jobs
+			if (mThreadPool.mStop && mThreadPool.mJobs.empty())
 			{
 				return;
 			}
 
-			job = pool.jobs.front();
-			pool.jobs.pop_front();
+			job = mThreadPool.mJobs.front();
+			mThreadPool.mJobs.pop_front();
 		}
 
 		job->Execute();
 
 		if (job->GetJobBatch() != NULL)
 		{
-			std::unique_lock<std::mutex> lock(pool.batch_mutex);
+			std::unique_lock<std::mutex> lock(mThreadPool.mJobBatchMutex);
 
 			JobBatch *jobBatch = job->GetJobBatch();
 			jobBatch->CompletedJob(job);
@@ -46,53 +46,43 @@ void ThreadPool::WorkerThread::operator()()
 	}
 }
 
-ThreadPool::ThreadPool(size_t threads)
-	: stop(false)
+ThreadPool::ThreadPool(uint32 numThreads)
+	: mStop(false)
 {
-	for (size_t i = 0; i < threads; ++i)
+	for (uint32 i = 0; i < numThreads; i++)
 	{
-		workers.push_back(std::thread(WorkerThread(*this)));
+		mWorkerThreads.push_back(std::thread(WorkerThread(*this)));
 	}
 }
 
 ThreadPool::~ThreadPool()
 {
-	{
-		std::unique_lock<std::mutex> lock(queue_mutex);
-		stop = true;
-	}
-
-	condition.notify_all();
-
-	for (size_t i = 0; i < workers.size(); ++i)
-	{
-		workers[i].join();
-	}
+    WaitForAll();
 }
 
 void ThreadPool::WaitForAll()
 {
-	{
-		std::unique_lock<std::mutex> lock(queue_mutex);
-		stop = true;
-	}
+    {
+        std::unique_lock<std::mutex> lock(mJobQueueMutex);
+        mStop = true;
+    }
+	
+	mCondition.notify_all();
 
-	condition.notify_all();
-
-	for (size_t i = 0; i < workers.size(); ++i)
+	for (size_t i = 0; i < mWorkerThreads.size(); ++i)
 	{
-		workers[i].join();
+		mWorkerThreads[i].join();
 	}
 }
 
 void ThreadPool::AddSingleJob(Job *job)
 {
 	{
-		std::unique_lock<std::mutex> lock(queue_mutex);
-		jobs.push_back(job);
+		std::unique_lock<std::mutex> lock(mJobQueueMutex);
+		mJobs.push_back(job);
 	}
 
-	condition.notify_one();
+	mCondition.notify_one();
 }
 
 void ThreadPool::AddJobBatch(JobBatch *jobBatch)
@@ -103,7 +93,7 @@ void ThreadPool::AddJobBatch(JobBatch *jobBatch)
 	}
 
 	{
-		std::unique_lock<std::mutex> batchLock(batch_mutex);
+		std::unique_lock<std::mutex> batchLock(mJobBatchMutex);
 
 		uint32 jobCount = jobBatch->GetNumJobs();
 		for (uint32 i = 0; i < jobCount; i++)

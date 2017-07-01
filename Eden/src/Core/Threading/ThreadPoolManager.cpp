@@ -9,14 +9,19 @@ ThreadPoolManager::ThreadPoolManager()
 
 ThreadPoolManager::~ThreadPoolManager()
 {
-	delete mThreadPool;
-	mThreadPool = NULL;
+	delete mGeneralThreadPool;
+    mGeneralThreadPool = NULL;
+
+    delete mBackgroundThreadPool;
+    mBackgroundThreadPool = NULL;
+
 	mThreadPoolManager = NULL;
 }
 
-void ThreadPoolManager::Initialize(uint32 numWorkerThreads)
+void ThreadPoolManager::Initialize(uint32 numGeneralPurposeThreads, uint32 numBackgroundWorkerThreads)
 {
-	mThreadPool = new ThreadPool(numWorkerThreads);
+	mGeneralThreadPool = new ThreadPool(numGeneralPurposeThreads);
+    mBackgroundThreadPool = new ThreadPool(numBackgroundWorkerThreads);
 }
 
 ThreadPoolManager *ThreadPoolManager::GetSingleton()
