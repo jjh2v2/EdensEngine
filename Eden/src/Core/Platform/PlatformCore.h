@@ -7,7 +7,7 @@
 #include <assert.h>
 #include <d3dcompiler.h>
 
-#define NUM_DEFAULT_LOGICAL_CORES           8
+#define MIN_LOGICAL_CORES                   4
 #define BACK_BUFFER_COUNT					2
 #define RTV_DESCRIPTOR_HEAP_SIZE			64
 #define SRV_DESCRIPTOR_HEAP_SIZE			1024

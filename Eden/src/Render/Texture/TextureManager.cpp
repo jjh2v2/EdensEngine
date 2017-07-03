@@ -1,7 +1,40 @@
 #include "Render/Texture/TextureManager.h"
 #include "Util/String/StringConverter.h"
+#include "Core/Threading/ThreadPoolManager.h"
 
 Texture *TextureManager::mDefaultTexture = NULL;
+
+TextureUpload::TextureUpload()
+{
+    UploadState = TextureUploadState_Pending;
+    TextureToUpload = NULL;
+    FilePath = NULL;
+    ImageData = NULL;
+    UploadFence = 0;
+    ReadJob = NULL;
+    CopyJob = NULL;
+}
+
+TextureUpload::~TextureUpload()
+{
+    delete[] FilePath;
+    FilePath = NULL;
+
+    delete ImageData;
+    ImageData = NULL;
+
+    if (ReadJob)
+    {
+        delete ReadJob;
+        ReadJob = NULL;
+    }
+
+    if (CopyJob)
+    {
+        delete CopyJob;
+        CopyJob = NULL;
+    }
+}
 
 TextureManager::TextureManager(Direct3DManager *direct3DManager)
 {
@@ -10,21 +43,11 @@ TextureManager::TextureManager(Direct3DManager *direct3DManager)
 
 TextureManager::~TextureManager()
 {
-    //check the pending uploads for any unreleased memory
-    for (uint32 i = 0; i < mTextureUploads.CurrentSize(); i++)
+    //wait until pending uploads are completed before nuking everything. We don't just delete them because they could have jobs mid-process
+    while (mTextureUploads.CurrentSize() > 0)
     {
-        if (mTextureUploads[i].FilePath)
-        {
-            delete[] mTextureUploads[i].FilePath;
-        }
-
-        if (mTextureUploads[i].ImageData)
-        {
-            delete mTextureUploads[i].ImageData;
-        }
+        ProcessUploads();
     }
-
-    mTextureUploads.Clear();
 
 	for (uint32 i = 0; i < mTextures.CurrentSize(); i++)
 	{
@@ -76,26 +99,53 @@ Texture *TextureManager::GetTexture(const std::string &textureName, bool loadImm
 
 Texture *TextureManager::LoadTexture(WCHAR *filePath, bool async)
 {
-    TextureUpload newTextureUpload;
-    newTextureUpload.TextureToUpload = new Texture();
-    newTextureUpload.UploadState = TextureUploadState_Pending;
-    newTextureUpload.FilePath = filePath;
-    newTextureUpload.ImageData = new DirectX::ScratchImage();
+    TextureUpload *newTextureUpload = new TextureUpload();
+    newTextureUpload->TextureToUpload = new Texture();
+    newTextureUpload->UploadState = TextureUploadState_Initialized;
+    newTextureUpload->FilePath = filePath;
+    newTextureUpload->ImageData = new DirectX::ScratchImage();
 
     if (async)
     {
+        newTextureUpload->ReadJob = new TextureReadJob(newTextureUpload, this);
+        newTextureUpload->CopyJob = new TextureCopyJob(newTextureUpload, this);
         mTextureUploads.Add(newTextureUpload);
     }
     else
     {
+        newTextureUpload->ReadJob = NULL;
+        newTextureUpload->CopyJob = NULL;
+
         ProcessFileRead(newTextureUpload);
         ProcessCopy(newTextureUpload);
         ProcessUpload(newTextureUpload, true);
         ProcessTransition(newTextureUpload, 0); //fake fence of 0 because we know it's uploaded
-        newTextureUpload.TextureToUpload->SetIsReady(true);
+        newTextureUpload->TextureToUpload->SetIsReady(true);
     }
 
-	return newTextureUpload.TextureToUpload;
+	return newTextureUpload->TextureToUpload;
+}
+
+TextureManager::TextureReadJob::TextureReadJob(TextureUpload *textureUpload, TextureManager *textureManager)
+{
+    mTextureUpload = textureUpload;
+    mTextureManager = textureManager;
+}
+
+TextureManager::TextureCopyJob::TextureCopyJob(TextureUpload *textureUpload, TextureManager *textureManager)
+{
+    mTextureUpload = textureUpload;
+    mTextureManager = textureManager;
+}
+
+void TextureManager::TextureReadJob::Execute()
+{
+    mTextureManager->ProcessFileRead(mTextureUpload);
+}
+
+void TextureManager::TextureCopyJob::Execute()
+{
+    mTextureManager->ProcessCopy(mTextureUpload);
 }
 
 void TextureManager::ProcessUploads()
@@ -105,17 +155,19 @@ void TextureManager::ProcessUploads()
     uint32 numUploads = mTextureUploads.CurrentSize();
     for (uint32 i = 0; i < numUploads; i++)
     {
-        TextureUpload &currentUpload = mTextureUploads[i];
-        switch (currentUpload.UploadState)
+        TextureUpload *currentUpload = mTextureUploads[i];
+        switch (currentUpload->UploadState)
         {
-        case TextureUploadState_Pending:
-            currentUpload.UploadState = TextureUploadState_Read;
+        case TextureUploadState_Initialized:
+            currentUpload->UploadState = TextureUploadState_Read;
             break;
         case TextureUploadState_Read:
-            ProcessFileRead(currentUpload);
+            currentUpload->UploadState = TextureUploadState_Pending;
+            ThreadPoolManager::GetSingleton()->GetBackgroundThreadPool()->AddSingleJob(currentUpload->ReadJob);
             break;
         case TextureUploadState_Copy:
-            ProcessCopy(currentUpload);
+            currentUpload->UploadState = TextureUploadState_Pending;
+            ThreadPoolManager::GetSingleton()->GetBackgroundThreadPool()->AddSingleJob(currentUpload->CopyJob);
             break;
         case TextureUploadState_Upload:
             if (mDirect3DManager->GetContextManager()->GetUploadContext()->GetNumUploadsAvailable() > 0)
@@ -127,47 +179,63 @@ void TextureManager::ProcessUploads()
             ProcessTransition(currentUpload, currentUploadFence);
             break;
         case TextureUploadState_Completed:
-            currentUpload.TextureToUpload->SetIsReady(true);
+            currentUpload->TextureToUpload->SetIsReady(true);
+            currentUpload->UploadState = TextureUploadState_Delete;
+            break;
+        case TextureUploadState_Pending:
+            //Background job is currently pending, just wait
             break;
         default:
             Application::Assert(false);
             break;
         }
     }
+
+    for (int32 i = 0; i < (int32)mTextureUploads.CurrentSize(); i++)
+    {
+        TextureUpload *currentUpload = mTextureUploads[i];
+
+        if (currentUpload->UploadState == TextureUploadState_Delete)
+        {
+            mTextureUploads.Remove(i);
+            delete currentUpload;
+            i -= 1;
+        }
+    }
 }
 
 
-void TextureManager::ProcessFileRead(TextureUpload &currentUpload)
+void TextureManager::ProcessFileRead(TextureUpload *currentUpload)
 {
-    HRESULT loadResult = DirectX::LoadFromDDSFile(currentUpload.FilePath, DirectX::DDS_FLAGS_NONE, nullptr, *currentUpload.ImageData);
+    HRESULT loadResult = DirectX::LoadFromDDSFile(currentUpload->FilePath, DirectX::DDS_FLAGS_NONE, nullptr, *currentUpload->ImageData);
     assert(loadResult == S_OK);
 
-    const DirectX::TexMetadata& textureMetaData = currentUpload.ImageData->GetMetadata();
+    const DirectX::TexMetadata& textureMetaData = currentUpload->ImageData->GetMetadata();
     DXGI_FORMAT textureFormat = textureMetaData.format;
     bool is3DTexture = textureMetaData.dimension == DirectX::TEX_DIMENSION_TEXTURE3D;
 
-    currentUpload.TextureToUpload->SetDimensions(Vector3((float)textureMetaData.width, (float)textureMetaData.height, (float)textureMetaData.depth));
-    currentUpload.TextureToUpload->SetMipCount((uint32)textureMetaData.mipLevels);
-    currentUpload.TextureToUpload->SetArraySize((uint32)textureMetaData.arraySize);
-    currentUpload.TextureToUpload->SetFormat(textureMetaData.format);
-    currentUpload.TextureToUpload->SetIsCubeMap(textureMetaData.IsCubemap());
+    currentUpload->TextureToUpload->SetDimensions(Vector3((float)textureMetaData.width, (float)textureMetaData.height, (float)textureMetaData.depth));
+    currentUpload->TextureToUpload->SetMipCount((uint32)textureMetaData.mipLevels);
+    currentUpload->TextureToUpload->SetArraySize((uint32)textureMetaData.arraySize);
+    currentUpload->TextureToUpload->SetFormat(textureMetaData.format);
+    currentUpload->TextureToUpload->SetIsCubeMap(textureMetaData.IsCubemap());
 
     if (ApplicationSpecification::ForceAllTexturesToSRGB)
     {
         textureFormat = DirectX::MakeSRGB(textureFormat);
     }
 
-    currentUpload.TextureDesc.MipLevels = (uint16)textureMetaData.mipLevels;
-    currentUpload.TextureDesc.Format = textureFormat;
-    currentUpload.TextureDesc.Width = (uint32)textureMetaData.width;
-    currentUpload.TextureDesc.Height = (uint32)textureMetaData.height;
-    currentUpload.TextureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-    currentUpload.TextureDesc.DepthOrArraySize = is3DTexture ? uint16(textureMetaData.depth) : uint16(textureMetaData.arraySize);
-    currentUpload.TextureDesc.SampleDesc.Count = 1;
-    currentUpload.TextureDesc.SampleDesc.Quality = 0;
-    currentUpload.TextureDesc.Dimension = is3DTexture ? D3D12_RESOURCE_DIMENSION_TEXTURE3D : D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-    currentUpload.TextureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-    currentUpload.TextureDesc.Alignment = 0;
+    currentUpload->TextureDesc.MipLevels = (uint16)textureMetaData.mipLevels;
+    currentUpload->TextureDesc.Format = textureFormat;
+    currentUpload->TextureDesc.Width = (uint32)textureMetaData.width;
+    currentUpload->TextureDesc.Height = (uint32)textureMetaData.height;
+    currentUpload->TextureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+    currentUpload->TextureDesc.DepthOrArraySize = is3DTexture ? uint16(textureMetaData.depth) : uint16(textureMetaData.arraySize);
+    currentUpload->TextureDesc.SampleDesc.Count = 1;
+    currentUpload->TextureDesc.SampleDesc.Quality = 0;
+    currentUpload->TextureDesc.Dimension = is3DTexture ? D3D12_RESOURCE_DIMENSION_TEXTURE3D : D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    currentUpload->TextureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    currentUpload->TextureDesc.Alignment = 0;
 
     D3D12_HEAP_PROPERTIES defaultProperties;
     defaultProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
@@ -177,11 +245,11 @@ void TextureManager::ProcessFileRead(TextureUpload &currentUpload)
     defaultProperties.VisibleNodeMask = 0;
 
     ID3D12Resource *newTextureResource = NULL;
-    mDirect3DManager->GetDevice()->CreateCommittedResource(&defaultProperties, D3D12_HEAP_FLAG_NONE, &currentUpload.TextureDesc,
+    mDirect3DManager->GetDevice()->CreateCommittedResource(&defaultProperties, D3D12_HEAP_FLAG_NONE, &currentUpload->TextureDesc,
         D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&newTextureResource));
 
     TextureResource *textureGPUResource = new TextureResource(newTextureResource, D3D12_RESOURCE_STATE_COPY_DEST, mDirect3DManager->GetContextManager()->GetHeapManager()->GetNewSRVDescriptorHeapHandle());
-    currentUpload.TextureToUpload->SetTextureResource(textureGPUResource);
+    currentUpload->TextureToUpload->SetTextureResource(textureGPUResource);
 
     D3D12_SHADER_RESOURCE_VIEW_DESC *srvDescPointer = NULL;
     D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc = {};
@@ -197,27 +265,24 @@ void TextureManager::ProcessFileRead(TextureUpload &currentUpload)
         srvDescPointer = &shaderResourceViewDesc;
     }
 
-    mDirect3DManager->GetDevice()->CreateShaderResourceView(newTextureResource, srvDescPointer, currentUpload.TextureToUpload->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle());
+    mDirect3DManager->GetDevice()->CreateShaderResourceView(newTextureResource, srvDescPointer, currentUpload->TextureToUpload->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle());
 
-    delete[] currentUpload.FilePath;
-    currentUpload.FilePath = NULL;
-
-    currentUpload.UploadState = TextureUploadState_Copy;
+    currentUpload->UploadState = TextureUploadState_Copy;
 }
 
-void TextureManager::ProcessCopy(TextureUpload &currentUpload)
+void TextureManager::ProcessCopy(TextureUpload *currentUpload)
 {
-    const DirectX::TexMetadata& textureMetaData = currentUpload.ImageData->GetMetadata();
+    const DirectX::TexMetadata& textureMetaData = currentUpload->ImageData->GetMetadata();
     const uint64 numSubResources = textureMetaData.mipLevels * textureMetaData.arraySize;
     uint64 textureMemorySize = 0;
     UINT numRows[MAX_TEXTURE_SUBRESOURCE_COUNT];
     UINT64 rowSizesInBytes[MAX_TEXTURE_SUBRESOURCE_COUNT];
 
-    mDirect3DManager->GetDevice()->GetCopyableFootprints(&currentUpload.TextureDesc, 0, uint32(numSubResources), 0, currentUpload.Layouts, numRows, rowSizesInBytes, &textureMemorySize);
+    mDirect3DManager->GetDevice()->GetCopyableFootprints(&currentUpload->TextureDesc, 0, uint32(numSubResources), 0, currentUpload->Layouts, numRows, rowSizesInBytes, &textureMemorySize);
 
     UploadContext *uploadContext = mDirect3DManager->GetContextManager()->GetUploadContext();
-    currentUpload.UploadInfo = uploadContext->BeginUpload(textureMemorySize, mDirect3DManager->GetContextManager()->GetQueueManager());
-    uint8* uploadMem = reinterpret_cast<uint8*>(currentUpload.UploadInfo.CPUAddress);
+    currentUpload->UploadInfo = uploadContext->BeginUpload(textureMemorySize, mDirect3DManager->GetContextManager()->GetQueueManager());
+    uint8* uploadMem = reinterpret_cast<uint8*>(currentUpload->UploadInfo.CPUAddress);
 
     for (uint64 arrayIdx = 0; arrayIdx < textureMetaData.arraySize; ++arrayIdx)
     {
@@ -225,7 +290,7 @@ void TextureManager::ProcessCopy(TextureUpload &currentUpload)
         {
             const uint64 subResourceIdx = mipIdx + (arrayIdx * textureMetaData.mipLevels);
 
-            const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& subResourceLayout = currentUpload.Layouts[subResourceIdx];
+            const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& subResourceLayout = currentUpload->Layouts[subResourceIdx];
             const uint64 subResourceHeight = numRows[subResourceIdx];
             const uint64 subResourcePitch = subResourceLayout.Footprint.RowPitch;
             const uint64 subResourceDepth = subResourceLayout.Footprint.Depth;
@@ -233,7 +298,7 @@ void TextureManager::ProcessCopy(TextureUpload &currentUpload)
 
             for (uint64 z = 0; z < subResourceDepth; ++z)
             {
-                const DirectX::Image* subImage = currentUpload.ImageData->GetImage(mipIdx, arrayIdx, z);
+                const DirectX::Image* subImage = currentUpload->ImageData->GetImage(mipIdx, arrayIdx, z);
                 Application::Assert(subImage != NULL);
                 const uint8* srcSubResourceMem = subImage->pixels;
 
@@ -247,43 +312,40 @@ void TextureManager::ProcessCopy(TextureUpload &currentUpload)
         }
     }
 
-    currentUpload.UploadState = TextureUploadState_Upload;
+    currentUpload->UploadState = TextureUploadState_Upload;
 }
 
-void TextureManager::ProcessUpload(TextureUpload &currentUpload, bool forceWait)
+void TextureManager::ProcessUpload(TextureUpload *currentUpload, bool forceWait)
 {
     UploadContext *uploadContext = mDirect3DManager->GetContextManager()->GetUploadContext();
-    const DirectX::TexMetadata& textureMetaData = currentUpload.ImageData->GetMetadata();
+    const DirectX::TexMetadata& textureMetaData = currentUpload->ImageData->GetMetadata();
     const uint64 numSubResources = textureMetaData.mipLevels * textureMetaData.arraySize;
 
     for (uint64 subResourceIdx = 0; subResourceIdx < numSubResources; ++subResourceIdx)
     {
         D3D12_TEXTURE_COPY_LOCATION dst = {};
-        dst.pResource = currentUpload.TextureToUpload->GetTextureResource()->GetResource();
+        dst.pResource = currentUpload->TextureToUpload->GetTextureResource()->GetResource();
         dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
         dst.SubresourceIndex = uint32(subResourceIdx);
         D3D12_TEXTURE_COPY_LOCATION src = {};
-        src.pResource = currentUpload.UploadInfo.Resource;
+        src.pResource = currentUpload->UploadInfo.Resource;
         src.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-        src.PlacedFootprint = currentUpload.Layouts[subResourceIdx];
-        src.PlacedFootprint.Offset += currentUpload.UploadInfo.UploadAddressOffset;
+        src.PlacedFootprint = currentUpload->Layouts[subResourceIdx];
+        src.PlacedFootprint.Offset += currentUpload->UploadInfo.UploadAddressOffset;
         uploadContext->CopyTextureRegion(&dst, &src);
     }
 
-    currentUpload.UploadFence = uploadContext->FlushUpload(currentUpload.UploadInfo, mDirect3DManager->GetContextManager()->GetQueueManager(), forceWait);
+    currentUpload->UploadFence = uploadContext->FlushUpload(currentUpload->UploadInfo, mDirect3DManager->GetContextManager()->GetQueueManager(), forceWait);
 
-    currentUpload.UploadState = TextureUploadState_Transition;
+    currentUpload->UploadState = TextureUploadState_Transition;
 }
 
-void TextureManager::ProcessTransition(TextureUpload &currentUpload, uint64 currentFence)
+void TextureManager::ProcessTransition(TextureUpload *currentUpload, uint64 currentFence)
 {
-    if (currentUpload.UploadFence <= currentFence)
+    if (currentUpload->UploadFence <= currentFence)
     {
-        mDirect3DManager->GetContextManager()->GetGraphicsContext()->TransitionResource((*currentUpload.TextureToUpload->GetTextureResource()), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
+        mDirect3DManager->GetContextManager()->GetGraphicsContext()->TransitionResource((*currentUpload->TextureToUpload->GetTextureResource()), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
        
-        delete currentUpload.ImageData;
-        currentUpload.ImageData = NULL;
-
-        currentUpload.UploadState = TextureUploadState_Completed;
+        currentUpload->UploadState = TextureUploadState_Completed;
     }
 }

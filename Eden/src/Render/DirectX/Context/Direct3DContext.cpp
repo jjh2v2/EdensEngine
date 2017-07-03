@@ -674,7 +674,7 @@ void UploadContext::CopyResourceRegion(ID3D12Resource *destination, uint64 destO
 	mCommandList->CopyBufferRegion(destination, destOffset, source, sourceOffset, numBytes);
 }
 
-uint64 UploadContext::FlushUpload(Direct3DUploadInfo& uploadInfo, Direct3DQueueManager *queueManager, bool forceWait)
+uint64 UploadContext::FlushUpload(Direct3DUploadInfo& uploadInfo, Direct3DQueueManager *queueManager, bool forceWait) //TDA not actually using forcewait yet
 {
 	uint64 uploadFence = Flush(queueManager, true);
 	mUploads[uploadInfo.UploadID].FenceValue = uploadFence;

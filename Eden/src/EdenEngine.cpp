@@ -3,13 +3,10 @@
 
 EdenEngine::EdenEngine()
 {
-    uint32 numThreads = CPUDeviceInfo::GetNumberOfLogicalCores();
+    uint32 numGeneralWorkers = CPUDeviceInfo::GetNumberOfLogicalCores() - 1; //# of cores minus 1 (the main thread)
+    uint32 numBackgroundWorkers = 1;  //just one for now, for loading and other work. Will probably add another one just for IO eventually.
 
-    int cpuinfo[4];
-    __cpuid(cpuinfo, 1);
-
-    bool hasHT = (cpuinfo[3] & (1 << 28)) > 0;
-
+    ThreadPoolManager::GetSingleton()->Initialize(numGeneralWorkers, numBackgroundWorkers);
 
 	mEngineWindow = new EdenEngineWindow(1920, 1080, false);
 	mGameTimer = new GameTimer();
@@ -46,6 +43,8 @@ EdenEngine::~EdenEngine()
 
 	delete mEngineWindow;
 	mEngineWindow = NULL;
+
+    ThreadPoolManager::DestroySingleton();
 }
 
 void EdenEngine::Run()

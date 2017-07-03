@@ -15,15 +15,20 @@ struct TextureLookup
 enum TextureUploadState
 {
     TextureUploadState_Pending,
+    TextureUploadState_Initialized,
     TextureUploadState_Read,
     TextureUploadState_Copy,
     TextureUploadState_Upload,
     TextureUploadState_Transition,
-    TextureUploadState_Completed
+    TextureUploadState_Completed,
+    TextureUploadState_Delete
 };
 
 struct TextureUpload
 {
+    TextureUpload();
+    ~TextureUpload();
+
     TextureUploadState UploadState;
     Texture *TextureToUpload;
     WCHAR *FilePath;
@@ -34,6 +39,9 @@ struct TextureUpload
 
     Direct3DUploadInfo UploadInfo;
     uint64 UploadFence;
+
+    Job *ReadJob;
+    Job *CopyJob;
 };
 
 class TextureManager
@@ -51,10 +59,35 @@ public:
 
 private:
 
-    void ProcessFileRead(TextureUpload &currentUpload);
-    void ProcessCopy(TextureUpload &currentUpload);
-    void ProcessUpload(TextureUpload &currentUpload, bool forceWait = false);
-    void ProcessTransition(TextureUpload &currentUpload, uint64 currentFence);
+    //These could be combined into one with a switch, but creating unique job types will make them easier to 
+    //track when I add job type IDs and a tracker for testing and debugging
+    class TextureReadJob : public Job
+    {
+    public:
+        TextureReadJob(TextureUpload *textureUpload, TextureManager *textureManager);
+        virtual void Execute();
+
+    private:
+        TextureManager *mTextureManager;
+        TextureUpload *mTextureUpload;
+    };
+
+    class TextureCopyJob : public Job
+    {
+    public:
+        TextureCopyJob(TextureUpload *textureUpload, TextureManager *textureManager);
+        virtual void Execute();
+
+    private:
+        TextureManager *mTextureManager;
+        TextureUpload *mTextureUpload;
+    };
+
+
+    void ProcessFileRead(TextureUpload *currentUpload);
+    void ProcessCopy(TextureUpload *currentUpload);
+    void ProcessUpload(TextureUpload *currentUpload, bool forceWait = false);
+    void ProcessTransition(TextureUpload *currentUpload, uint64 currentFence);
 
 	Direct3DManager *mDirect3DManager;
 
@@ -62,7 +95,7 @@ private:
 	DynamicArray<Texture*> mTextures;
 	ManifestLoader mManifestLoader;
 
-    DynamicArray<TextureUpload> mTextureUploads;
+    DynamicArray<TextureUpload*> mTextureUploads;
 
 	static Texture *mDefaultTexture;
 };
