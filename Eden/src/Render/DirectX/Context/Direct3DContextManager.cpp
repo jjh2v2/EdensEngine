@@ -17,6 +17,39 @@ Direct3DContextManager::~Direct3DContextManager()
 	delete mHeapManager;
 }
 
+void Direct3DContextManager::FinishContextsAndWaitForIdle()
+{
+    mGraphicsContext->Flush(mQueueManager, true, true);
+    mUploadContext->Flush(mQueueManager, true, true);
+
+    mUploadContext->WaitForCommandIdle(mQueueManager);
+    mGraphicsContext->WaitForCommandIdle(mQueueManager);
+}
+
+Direct3DContextManager::VertexBufferBackgroundUpload::VertexBufferBackgroundUpload(Direct3DContextManager *contextManager, VertexBuffer *vertexBuffer, void *vertexData)
+{
+    mContextManager = contextManager;
+    mVertexBuffer = vertexBuffer;
+    mVertexData = vertexData;
+}
+
+void Direct3DContextManager::VertexBufferBackgroundUpload::ProcessUpload(UploadContext *uploadContext)
+{
+    uint32 bufferSize = mVertexBuffer->GetVertexBufferView().SizeInBytes;
+    Direct3DUploadInfo uploadInfo = uploadContext->BeginUpload(bufferSize, mContextManager->GetQueueManager());
+    uint8* uploadMem = reinterpret_cast<uint8*>(uploadInfo.CPUAddress);
+
+    memcpy(uploadMem, mVertexData, bufferSize);
+    uploadContext->CopyResourceRegion(mVertexBuffer->GetResource(), 0, uploadInfo.Resource, uploadInfo.UploadAddressOffset, bufferSize);
+
+    mUploadFence = uploadContext->FlushUpload(uploadInfo, mContextManager->GetQueueManager());
+}
+
+void Direct3DContextManager::VertexBufferBackgroundUpload::OnUploadFinished()
+{
+    mContextManager->GetGraphicsContext()->TransitionResourceDeferred(mVertexBuffer, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, true);
+}
+
 VertexBuffer *Direct3DContextManager::CreateVertexBuffer(void* vertexData, uint32 vertexStride, uint32 bufferSize)
 {
 	ID3D12Resource *vertexBufferResource = NULL;
@@ -44,19 +77,36 @@ VertexBuffer *Direct3DContextManager::CreateVertexBuffer(void* vertexData, uint3
 	Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &vertexBufferDesc,
 		D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&vertexBufferResource)));
 
-	Direct3DUploadInfo uploadInfo = mUploadContext->BeginUpload(bufferSize, mQueueManager);
-	uint8* uploadMem = reinterpret_cast<uint8*>(uploadInfo.CPUAddress);
-
-	memcpy(uploadMem, vertexData, bufferSize);
-	mUploadContext->CopyResourceRegion(vertexBufferResource, 0, uploadInfo.Resource, uploadInfo.UploadAddressOffset, bufferSize);
-
-	mUploadContext->FlushUpload(uploadInfo, mQueueManager);
-
 	VertexBuffer *vertexBuffer = new VertexBuffer(vertexBufferResource, D3D12_RESOURCE_STATE_COPY_DEST, vertexStride, bufferSize);
 
-	mGraphicsContext->TransitionResource((*vertexBuffer), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, true);
+    VertexBufferBackgroundUpload *vertexBufferUpload = new VertexBufferBackgroundUpload(this, vertexBuffer, vertexData);
+    mUploadContext->AddBackgroundUpload(vertexBufferUpload);
 
 	return vertexBuffer;
+}
+
+Direct3DContextManager::IndexBufferBackgroundUpload::IndexBufferBackgroundUpload(Direct3DContextManager *contextManager, IndexBuffer *indexBuffer, void *indexData)
+{
+    mContextManager = contextManager;
+    mIndexBuffer = indexBuffer;
+    mIndexData = indexData;
+}
+
+void Direct3DContextManager::IndexBufferBackgroundUpload::ProcessUpload(UploadContext *uploadContext)
+{
+    uint32 bufferSize = mIndexBuffer->GetIndexBufferView().SizeInBytes;
+    Direct3DUploadInfo uploadInfo = uploadContext->BeginUpload(bufferSize, mContextManager->GetQueueManager());
+    uint8* uploadMem = reinterpret_cast<uint8*>(uploadInfo.CPUAddress);
+
+    memcpy(uploadMem, mIndexData, bufferSize);
+    uploadContext->CopyResourceRegion(mIndexBuffer->GetResource(), 0, uploadInfo.Resource, uploadInfo.UploadAddressOffset, bufferSize);
+
+    mUploadFence = uploadContext->FlushUpload(uploadInfo, mContextManager->GetQueueManager());
+}
+
+void Direct3DContextManager::IndexBufferBackgroundUpload::OnUploadFinished()
+{
+    mContextManager->GetGraphicsContext()->TransitionResourceDeferred(mIndexBuffer, D3D12_RESOURCE_STATE_INDEX_BUFFER, true);
 }
 
 IndexBuffer *Direct3DContextManager::CreateIndexBuffer(void* indexData, uint32 bufferSize)
@@ -86,17 +136,10 @@ IndexBuffer *Direct3DContextManager::CreateIndexBuffer(void* indexData, uint32 b
 	Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &indexBufferDesc,
 		D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&indexBufferResource)));
 
-	Direct3DUploadInfo uploadInfo = mUploadContext->BeginUpload(bufferSize, mQueueManager);
-	uint8* uploadMem = reinterpret_cast<uint8*>(uploadInfo.CPUAddress);
-
-	memcpy(uploadMem, indexData, bufferSize);
-	mUploadContext->CopyResourceRegion(indexBufferResource, 0, uploadInfo.Resource, uploadInfo.UploadAddressOffset, bufferSize);
-
-	mUploadContext->FlushUpload(uploadInfo, mQueueManager);
-
 	IndexBuffer *indexBuffer = new IndexBuffer(indexBufferResource, D3D12_RESOURCE_STATE_COPY_DEST, bufferSize);
 
-	mGraphicsContext->TransitionResource((*indexBuffer), D3D12_RESOURCE_STATE_INDEX_BUFFER, true);
+    IndexBufferBackgroundUpload *indexBufferUpload = new IndexBufferBackgroundUpload(this, indexBuffer, indexData);
+    mUploadContext->AddBackgroundUpload(indexBufferUpload);
 
 	return indexBuffer;
 }
@@ -138,7 +181,9 @@ ConstantBuffer *Direct3DContextManager::CreateConstantBuffer(uint32 bufferSize)
 	mDevice->CreateConstantBufferView(&constantBufferViewDesc, constantBufferHeapHandle.GetCPUHandle());
 
 	ConstantBuffer *constantBuffer = new ConstantBuffer(constantBufferResource, D3D12_RESOURCE_STATE_GENERIC_READ, constantBufferViewDesc, constantBufferHeapHandle);
-	return constantBuffer;
+    constantBuffer->SetIsReady(true);
+
+    return constantBuffer;
 }
 
 RenderTarget *Direct3DContextManager::CreateRenderTarget(uint32 width, uint32 height, DXGI_FORMAT format, bool hasUAV, uint16 arraySize, uint32 sampleCount, uint32 quality)

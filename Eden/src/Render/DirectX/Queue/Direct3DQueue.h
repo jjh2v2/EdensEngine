@@ -15,7 +15,6 @@ public:
 	void StallForFence(Direct3DQueue* otherQueue, uint64 fenceValue);
 	void StallForQueue(Direct3DQueue* otherQueue);
 
-	//void StallForProducer(CommandQueue& Producer);
 	void WaitForFence(uint64 fenceValue);
 	void WaitForIdle() { WaitForFence(mNextFenceValue - 1); }
 

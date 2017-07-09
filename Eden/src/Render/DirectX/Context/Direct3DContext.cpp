@@ -1,23 +1,24 @@
 #include "Render/DirectX/Context/Direct3DContext.h"
+#include "Render/DirectX/Allocator/Direct3DCommandAllocatorPool.h"
 
 Direct3DContext::Direct3DContext(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE commandType)
 {
 	mDevice = device;
-	mContextType = commandType;
-	mCommandList = NULL;
-	mCommandAllocator = NULL;
-
+    mContextType = commandType;
+    mCommandList = NULL;
+    mCurrentCommandAllocator = NULL;
 	mCurrentGraphicsRootSignature = NULL;
 	mCurrentGraphicsPipelineState = NULL;
 	mCurrentComputeRootSignature = NULL;
 	mCurrentComputePipelineState = NULL;
 	mNumBarriersToFlush = 0;
 
-	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateCommandAllocator(commandType, IID_PPV_ARGS(&mCommandAllocator)));
-	mCommandAllocator->SetName(L"Direct3DContext::mCommandAllocator");
-	Direct3DUtils::ThrowIfHRESULTFailed(mCommandAllocator->Reset());
+    mCommandAllocatorPool = new Direct3DCommandAllocatorPool(device, commandType, NUM_STARTING_COMMAND_ALLOCATORS);
+    mCurrentCommandAllocator = mCommandAllocatorPool->GetAllocator(0);
 
-	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateCommandList(1, commandType, mCommandAllocator, NULL, IID_PPV_ARGS(&mCommandList)));
+	Direct3DUtils::ThrowIfHRESULTFailed(mCurrentCommandAllocator->Reset());
+
+	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateCommandList(1, commandType, mCurrentCommandAllocator, NULL, IID_PPV_ARGS(&mCommandList)));
 	mCommandList->SetName(L"Direct3DContext::mCommandList");
 
 	for (uint32 i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; i++)
@@ -34,36 +35,82 @@ Direct3DContext::~Direct3DContext()
 		mCommandList = NULL;
 	}
 
-	if (mCommandAllocator)
-	{
-		mCommandAllocator->Release();
-		mCommandAllocator = NULL;
-	}
+    if (mCommandAllocatorPool)
+    {
+        delete mCommandAllocatorPool;
+        mCommandAllocatorPool = NULL;
+    }
+    
+    mCurrentCommandAllocator = NULL;
 }
 
-uint64 Direct3DContext::Flush(Direct3DQueueManager *queueManager, bool waitForCompletion)
+void Direct3DContext::WaitForCommandIdle(Direct3DQueueManager *queueManager)
+{
+    uint64 mostRecentFence = 0;
+    while (mCommandAllocatorPool->GetNumAllocatorsProcessing(mostRecentFence) > 0)
+    {
+        mostRecentFence = queueManager->GetQueue(mContextType)->PollCurrentFenceValue();
+    }
+}
+
+uint64 Direct3DContext::Flush(Direct3DQueueManager *queueManager, bool waitForCompletion, bool finalize)
 {
 	FlushResourceBarriers();
 
 	uint64 queueFence = queueManager->GetQueue(mContextType)->ExecuteCommandList(mCommandList);
+    mCommandAllocatorPool->ReturnAllocator(mCurrentCommandAllocator, queueFence);
 
-	if (waitForCompletion)
+	if (waitForCompletion || finalize)
 	{
 		queueManager->WaitForFence(queueFence);
 	}
 
-	Direct3DUtils::ThrowIfHRESULTFailed(mCommandAllocator->Reset());
+    if (!finalize)
+    {
+        //grab a new allocator while the old one is used for the flush
+        mCurrentCommandAllocator = mCommandAllocatorPool->GetAllocator(queueManager->GetQueue(mContextType)->PollCurrentFenceValue());
+        Direct3DUtils::ThrowIfHRESULTFailed(mCurrentCommandAllocator->Reset());
 
-	// Reset the command list
-	Direct3DUtils::ThrowIfHRESULTFailed(mCommandList->Reset(mCommandAllocator, NULL));
+        // Reset the command list
+        Direct3DUtils::ThrowIfHRESULTFailed(mCommandList->Reset(mCurrentCommandAllocator, NULL));
 
-	//flush current state, rebind descriptor heaps
-	mCurrentGraphicsRootSignature = NULL;
-	mCurrentComputeRootSignature = NULL;
+        //flush current state, rebind descriptor heaps
+        mCurrentGraphicsRootSignature = NULL;
+        mCurrentComputeRootSignature = NULL;
 
-	BindDescriptorHeaps();
+        BindDescriptorHeaps();
+    }
+    
 
 	return queueFence;
+}
+
+void Direct3DContext::TransitionResourceDeferred(GPUResource *resource, D3D12_RESOURCE_STATES newState, bool setResourceReady /* = false */)
+{
+    std::lock_guard<std::mutex> lock(mDeferredTransitionArrayMutex);
+
+    DeferredTransition deferredTransition;
+    deferredTransition.Resource = resource;
+    deferredTransition.NewState = newState;
+    deferredTransition.SetResourceReady = setResourceReady;
+
+    mDeferredTransitions.Add(deferredTransition);
+}
+
+void Direct3DContext::FlushDeferredTransitions()
+{
+    std::lock_guard<std::mutex> lock(mDeferredTransitionArrayMutex);
+    for (uint32 i = 0; i < mDeferredTransitions.CurrentSize(); i++)
+    {
+        TransitionResource(mDeferredTransitions[i].Resource, mDeferredTransitions[i].NewState);
+
+        if (mDeferredTransitions[i].SetResourceReady)
+        {
+            mDeferredTransitions[i].Resource->SetIsReady(true);
+        }
+    }
+
+    mDeferredTransitions.Clear();
 }
 
 void Direct3DContext::FlushResourceBarriers()
@@ -127,9 +174,9 @@ void Direct3DContext::CopyDescriptors(uint32 numDescriptors, D3D12_CPU_DESCRIPTO
 	mDevice->CopyDescriptorsSimple(1, destinationStart, sourceStart, heapType);
 }
 
-void Direct3DContext::TransitionResource(GPUResource &resource, D3D12_RESOURCE_STATES newState, bool flushImmediate /* = false */)
+void Direct3DContext::TransitionResource(GPUResource *resource, D3D12_RESOURCE_STATES newState, bool flushImmediate /* = false */)
 {
-	D3D12_RESOURCE_STATES oldState = resource.GetUsageState();
+	D3D12_RESOURCE_STATES oldState = resource->GetUsageState();
 
 	if (mContextType == D3D12_COMMAND_LIST_TYPE_COMPUTE)
 	{
@@ -144,23 +191,23 @@ void Direct3DContext::TransitionResource(GPUResource &resource, D3D12_RESOURCE_S
 		mNumBarriersToFlush++;
 
 		barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		barrierDesc.Transition.pResource = resource.GetResource();
+		barrierDesc.Transition.pResource = resource->GetResource();
 		barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 		barrierDesc.Transition.StateBefore = oldState;
 		barrierDesc.Transition.StateAfter = newState;
 
 		// Check to see if we already started the transition
-		if (newState == resource.GetTransitionState())
+		if (newState == resource->GetTransitionState())
 		{
 			barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_END_ONLY;
-			resource.SetTransitionState(D3D12_GPU_RESOURCE_STATE_UNKNOWN);
+			resource->SetTransitionState(D3D12_GPU_RESOURCE_STATE_UNKNOWN);
 		}
 		else
 		{
 			barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 		}
 
-		resource.SetUsageState(newState);
+		resource->SetUsageState(newState);
 	}
 	else if (newState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
 	{
@@ -173,7 +220,7 @@ void Direct3DContext::TransitionResource(GPUResource &resource, D3D12_RESOURCE_S
 	}
 }
 
-void Direct3DContext::InsertUAVBarrier(GPUResource &resource, bool flushImmediate /* = false */)
+void Direct3DContext::InsertUAVBarrier(GPUResource *resource, bool flushImmediate /* = false */)
 {
 	Application::Assert(mNumBarriersToFlush < 16);
 	D3D12_RESOURCE_BARRIER& barrierDesc = mResourceBarrierBuffer[mNumBarriersToFlush];
@@ -181,7 +228,7 @@ void Direct3DContext::InsertUAVBarrier(GPUResource &resource, bool flushImmediat
 
 	barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
 	barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	barrierDesc.UAV.pResource = resource.GetResource();
+	barrierDesc.UAV.pResource = resource->GetResource();
 
 	if (flushImmediate)
 	{
@@ -189,7 +236,7 @@ void Direct3DContext::InsertUAVBarrier(GPUResource &resource, bool flushImmediat
 	}
 }
 
-void Direct3DContext::InsertAliasBarrier(GPUResource &before, GPUResource &after, bool flushImmediate /* = false */)
+void Direct3DContext::InsertAliasBarrier(GPUResource *before, GPUResource *after, bool flushImmediate /* = false */)
 {
 	Application::Assert(mNumBarriersToFlush < 16);
 	D3D12_RESOURCE_BARRIER& barrierDesc = mResourceBarrierBuffer[mNumBarriersToFlush];
@@ -197,8 +244,8 @@ void Direct3DContext::InsertAliasBarrier(GPUResource &before, GPUResource &after
 
 	barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_ALIASING;
 	barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	barrierDesc.Aliasing.pResourceBefore = before.GetResource();
-	barrierDesc.Aliasing.pResourceAfter = after.GetResource();
+	barrierDesc.Aliasing.pResourceBefore = before->GetResource();
+	barrierDesc.Aliasing.pResourceAfter = after->GetResource();
 
 	if (flushImmediate)
 	{
@@ -423,32 +470,6 @@ void ComputeContext::SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDL
     mCommandList->SetComputeRootDescriptorTable(index, handle);
 }
 
-//TDA: fill this out when we have a buffer type for it
-/*
-void ComputeContext::ClearUAV(D3D12_GPU_DESCRIPTOR_HANDLE gpuHandleInCurrentHeap, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle, )
-{
-
-    mCommandList->ClearUnorderedAccessViewUint(gpuHandleInCurrentHeap, cpuHandle, )
-
-    // After binding a UAV, we can get a GPU handle that is required to clear it as a UAV (because it essentially runs
-    // a shader to set all of the values).
-    D3D12_GPU_DESCRIPTOR_HANDLE GpuVisibleHandle = m_DynamicDescriptorHeap.UploadDirect(Target.GetUAV());
-    const UINT ClearColor[4] = {};
-    m_CommandList->ClearUnorderedAccessViewUint(GpuVisibleHandle, Target.GetUAV(), Target.GetResource(), ClearColor, 0, nullptr);
-}
-
-void ComputeContext::ClearUAV(ColorBuffer& Target)
-{
-    // After binding a UAV, we can get a GPU handle that is required to clear it as a UAV (because it essentially runs
-    // a shader to set all of the values).
-    D3D12_GPU_DESCRIPTOR_HANDLE GpuVisibleHandle = m_DynamicDescriptorHeap.UploadDirect(Target.GetUAV());
-    CD3DX12_RECT ClearRect(0, 0, (LONG)Target.GetWidth(), (LONG)Target.GetHeight());
-
-    //TODO: My Nvidia card is not clearing UAVs with either Float or Uint variants.
-    const float* ClearColor = Target.GetClearColor().GetPtr();
-    m_CommandList->ClearUnorderedAccessViewFloat(GpuVisibleHandle, Target.GetUAV(), Target.GetResource(), ClearColor, 1, &ClearRect);
-}*/
-
 void ComputeContext::Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
 {
     FlushResourceBarriers();
@@ -507,7 +528,7 @@ UploadContext::UploadContext(ID3D12Device *device)
 }
 
 UploadContext::~UploadContext()
-{
+{ 
 	D3D12_RANGE range = {};
 	mUploadBuffer.BufferResource->Unmap(0, &range);
 
@@ -516,6 +537,53 @@ UploadContext::~UploadContext()
 		mUploadBuffer.BufferResource->Release();
 		mUploadBuffer.BufferResource = NULL;
 	}
+}
+
+void UploadContext::AddBackgroundUpload(BackgroundUpload *backgroundUpload)
+{
+    std::lock_guard<std::mutex> lock(mBackgroundUploadArrayMutex);
+    mBackgroundUploadsToProcess.Add(backgroundUpload);
+}
+
+void UploadContext::ProcessBackgroundUploads(uint32 maxToProcess)
+{
+    //temp array so we only have to lock around the array and not the entire upload processing (that way AddBackgroundUpload doesn't hang)
+    DynamicArray<BackgroundUpload*> newUploads; 
+    {
+        std::lock_guard<std::mutex> lock(mBackgroundUploadArrayMutex);
+
+        while (mBackgroundUploadsToProcess.CurrentSize() > 0 && newUploads.CurrentSize() < maxToProcess)
+        {
+            newUploads.Add(mBackgroundUploadsToProcess.RemoveLast());
+        }
+    }
+
+    for (uint32 i = 0; i < newUploads.CurrentSize(); i++)
+    {
+        LockUploads();
+        newUploads[i]->ProcessUpload(this);
+        UnlockUploads();
+
+        mBackgroundUploadsInFlight.Add(newUploads[i]);
+    }
+}
+
+void UploadContext::ProcessFinishedUploads(uint64 mostRecentFence)
+{
+    for (int32 i = 0; i < mBackgroundUploadsInFlight.CurrentSizeSigned(); i++)
+    {
+        BackgroundUpload *backgroundUpload = mBackgroundUploadsInFlight[i];
+        uint64 currentUploadFence = backgroundUpload->GetUploadFence();
+        Application::Assert(currentUploadFence > 0); //ensure the backgroundupload set the upload fence
+
+        if (mostRecentFence >= currentUploadFence)
+        {
+            backgroundUpload->OnUploadFinished();
+            mBackgroundUploadsInFlight.Remove(i);
+            delete backgroundUpload;
+            i--;
+        }
+    }
 }
 
 bool UploadContext::ClearSubmissionIfFinished(Direct3DUpload &submission, Direct3DQueueManager *queueManager)
@@ -542,38 +610,29 @@ bool UploadContext::ClearSubmissionIfFinished(Direct3DUpload &submission, Direct
     return false;
 }
 
-void UploadContext::ClearFinishedUploads(uint64 flushCount, Direct3DQueueManager *queueManager)
+uint32 UploadContext::ClearFinishedUploads(uint64 flushCount, Direct3DQueueManager *queueManager)
 {
 	const uint32 uploadStart = mUploadSubmissionStart;
 	const uint32 numUsedUploads = mUploadSubmissionUsed;
 	uint32 numFlushed = 0;
 
-    //clear pending free uploads first before waiting on anything
-	for (uint32 i = 0; i < numUsedUploads; ++i)
-	{
-		Direct3DUpload &submission = mUploads[(uploadStart + i) % MAX_GPU_UPLOADS];
-        numFlushed += ClearSubmissionIfFinished(submission, queueManager) ? 1 : 0;
-	}
-
-    //if we still need some uploads freed, wait for as many as we need to
-    if (numFlushed < flushCount)
+    for (uint32 i = 0; i < numUsedUploads; ++i)
     {
-        for (uint32 i = 0; i < numUsedUploads; ++i)
+        Direct3DUpload &submission = mUploads[(uploadStart + i) % MAX_GPU_UPLOADS];
+        if (submission.IsUploading && !queueManager->GetCopyQueue()->IsFenceComplete(submission.FenceValue))
         {
-            Direct3DUpload &submission = mUploads[(uploadStart + i) % MAX_GPU_UPLOADS];
-            if (submission.IsUploading && !queueManager->GetCopyQueue()->IsFenceComplete(submission.FenceValue))
-            {
-                queueManager->GetCopyQueue()->WaitForFence(submission.FenceValue);
-            }
+            queueManager->GetCopyQueue()->WaitForFence(submission.FenceValue);
+        }
 
-            numFlushed += ClearSubmissionIfFinished(submission, queueManager) ? 1 : 0;
+        numFlushed += ClearSubmissionIfFinished(submission, queueManager) ? 1 : 0;
 
-            if (numFlushed == flushCount)
-            {
-                break;
-            }
+        if (numFlushed == flushCount)
+        {
+            break;
         }
     }
+
+    return numFlushed;
 }
 
 bool UploadContext::CreateNewUpload(uint64 size, uint32 &uploadIndex)
@@ -674,9 +733,9 @@ void UploadContext::CopyResourceRegion(ID3D12Resource *destination, uint64 destO
 	mCommandList->CopyBufferRegion(destination, destOffset, source, sourceOffset, numBytes);
 }
 
-uint64 UploadContext::FlushUpload(Direct3DUploadInfo& uploadInfo, Direct3DQueueManager *queueManager, bool forceWait) //TDA not actually using forcewait yet
+uint64 UploadContext::FlushUpload(Direct3DUploadInfo& uploadInfo, Direct3DQueueManager *queueManager, bool forceWait)
 {
-	uint64 uploadFence = Flush(queueManager, true);
+	uint64 uploadFence = Flush(queueManager, forceWait);
 	mUploads[uploadInfo.UploadID].FenceValue = uploadFence;
 	mUploads[uploadInfo.UploadID].IsUploading = true;
 

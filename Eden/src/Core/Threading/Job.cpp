@@ -7,11 +7,12 @@ Job::Job(JobBatch *batch /* = NULL */)
 
 JobBatch::JobBatch()
 {
-	mJobsCompleted = false;
+	mJobsCompleted = true;
 }
 
 void JobBatch::AddBatchJob(Job *job)
 {
+    mJobsCompleted = false; //so we can reuse a job batch
 	job->SetJobBatch(this);
 	mJobs.Add(job);
 }

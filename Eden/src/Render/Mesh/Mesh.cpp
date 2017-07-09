@@ -71,28 +71,3 @@ void Mesh::RecalculateBounds()
 
 	mMeshBounds.Set(boundMin.X, boundMin.Y, boundMin.Z, boundMax.X - boundMin.X, boundMax.Y - boundMin.Y, boundMax.Z - boundMin.Z);
 }
-
-
-/*void Mesh::Render(ID3D11DeviceContext* deviceContext, int subMeshIndex)
-{
-	uint32 stride = sizeof(MeshVertexData);
-	uint32 offset = 0;
-
-	int indexOffset = 0;
-	int indexCount = mIndexCount;
-	
-	if(mIndexSplits.CurrentSize() > 1)
-	{
-		if(subMeshIndex > 0)
-		{
-			indexOffset = mIndexSplits[subMeshIndex-1];
-		}
-
-		indexCount = mIndexSplits[subMeshIndex] - indexOffset;
-	}
-
-	deviceContext->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
-	deviceContext->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
-	deviceContext->IASetPrimitiveTopology(mRenderTopology);
-	deviceContext->DrawIndexed(indexCount, indexOffset, 0);
-}*/

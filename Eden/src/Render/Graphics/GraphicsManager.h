@@ -12,8 +12,8 @@ public:
 	~GraphicsManager();
 
 	void InitializeGraphicsResources();
-	void FinalizeGraphicsForRemoval();
     void Update(float deltaTime);
+    void FlushAllAndWaitForIdle();
 
 	Direct3DManager *GetDirect3DManager() { return mDirect3DManager; }
 	TextureManager *GetTextureManager() { return mTextureManager; }
@@ -22,9 +22,22 @@ public:
 	MeshManager *GetMeshManager() { return mMeshManager; }
 
 private:
+    class UploadUpdateBackgroundJob : public Job
+    {
+    public:
+        UploadUpdateBackgroundJob(Direct3DContextManager *contextManager);
+        virtual void Execute();
+
+    private:
+        Direct3DContextManager *mContextManager;
+    };
+
 	Direct3DManager *mDirect3DManager;
 	TextureManager *mTextureManager;
 	SamplerManager *mSamplerManager;
 	ShaderManager *mShaderManager;
 	MeshManager *mMeshManager;
+
+    UploadUpdateBackgroundJob *mBackgroundJob;
+    JobBatch *mBackgroundUpdateJobBatch;
 };

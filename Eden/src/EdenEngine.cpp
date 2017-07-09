@@ -24,7 +24,7 @@ EdenEngine::EdenEngine()
 
 EdenEngine::~EdenEngine()
 {
-	mGraphicsManager->FinalizeGraphicsForRemoval();
+    ThreadPoolManager::DestroySingleton();
 
 	delete mSceneManager;
 	mSceneManager = NULL;
@@ -35,6 +35,8 @@ EdenEngine::~EdenEngine()
 	delete mGameTimer;
 	mGameTimer = NULL;
 
+    mGraphicsManager->FlushAllAndWaitForIdle();
+
 	delete mDeferredRenderer;
 	mDeferredRenderer = NULL;
 
@@ -43,8 +45,6 @@ EdenEngine::~EdenEngine()
 
 	delete mEngineWindow;
 	mEngineWindow = NULL;
-
-    ThreadPoolManager::DestroySingleton();
 }
 
 void EdenEngine::Run()

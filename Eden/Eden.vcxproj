@@ -169,6 +169,7 @@
     <ClInclude Include="src\Entity\SceneEntity.h" />
     <ClInclude Include="src\Input\InputManager.h" />
     <ClInclude Include="src\Render\Buffer\GPUResource.h" />
+    <ClInclude Include="src\Render\DirectX\Allocator\Direct3DCommandAllocatorPool.h" />
     <ClInclude Include="src\Render\DirectX\Context\Direct3DContext.h" />
     <ClInclude Include="src\Render\DirectX\Context\Direct3DContextManager.h" />
     <ClInclude Include="src\Render\DirectX\D3D12Helper.h" />
@@ -240,6 +241,7 @@
     <ClCompile Include="src\Input\InputManager.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Render\Buffer\GPUResource.cpp" />
+    <ClCompile Include="src\Render\DirectX\Allocator\Direct3DCommandAllocatorPool.cpp" />
     <ClCompile Include="src\Render\DirectX\Context\Direct3DContext.cpp" />
     <ClCompile Include="src\Render\DirectX\Context\Direct3DContextManager.cpp" />
     <ClCompile Include="src\Render\DirectX\Direct3DManager.cpp" />

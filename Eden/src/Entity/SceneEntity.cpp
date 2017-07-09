@@ -22,6 +22,11 @@ void SceneEntity::Update()
 
 void SceneEntity::Render(RenderPassContext *renderPassContext)
 {
+    if (!mMesh->IsReady())
+    {
+        return;
+    }
+
 	GraphicsContext *graphicsContext = renderPassContext->GetGraphicsContext();
 
 	D3DXMATRIX modelMatrix, positionMatrix, rotationMatrix, scalarMatrix;

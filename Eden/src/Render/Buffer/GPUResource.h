@@ -17,11 +17,15 @@ public:
 	void SetUsageState(D3D12_RESOURCE_STATES usageState) { mUsageState = usageState; }
 	void SetTransitionState(D3D12_RESOURCE_STATES transitionState) { mTransitioningState = transitionState; }
 
+    bool GetIsReady() { return mIsReady; }
+    void SetIsReady(bool isReady) { mIsReady = isReady; }
+
 protected:
 	ID3D12Resource *mResource;
 	D3D12_GPU_VIRTUAL_ADDRESS mGPUAddress;
 	D3D12_RESOURCE_STATES mUsageState;
 	D3D12_RESOURCE_STATES mTransitioningState;
+    bool mIsReady;
 };
 
 

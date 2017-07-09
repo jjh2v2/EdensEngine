@@ -9,6 +9,7 @@ public:
 	//TDA: Create a second Graphics context to start recording while the previous context is being consumed
 	Direct3DContextManager(ID3D12Device* device);
 	~Direct3DContextManager();
+    void FinishContextsAndWaitForIdle();
 
 	Direct3DHeapManager *GetHeapManager() { return mHeapManager; }
 
@@ -27,6 +28,32 @@ public:
 	void FreeConstantBuffer(ConstantBuffer *constantBuffer);
 
 private:
+    class VertexBufferBackgroundUpload : public UploadContext::BackgroundUpload
+    {
+    public:
+        VertexBufferBackgroundUpload(Direct3DContextManager *contextManager, VertexBuffer *vertexBuffer, void *vertexData);
+        virtual void ProcessUpload(UploadContext *uploadContext);
+        virtual void OnUploadFinished();
+
+    private:
+        Direct3DContextManager *mContextManager;
+        VertexBuffer *mVertexBuffer;
+        void *mVertexData;
+    };
+
+    class IndexBufferBackgroundUpload : public UploadContext::BackgroundUpload
+    {
+    public:
+        IndexBufferBackgroundUpload(Direct3DContextManager *contextManager, IndexBuffer *indexBuffer, void *indexData);
+        virtual void ProcessUpload(UploadContext *uploadContext);
+        virtual void OnUploadFinished();
+
+    private:
+        Direct3DContextManager *mContextManager;
+        IndexBuffer *mIndexBuffer;
+        void *mIndexData;
+    };
+
 	ID3D12Device *mDevice;
 	Direct3DHeapManager *mHeapManager;
 	Direct3DQueueManager *mQueueManager;

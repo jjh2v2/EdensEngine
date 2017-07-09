@@ -136,6 +136,9 @@
     <Filter Include="Source Files\Scene">
       <UniqueIdentifier>{ee29ccc1-113c-4bf0-9c58-44a7b139609c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render\DirectX\Allocator">
+      <UniqueIdentifier>{176a2078-a233-4a42-8dec-c3c4a9fd0b63}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -351,6 +354,9 @@
     <ClInclude Include="src\Render\Shader\Definitions\MaterialDefinitions.h">
       <Filter>Source Files\Render\Shader\Definitions</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\DirectX\Allocator\Direct3DCommandAllocatorPool.h">
+      <Filter>Source Files\Render\DirectX\Allocator</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -532,6 +538,9 @@
     </ClCompile>
     <ClCompile Include="src\Render\Shader\Definitions\ConstantBufferDefinitions.cpp">
       <Filter>Source Files\Render\Shader\Definitions</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\DirectX\Allocator\Direct3DCommandAllocatorPool.cpp">
+      <Filter>Source Files\Render\DirectX\Allocator</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

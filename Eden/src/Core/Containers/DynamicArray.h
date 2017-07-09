@@ -70,6 +70,7 @@ public:
 
 	T RemoveLast()
 	{
+        assert(mSize > 0);
 		mSize--;
 		return mArray[mSize];
 	}
@@ -87,6 +88,11 @@ public:
 	{
 		return mSize;
 	}
+
+    int32 CurrentSizeSigned()
+    {
+        return (int32)mSize;
+    }
 
 	uint32 MaxSize()
 	{

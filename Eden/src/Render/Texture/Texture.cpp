@@ -8,7 +8,6 @@ Texture::Texture()
 	mMipCount = 0;
 	mArraySize = 0;
 	mIsCubeMap = false;
-    mIsReady = false;
 }
 
 

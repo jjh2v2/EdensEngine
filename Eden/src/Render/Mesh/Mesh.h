@@ -49,7 +49,6 @@ class Mesh
 public:
 	Mesh(Direct3DManager *direct3DManager, uint32 vertexCount, uint32 indexCount, MeshVertexData *meshData, DynamicArray<uint32> &splits, uint64 *indices);
 	virtual ~Mesh();
-	//virtual void Render(ID3D12DeviceContext* deviceContext, int subMeshIndex = 0);
 
 	uint32 GetIndexCount() { return mIndexCount; }
 	uint32 GetVertexCount() { return mVertexCount; }
@@ -63,6 +62,8 @@ public:
 
 	VertexBuffer *GetVertexBuffer() { return mVertexBuffer; }
 	IndexBuffer *GetIndexBuffer() { return mIndexBuffer; }
+
+    bool IsReady() { return mVertexBuffer->GetIsReady() && mIndexBuffer->GetIsReady(); }
 
 protected:
 

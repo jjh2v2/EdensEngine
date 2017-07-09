@@ -17,7 +17,6 @@ enum TextureUploadState
     TextureUploadState_Pending,
     TextureUploadState_Initialized,
     TextureUploadState_Read,
-    TextureUploadState_Copy,
     TextureUploadState_Upload,
     TextureUploadState_Transition,
     TextureUploadState_Completed,
@@ -41,7 +40,6 @@ struct TextureUpload
     uint64 UploadFence;
 
     Job *ReadJob;
-    Job *CopyJob;
 };
 
 class TextureManager
@@ -50,14 +48,14 @@ public:
 	TextureManager(Direct3DManager *direct3DManager);
 	~TextureManager();
 
-    void ProcessUploads();
-	void LoadAllTextures();
-	Texture *LoadTexture(WCHAR *filePath, bool async = false);
-	Texture *GetTexture(const std::string &textureName, bool loadImmediate = false);
-
+    void ProcessCurrentUploads();
+	void LoadTextureManifest();
+	
+	Texture *GetTexture(const std::string &textureName, bool async = true);
     static Texture* GetDefaultTexture() { return mDefaultTexture; }
 
 private:
+    Texture *LoadTexture(WCHAR *filePath, bool async = true);
 
     //These could be combined into one with a switch, but creating unique job types will make them easier to 
     //track when I add job type IDs and a tracker for testing and debugging
@@ -72,21 +70,21 @@ private:
         TextureUpload *mTextureUpload;
     };
 
-    class TextureCopyJob : public Job
+    class TextureBackgroundUpload : public UploadContext::BackgroundUpload
     {
     public:
-        TextureCopyJob(TextureUpload *textureUpload, TextureManager *textureManager);
-        virtual void Execute();
+        TextureBackgroundUpload(ID3D12Device *device, Direct3DQueueManager *queueManager, TextureUpload *textureUpload);
+        virtual void ProcessUpload(UploadContext *uploadContext);
 
     private:
-        TextureManager *mTextureManager;
+        ID3D12Device *mDevice;
+        Direct3DQueueManager *mQueueManager;
         TextureUpload *mTextureUpload;
     };
 
 
     void ProcessFileRead(TextureUpload *currentUpload);
     void ProcessCopy(TextureUpload *currentUpload);
-    void ProcessUpload(TextureUpload *currentUpload, bool forceWait = false);
     void ProcessTransition(TextureUpload *currentUpload, uint64 currentFence);
 
 	Direct3DManager *mDirect3DManager;
@@ -96,6 +94,9 @@ private:
 	ManifestLoader mManifestLoader;
 
     DynamicArray<TextureUpload*> mTextureUploads;
+
+    std::mutex mTextureLookupMutex;
+    std::mutex mTextureUploadMutex;
 
 	static Texture *mDefaultTexture;
 };

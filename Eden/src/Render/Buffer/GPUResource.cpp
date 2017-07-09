@@ -8,9 +8,10 @@ GPUResource::GPUResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageSt
 	mGPUAddress = 0; //other buffer types set this themselves
 	
 	mTransitioningState = D3D12_GPU_RESOURCE_STATE_UNKNOWN;
+    mIsReady = false;
 }
 
-GPUResource::~GPUResource()						//Sometimes we assign the resource from somewhere else, and don't want it released. How do we handle it? Answer: we release it here, everything that creates a resource should do it through this
+GPUResource::~GPUResource()						//Sometimes we assign the resource from somewhere else, and don't want it released. How do we handle it? Current answer: we release it here, everything that creates a resource should do it through this
 {
 	mResource->Release();
 	mResource = NULL;
@@ -46,6 +47,7 @@ RenderTarget::RenderTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usage
 	mRenderTargetViewHandle = renderTargetViewHandle;
 	mShaderResourceViewHandle = shaderResourceViewHandle;
 	mUnorderedAccessViewHandle = unorderedAccessViewHandle;
+    mIsReady = true;
 
 	for (uint32 i = 0; i < renderTargetViewArray.CurrentSize(); i++)
 	{
@@ -66,6 +68,7 @@ DepthStencilTarget::DepthStencilTarget(ID3D12Resource* resource, D3D12_RESOURCE_
 	mDepthStencilViewHandle = depthStencilViewHandle;
 	mReadOnlyDepthStencilViewHandle = readOnlyDepthStencilViewHandle;
 	mShaderResourceViewHandle = shaderResourceViewHandle;
+    mIsReady = true;
 
 	for (uint32 i = 0; i < depthStencilViewArray.CurrentSize(); i++)
 	{

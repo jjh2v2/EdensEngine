@@ -30,6 +30,7 @@ public:
 	Job *GetBatchJob(uint32 index);
 
 	void WaitForBatch();
+    bool IsCompleted() { return mJobsCompleted; }
 
 private:
 	DynamicArray<Job *> mJobs;

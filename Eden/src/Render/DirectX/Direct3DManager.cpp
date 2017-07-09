@@ -15,7 +15,6 @@ Direct3DManager::Direct3DManager()
 
 Direct3DManager::~Direct3DManager()
 {
-	//GraphicsManager's FinalizeGraphicsForRemoval should be called before this, so all GPU work should be done
 	ReleaseSwapChainDependentResources();
 
 	mSwapChain->Release();

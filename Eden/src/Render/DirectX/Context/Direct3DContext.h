@@ -9,11 +9,7 @@
 #include "Render/DirectX/Heap/DescriptorHeap.h"
 #include "Render/Shader/Definitions/MaterialDefinitions.h"
 
-#define VALID_COMPUTE_QUEUE_RESOURCE_STATES \
-	( D3D12_RESOURCE_STATE_UNORDERED_ACCESS \
-	| D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE \
-	| D3D12_RESOURCE_STATE_COPY_DEST \
-	| D3D12_RESOURCE_STATE_COPY_SOURCE )
+class Direct3DCommandAllocatorPool;
 
 class Direct3DContext
 {
@@ -24,24 +20,37 @@ public:
 	Direct3DContext(const Direct3DContext&) = delete;
 	Direct3DContext & operator=(const Direct3DContext&) = delete;
 
-	uint64 Flush(Direct3DQueueManager *queueManager, bool waitForCompletion = false);
+    void WaitForCommandIdle(Direct3DQueueManager *queueManager);
+	uint64 Flush(Direct3DQueueManager *queueManager, bool waitForCompletion = false, bool finalize = false);
 
+    void FlushDeferredTransitions();
 	void FlushResourceBarriers();
+
 	void BindDescriptorHeaps();
 	void SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, ID3D12DescriptorHeap *heap);
 	void SetDescriptorHeaps(uint32 numHeaps, D3D12_DESCRIPTOR_HEAP_TYPE heapTypes[], ID3D12DescriptorHeap *heaps[]);
 	void CopyDescriptors(uint32 numDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE destinationStart, D3D12_CPU_DESCRIPTOR_HANDLE sourceStart, D3D12_DESCRIPTOR_HEAP_TYPE heapType);
 
-	void TransitionResource(GPUResource &resource, D3D12_RESOURCE_STATES newState, bool flushImmediate = false);
-	void InsertUAVBarrier(GPUResource &resource, bool flushImmediate = false);
-	void InsertAliasBarrier(GPUResource &before, GPUResource &after, bool flushImmediate = false);
+	void TransitionResource(GPUResource *resource, D3D12_RESOURCE_STATES newState, bool flushImmediate = false);
+    void TransitionResourceDeferred(GPUResource *resource, D3D12_RESOURCE_STATES newState, bool setResourceReady = false);
+	void InsertUAVBarrier(GPUResource *resource, bool flushImmediate = false);
+	void InsertAliasBarrier(GPUResource *before, GPUResource *after, bool flushImmediate = false);
 
 protected:
+    struct DeferredTransition
+    {
+        GPUResource *Resource;
+        D3D12_RESOURCE_STATES NewState;
+        bool SetResourceReady;
+    };
+
 	ID3D12Device *mDevice;
 
 	D3D12_COMMAND_LIST_TYPE mContextType;
 	ID3D12GraphicsCommandList *mCommandList;
-	ID3D12CommandAllocator *mCommandAllocator;
+
+    Direct3DCommandAllocatorPool *mCommandAllocatorPool;
+	ID3D12CommandAllocator *mCurrentCommandAllocator;
 
 	ID3D12RootSignature *mCurrentGraphicsRootSignature;
 	ID3D12PipelineState *mCurrentGraphicsPipelineState;
@@ -52,6 +61,9 @@ protected:
 	uint32 mNumBarriersToFlush;
 
 	ID3D12DescriptorHeap* mCurrentDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
+
+    DynamicArray<DeferredTransition> mDeferredTransitions;
+    std::mutex mDeferredTransitionArrayMutex;
 };
 
 class GraphicsContext : public Direct3DContext
@@ -110,9 +122,6 @@ public:
     void SetRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer);
     void SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle);
 
-//    void ClearUAV(GpuBuffer& Target);
-//    void ClearUAV(ColorBuffer& Target);
-
     void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
     void Dispatch1D(uint32 threadCountX, uint32 groupSizeX);
     void Dispatch2D(uint32 threadCountX, uint32 threadCountY, uint32 groupSizeX, uint32 groupSizeY);
@@ -120,6 +129,7 @@ public:
 
 private:
 };
+
 
 struct Direct3DUploadInfo
 {
@@ -140,17 +150,37 @@ struct Direct3DUploadInfo
 class UploadContext : public Direct3DContext
 {
 public:
+    class BackgroundUpload
+    {
+    public:
+        BackgroundUpload() { mUploadFence = 0; }
+        virtual void ProcessUpload(UploadContext *uploadContext) = 0;
+        virtual void OnUploadFinished() {}
+
+        uint64 GetUploadFence() { return mUploadFence; }
+
+    protected:
+        uint64 mUploadFence;
+    };
+
 	UploadContext(ID3D12Device *device);
 	virtual ~UploadContext();
 	
-    uint32 GetNumUploadsAvailable() { return MAX_GPU_UPLOADS - mUploadSubmissionUsed; }
-
-	Direct3DUploadInfo BeginUpload(uint64 size, Direct3DQueueManager *queueManager);
-	void CopyTextureRegion(D3D12_TEXTURE_COPY_LOCATION *destination, D3D12_TEXTURE_COPY_LOCATION *source);
-	void CopyResourceRegion(ID3D12Resource *destination, uint64 destOffset, ID3D12Resource *source, uint64 sourceOffset, uint64 numBytes);
-	uint64 FlushUpload(Direct3DUploadInfo& uploadInfo, Direct3DQueueManager *queueManager, bool forceWait = false);
+    void ProcessBackgroundUploads(uint32 maxToProcess);
+    void ProcessFinishedUploads(uint64 mostRecentFence);
+    void AddBackgroundUpload(BackgroundUpload *backgroundUpload);
 	
+    void LockUploads() { mUploadProcessMutex.lock(); }
+    void UnlockUploads() { mUploadProcessMutex.unlock(); }
+
+    //If these functions are used outside of BackgroundUploads, it must call Lock/UnlockUploads to be safe
+    Direct3DUploadInfo BeginUpload(uint64 size, Direct3DQueueManager *queueManager);
+    void CopyTextureRegion(D3D12_TEXTURE_COPY_LOCATION *destination, D3D12_TEXTURE_COPY_LOCATION *source);
+    void CopyResourceRegion(ID3D12Resource *destination, uint64 destOffset, ID3D12Resource *source, uint64 sourceOffset, uint64 numBytes);
+    uint64 FlushUpload(Direct3DUploadInfo& uploadInfo, Direct3DQueueManager *queueManager, bool forceWait = false);
+
 private:
+
     struct UploadBuffer
     {
         UploadBuffer()
@@ -191,13 +221,19 @@ private:
     };
 
     bool ClearSubmissionIfFinished(Direct3DUpload &submission, Direct3DQueueManager *queueManager);
-	void ClearFinishedUploads(uint64 flushCount, Direct3DQueueManager *queueManager);
+	uint32 ClearFinishedUploads(uint64 flushCount, Direct3DQueueManager *queueManager);
 	bool CreateNewUpload(uint64 size, uint32 &uploadIndex);
 	
 	UploadBuffer mUploadBuffer;
 	Direct3DUpload mUploads[MAX_GPU_UPLOADS];
 	uint32 mUploadSubmissionStart;
 	uint32 mUploadSubmissionUsed;
+
+    DynamicArray<BackgroundUpload*> mBackgroundUploadsToProcess;
+    DynamicArray<BackgroundUpload*> mBackgroundUploadsInFlight;
+
+    std::mutex mBackgroundUploadArrayMutex;
+    std::mutex mUploadProcessMutex; //specifically for the purpose of allowing safe synchronous uploads while the background uploads are potentially processing
 };
 
 class RenderPassContext
