@@ -20,17 +20,13 @@ public:
 	void CreateWindowDependentResources(Vector2 screenSize, HWND windowHandle, bool vsync = false, bool fullScreen = false);
 	void Present();
 	
-	ID3D12Device				*GetDevice() { return mDevice; }
-	IDXGISwapChain3 			*GetSwapChain() { return mSwapChain; }
-	BackBufferTarget  			*GetBackBufferTarget() { return mBackBuffers[mCurrentBackBuffer]; }
+	ID3D12Device	 *GetDevice() { return mDevice; }
+	IDXGISwapChain3  *GetSwapChain() { return mSwapChain; }
+	BackBufferTarget *GetBackBufferTarget() { return mBackBuffers[mCurrentBackBuffer]; }
 
-	D3D12_VIEWPORT				GetScreenViewport() { return mScreenViewport; }
-	Vector2						GetScreenSize() { return mOutputSize; }
-
-	D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView()
-	{
-		return mBackBuffers[mCurrentBackBuffer]->GetRenderTargetViewHandle().GetCPUHandle();
-	}
+	D3D12_VIEWPORT	GetScreenViewport() { return mScreenViewport; }
+	Vector2			GetScreenSize() { return mOutputSize; }
+    uint32          GetFrameIndex() { return mCurrentBackBuffer; }
 
 	Direct3DContextManager *GetContextManager() { return mContextManager; }
 

@@ -45,12 +45,6 @@ public:
 		return 57.2957795f;
 	}
 
-	static D3DXVECTOR3 GetNormalized(D3DXVECTOR3 vector3)
-	{
-		float length = (float)sqrt((vector3.x * vector3.x) + (vector3.y * vector3.y) + (vector3.z * vector3.z));
-		return length == 0 ? D3DXVECTOR3(0,0,0) : D3DXVECTOR3(vector3.x/length, vector3.y/length, vector3.y/length);
-	}
-
 	template <class T>
 	static T Max(T a, T b)
 	{

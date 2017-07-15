@@ -46,7 +46,7 @@ private:
 class RenderPassDescriptorHeap : public DescriptorHeap
 {
 public:
-	RenderPassDescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, uint32 numDescriptors, bool isReferencedByShader);
+	RenderPassDescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, uint32 numDescriptors);
 	virtual ~RenderPassDescriptorHeap();
 
 	void Reset();

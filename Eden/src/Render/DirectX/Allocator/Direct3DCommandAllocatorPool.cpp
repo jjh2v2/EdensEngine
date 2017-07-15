@@ -34,12 +34,12 @@ uint32 Direct3DCommandAllocatorPool::GetNumAllocatorsProcessing(uint64 mostRecen
 
 void Direct3DCommandAllocatorPool::CheckReturnedAllocatorState(uint64 mostRecentFence)
 {
-    for (int32 i = 0; i < (int32)mReturnedAllocators.CurrentSize(); i++)
+    for (int32 i = 0; i < mReturnedAllocators.CurrentSizeSigned(); i++)
     {
         if (mostRecentFence >= mReturnedAllocators[i].Fence)
         {
             mAvailableAllocators.Add(mReturnedAllocators[i].Allocator);
-            mReturnedAllocators.Remove(i);
+            mReturnedAllocators.RemoveFast(i);
             i--;
         }
     }

@@ -1,5 +1,12 @@
 #pragma once
 #include "Render/DirectX/Heap/DescriptorHeap.h"
+#include <map>
+
+enum RenderPassDescriptorHeapType
+{
+    RenderPassDescriptorHeapType_GBuffer,
+    RenderPassDescriptorHeapType_PostProcess
+};
 
 class Direct3DHeapManager
 {
@@ -22,9 +29,27 @@ public:
 	DynamicDescriptorHeap *GetDSVDescriptorHeap() { return mDSVDescriptorHeap; }
 	DynamicDescriptorHeap *GetSamplerDescriptorHeap() { return mSamplerDescriptorHeap; }
 
+    RenderPassDescriptorHeap *GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType passType, D3D12_DESCRIPTOR_HEAP_TYPE heapType, uint32 frameIndex, uint32 numDescriptors, bool reset = true);
+
 private:
+    ID3D12Device* mDevice;
+
 	DynamicDescriptorHeap *mRTVDescriptorHeap;
 	DynamicDescriptorHeap *mSRVDescriptorHeap;
 	DynamicDescriptorHeap *mDSVDescriptorHeap;
 	DynamicDescriptorHeap *mSamplerDescriptorHeap;
+
+    struct RenderPassDescriptorHeapGroup
+    {
+        RenderPassDescriptorHeapGroup()
+        {
+            memset(SRVHeap,     0, sizeof(RenderPassDescriptorHeap*) * FRAME_BUFFER_COUNT);
+            memset(SamplerHeap, 0, sizeof(RenderPassDescriptorHeap*) * FRAME_BUFFER_COUNT);
+        }
+
+        RenderPassDescriptorHeap *SRVHeap[FRAME_BUFFER_COUNT];
+        RenderPassDescriptorHeap *SamplerHeap[FRAME_BUFFER_COUNT];
+    };
+
+    std::map<RenderPassDescriptorHeapType, RenderPassDescriptorHeapGroup> mRenderPassDescriptorHeapGroups;
 };

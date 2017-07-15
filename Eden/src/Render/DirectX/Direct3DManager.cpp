@@ -89,7 +89,7 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 	{
 		ReleaseSwapChainDependentResources();
 		// If the swap chain already exists, resize it.
-		HRESULT hr = mSwapChain->ResizeBuffers(BACK_BUFFER_COUNT, lround(mOutputSize.X), lround(mOutputSize.Y), DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+		HRESULT hr = mSwapChain->ResizeBuffers(FRAME_BUFFER_COUNT, lround(mOutputSize.X), lround(mOutputSize.Y), DXGI_FORMAT_R8G8B8A8_UNORM, 0);
 
 		if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
 		{
@@ -165,7 +165,7 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 		swapChainDesc.SampleDesc.Count = 1;
 		swapChainDesc.SampleDesc.Quality = 0;
 		swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		swapChainDesc.BufferCount = BACK_BUFFER_COUNT;
+		swapChainDesc.BufferCount = FRAME_BUFFER_COUNT;
 		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 		swapChainDesc.Flags = 0;
 		swapChainDesc.Scaling = DXGI_SCALING_NONE;
@@ -216,7 +216,7 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 
 void Direct3DManager::ReleaseSwapChainDependentResources()
 {
-	for (uint32 bufferIndex = 0; bufferIndex < BACK_BUFFER_COUNT; bufferIndex++)
+	for (uint32 bufferIndex = 0; bufferIndex < FRAME_BUFFER_COUNT; bufferIndex++)
 	{
 		mContextManager->GetHeapManager()->FreeRTVDescriptorHeapHandle(mBackBuffers[bufferIndex]->GetRenderTargetViewHandle());
 		delete mBackBuffers[bufferIndex];
@@ -229,11 +229,11 @@ void Direct3DManager::ReleaseSwapChainDependentResources()
 void Direct3DManager::BuildSwapChainDependentResources()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC desc = {};
-	desc.NumDescriptors = BACK_BUFFER_COUNT;
+	desc.NumDescriptors = FRAME_BUFFER_COUNT;
 	desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	
-	for (uint32 bufferIndex = 0; bufferIndex < BACK_BUFFER_COUNT; bufferIndex++)
+	for (uint32 bufferIndex = 0; bufferIndex < FRAME_BUFFER_COUNT; bufferIndex++)
 	{
 		ID3D12Resource *backBufferResource = NULL;
 		DescriptorHeapHandle backBufferHeapHandle = mContextManager->GetHeapManager()->GetNewRTVDescriptorHeapHandle();
@@ -280,7 +280,7 @@ void Direct3DManager::Present()
 void Direct3DManager::MoveToNextFrame()
 {
 	// Advance the frame index.
-	mCurrentBackBuffer = (mCurrentBackBuffer + 1) % BACK_BUFFER_COUNT;
+	mCurrentBackBuffer = (mCurrentBackBuffer + 1) % FRAME_BUFFER_COUNT;
 	uint64 fenceValue = mContextManager->GetQueueManager()->GetGraphicsQueue()->IncrementFence();
 	mContextManager->GetQueueManager()->GetGraphicsQueue()->WaitForFence(fenceValue);
 }

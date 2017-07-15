@@ -99,8 +99,8 @@ void DynamicDescriptorHeap::Reset()
 	mActiveHandleCount = 0;
 }
 
-RenderPassDescriptorHeap::RenderPassDescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, uint32 numDescriptors, bool isReferencedByShader)
-	:DescriptorHeap(device, heapType, numDescriptors, isReferencedByShader)
+RenderPassDescriptorHeap::RenderPassDescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, uint32 numDescriptors)
+	:DescriptorHeap(device, heapType, numDescriptors, true)
 {
 	mCurrentDescriptorIndex = 0;
 }

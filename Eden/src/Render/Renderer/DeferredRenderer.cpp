@@ -9,10 +9,6 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 	contextManager->GetGraphicsContext()->Flush(contextManager->GetQueueManager(), true);
 	
 	CreateTargets(direct3DManager->GetScreenSize());
-
-	//need to be able to make these bigger
-	mGBufferCBVDescHeap = new RenderPassDescriptorHeap(direct3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true);
-	mGBufferSamplerDescHeap = new RenderPassDescriptorHeap(direct3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 16, true);
 	
 	mCameraConstantBuffer = contextManager->CreateConstantBuffer(sizeof(CameraBuffer));
 
@@ -77,9 +73,6 @@ DeferredRenderer::~DeferredRenderer()
 		delete material;
 		delete mSceneEntity3;
 	}
-
-	delete mGBufferCBVDescHeap;
-	delete mGBufferSamplerDescHeap;
 }
 
 void DeferredRenderer::FreeTargets()
@@ -139,20 +132,29 @@ void DeferredRenderer::RenderGBuffer()
 {
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
 	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
+    Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
 	Vector2 screenSize = direct3DManager->GetScreenSize();
+
+    const uint32 testNumSRVsNeeded = 20; //TDA this needs to be changed to scene entity 
+    const uint32 testNumSamplersNeeded = 3; //TDA this needs to be changed to some definition
+    RenderPassDescriptorHeap *gbufferSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_GBuffer, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), testNumSRVsNeeded);
+    RenderPassDescriptorHeap *gbufferSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_GBuffer, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), testNumSamplersNeeded);
+
+    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, gbufferSRVDescHeap->GetHeap());
+    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, gbufferSamplerDescHeap->GetHeap());
 
 	graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
 	graphicsContext->SetScissorRect(0, 0, (uint32)screenSize.X, (uint32)screenSize.Y);
 
 	// set up the default samplers
-	DescriptorHeapHandle gBufferSamplersHandle = mGBufferSamplerDescHeap->GetHeapHandleBlock(3);
+	DescriptorHeapHandle gBufferSamplersHandle = gbufferSamplerDescHeap->GetHeapHandleBlock(3);
 	D3D12_CPU_DESCRIPTOR_HANDLE gBufferSamplersHandleOffset = gBufferSamplersHandle.GetCPUHandle();
 	Sampler *defaultAnisoSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_ANISO);
 
 	for (uint32 i = 0; i < GBufferTextureInputCount; i++)
 	{
 		direct3DManager->GetDevice()->CopyDescriptorsSimple(1, gBufferSamplersHandleOffset, defaultAnisoSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-		gBufferSamplersHandleOffset.ptr += mGBufferSamplerDescHeap->GetDescriptorSize();
+		gBufferSamplersHandleOffset.ptr += gbufferSamplerDescHeap->GetDescriptorSize();
 	}
 
 	//set up the camera buffer
@@ -168,7 +170,7 @@ void DeferredRenderer::RenderGBuffer()
 
 	mCameraConstantBuffer->SetConstantBufferData(&cameraBuffer, sizeof(CameraBuffer));
 
-	DescriptorHeapHandle perFrameCameraHandle = mGBufferCBVDescHeap->GetHeapHandleBlock(1);
+	DescriptorHeapHandle perFrameCameraHandle = gbufferSRVDescHeap->GetHeapHandleBlock(1);
 	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, perFrameCameraHandle.GetCPUHandle(), mCameraConstantBuffer->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	//set up the render targets
@@ -192,7 +194,8 @@ void DeferredRenderer::RenderGBuffer()
 	textureTypes.Add(MaterialTextureType_Diffuse);
 	textureTypes.Add(MaterialTextureType_Normal);
 	textureTypes.Add(MaterialTextureType_Roughmetal);
-	RenderPassContext renderPassContext(graphicsContext, mGBufferCBVDescHeap, textureTypes);
+
+	RenderPassContext renderPassContext(graphicsContext, gbufferSRVDescHeap, textureTypes);
 	mSceneEntity->Render(&renderPassContext);
 	mSceneEntity2->Render(&renderPassContext);
 	mSceneEntity3->Render(&renderPassContext);
@@ -202,10 +205,17 @@ void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
 {
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
 	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
+    Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
+
 	BackBufferTarget *backBuffer = direct3DManager->GetBackBufferTarget();
 
-	DescriptorHeapHandle copyTextureHandle = mGBufferCBVDescHeap->GetHeapHandleBlock(1);
-	DescriptorHeapHandle copySamplerHandle = mGBufferSamplerDescHeap->GetHeapHandleBlock(1);
+    RenderPassDescriptorHeap *postProcessSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), 1);
+    RenderPassDescriptorHeap *postProcessSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), 1);
+    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, postProcessSRVDescHeap->GetHeap());
+    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, postProcessSamplerDescHeap->GetHeap());
+
+	DescriptorHeapHandle copyTextureHandle = postProcessSRVDescHeap->GetHeapHandleBlock(1);
+	DescriptorHeapHandle copySamplerHandle = postProcessSamplerDescHeap->GetHeapHandleBlock(1);
 
 	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, copyTextureHandle.GetCPUHandle(), renderTargetToCopy->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, copySamplerHandle.GetCPUHandle(), mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_POINT)->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
@@ -232,12 +242,6 @@ void DeferredRenderer::Render()
 {
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
 	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
-
-	//Reset and set heaps
-	mGBufferCBVDescHeap->Reset();
-	mGBufferSamplerDescHeap->Reset();
-	graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mGBufferCBVDescHeap->GetHeap());
-	graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, mGBufferSamplerDescHeap->GetHeap());
 
 	ClearGBuffer();
 	RenderGBuffer();

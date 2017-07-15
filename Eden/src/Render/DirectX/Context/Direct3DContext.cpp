@@ -110,6 +110,8 @@ void Direct3DContext::FlushDeferredTransitions()
         }
     }
 
+    FlushResourceBarriers(); //flush any of the above that haven't flushed yet
+
     mDeferredTransitions.Clear();
 }
 
@@ -174,7 +176,7 @@ void Direct3DContext::CopyDescriptors(uint32 numDescriptors, D3D12_CPU_DESCRIPTO
 	mDevice->CopyDescriptorsSimple(1, destinationStart, sourceStart, heapType);
 }
 
-void Direct3DContext::TransitionResource(GPUResource *resource, D3D12_RESOURCE_STATES newState, bool flushImmediate /* = false */)
+void Direct3DContext::TransitionResource(GPUResource *resource, D3D12_RESOURCE_STATES newState, bool flushTransitionsImmediate /* = false */)
 {
 	D3D12_RESOURCE_STATES oldState = resource->GetUsageState();
 
@@ -211,10 +213,10 @@ void Direct3DContext::TransitionResource(GPUResource *resource, D3D12_RESOURCE_S
 	}
 	else if (newState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
 	{
-		InsertUAVBarrier(resource, flushImmediate);
+		InsertUAVBarrier(resource, flushTransitionsImmediate);
 	}
 
-	if (flushImmediate || mNumBarriersToFlush == BARRIER_LIMIT)
+	if (flushTransitionsImmediate || mNumBarriersToFlush == BARRIER_LIMIT)
 	{
 		FlushResourceBarriers();
 	}
@@ -579,7 +581,7 @@ void UploadContext::ProcessFinishedUploads(uint64 mostRecentFence)
         if (mostRecentFence >= currentUploadFence)
         {
             backgroundUpload->OnUploadFinished();
-            mBackgroundUploadsInFlight.Remove(i);
+            mBackgroundUploadsInFlight.Remove(i); //don't RemoveFast so that we maintain upload order
             delete backgroundUpload;
             i--;
         }

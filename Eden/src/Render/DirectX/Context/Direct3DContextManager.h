@@ -6,7 +6,7 @@
 class Direct3DContextManager
 {
 public:
-	//TDA: Create a second Graphics context to start recording while the previous context is being consumed
+	//TDA: Create a second Graphics context to start recording while the previous context is being consumed, need separate render pass heaps and everything
 	Direct3DContextManager(ID3D12Device* device);
 	~Direct3DContextManager();
     void FinishContextsAndWaitForIdle();

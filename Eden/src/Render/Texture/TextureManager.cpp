@@ -179,7 +179,7 @@ void TextureManager::ProcessCurrentUploads()
         }
     }
 
-    for (int32 i = 0; i < (int32)mTextureUploads.CurrentSize(); i++)
+    for (int32 i = 0; i < mTextureUploads.CurrentSizeSigned(); i++)
     {
         TextureUpload *currentUpload = mTextureUploads[i];
 

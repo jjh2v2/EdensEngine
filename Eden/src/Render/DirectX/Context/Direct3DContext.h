@@ -31,7 +31,7 @@ public:
 	void SetDescriptorHeaps(uint32 numHeaps, D3D12_DESCRIPTOR_HEAP_TYPE heapTypes[], ID3D12DescriptorHeap *heaps[]);
 	void CopyDescriptors(uint32 numDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE destinationStart, D3D12_CPU_DESCRIPTOR_HANDLE sourceStart, D3D12_DESCRIPTOR_HEAP_TYPE heapType);
 
-	void TransitionResource(GPUResource *resource, D3D12_RESOURCE_STATES newState, bool flushImmediate = false);
+	void TransitionResource(GPUResource *resource, D3D12_RESOURCE_STATES newState, bool flushTransitionsImmediate = false);
     void TransitionResourceDeferred(GPUResource *resource, D3D12_RESOURCE_STATES newState, bool setResourceReady = false);
 	void InsertUAVBarrier(GPUResource *resource, bool flushImmediate = false);
 	void InsertAliasBarrier(GPUResource *before, GPUResource *after, bool flushImmediate = false);

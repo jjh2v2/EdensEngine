@@ -20,6 +20,8 @@ public:
 	void Render(RenderPassContext *renderPassContext);
 
 private:
+    D3DXMATRIX GetWorldMatrix(const Vector3 &position, const Vector3 &rotation, const Vector3 &scale);
+
 	Mesh *mMesh;
 	Material *mMaterial;
 

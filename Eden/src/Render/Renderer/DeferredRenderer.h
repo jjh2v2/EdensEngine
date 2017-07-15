@@ -29,9 +29,6 @@ private:
 	DynamicArray<RenderTarget*> mGBufferTargets;
 	DepthStencilTarget *mGBufferDepth;
 
-	RenderPassDescriptorHeap *mGBufferCBVDescHeap;
-	RenderPassDescriptorHeap *mGBufferSamplerDescHeap;
-
 	ConstantBuffer *mCameraConstantBuffer;
 
 	SceneEntity *mSceneEntity;
