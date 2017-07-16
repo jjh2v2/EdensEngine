@@ -29,9 +29,11 @@ private:
 	DynamicArray<RenderTarget*> mGBufferTargets;
 	DepthStencilTarget *mGBufferDepth;
 
-	ConstantBuffer *mCameraConstantBuffer;
+	ConstantBuffer *mCameraConstantBuffer[FRAME_BUFFER_COUNT];
 
 	SceneEntity *mSceneEntity;
 	SceneEntity *mSceneEntity2;
 	SceneEntity *mSceneEntity3;
+
+    uint64 mPreviousFrameFence;
 };

@@ -10,8 +10,8 @@ public:
 
 	Material *GetMaterial() { return mMaterial; }
 	Vector3 GetPosition() { return mPosition; }
-	Vector3 GetRotation() { return mPosition; }
-	Vector3 GetScale() { return mPosition; }
+	Vector3 GetRotation() { return mRotation; }
+	Vector3 GetScale() { return mScale; }
 	void SetPosition(Vector3 position) { mPosition = position; }
 	void SetRotation(Vector3 rotation) { mRotation = rotation; }
 	void SetScale(Vector3 scale) { mScale = scale; }

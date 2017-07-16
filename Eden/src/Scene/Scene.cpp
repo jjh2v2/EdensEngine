@@ -18,14 +18,6 @@ void Scene::OnScreenChanged(Vector2 screenSize)
 	mCameraManager->OnScreenChanged(screenSize);
 }
 
-void Scene::FreeSceneEntity(SceneEntity *entity)
-{
-	Material *material = entity->GetMaterial();
-	mGraphicsManager->GetDirect3DManager()->GetContextManager()->FreeConstantBuffer(material->GetConstantBuffer());
-	delete material;
-	delete entity;
-}
-
 void Scene::ApplyInput(InputManager *inputManager, float delta)
 {
 	Camera *mainCamera = mCameraManager->GetMainCamera();

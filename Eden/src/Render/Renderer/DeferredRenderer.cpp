@@ -4,16 +4,27 @@
 DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 {
 	mGraphicsManager = graphicsManager;
+    mPreviousFrameFence = 0;
+
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
 	Direct3DContextManager *contextManager = direct3DManager->GetContextManager();
 	contextManager->GetGraphicsContext()->Flush(contextManager->GetQueueManager(), true);
 	
 	CreateTargets(direct3DManager->GetScreenSize());
 	
-	mCameraConstantBuffer = contextManager->CreateConstantBuffer(sizeof(CameraBuffer));
+    for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+    {
+        mCameraConstantBuffer[i] = contextManager->CreateConstantBuffer(sizeof(CameraBuffer));
+    }
 
 	{
-		Material *newMaterial = new Material(contextManager->CreateConstantBuffer(sizeof(MaterialConstants)));
+        ConstantBuffer *materialConstantBuffers[FRAME_BUFFER_COUNT];
+        for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+        {
+            materialConstantBuffers[i] = contextManager->CreateConstantBuffer(sizeof(MaterialConstants));
+        }
+
+		Material *newMaterial = new Material(materialConstantBuffers);
 		newMaterial->SetTexture(MaterialTextureType_Diffuse, mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire"));
 		newMaterial->SetTexture(MaterialTextureType_Normal, mGraphicsManager->GetTextureManager()->GetTexture("MageNormal"));
 		newMaterial->SetTexture(MaterialTextureType_Roughmetal, mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal"));
@@ -24,7 +35,13 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 		mSceneEntity->SetRotation(Vector3(0, MathHelper::Radian() * 180.0f, 0));
 	}
 	{
-		Material *newMaterial = new Material(contextManager->CreateConstantBuffer(sizeof(MaterialConstants)));
+        ConstantBuffer *materialConstantBuffers[FRAME_BUFFER_COUNT];
+        for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+        {
+            materialConstantBuffers[i] = contextManager->CreateConstantBuffer(sizeof(MaterialConstants));
+        }
+
+		Material *newMaterial = new Material(materialConstantBuffers);
 		newMaterial->SetTexture(MaterialTextureType_Diffuse, mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire"));
 		newMaterial->SetTexture(MaterialTextureType_Normal, mGraphicsManager->GetTextureManager()->GetTexture("MageNormal"));
 		newMaterial->SetTexture(MaterialTextureType_Roughmetal, mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal"));
@@ -35,7 +52,13 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 		mSceneEntity2->SetRotation(Vector3(0, MathHelper::Radian() * 180.0f, 0));
 	}
 	{
-		Material *newMaterial = new Material(contextManager->CreateConstantBuffer(sizeof(MaterialConstants)));
+        ConstantBuffer *materialConstantBuffers[FRAME_BUFFER_COUNT];
+        for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+        {
+            materialConstantBuffers[i] = contextManager->CreateConstantBuffer(sizeof(MaterialConstants));
+        }
+
+		Material *newMaterial = new Material(materialConstantBuffers);
 		newMaterial->SetTexture(MaterialTextureType_Diffuse, mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire"));
 		newMaterial->SetTexture(MaterialTextureType_Normal, mGraphicsManager->GetTextureManager()->GetTexture("MageNormal"));
 		newMaterial->SetTexture(MaterialTextureType_Roughmetal, mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal"));
@@ -52,24 +75,37 @@ DeferredRenderer::~DeferredRenderer()
 	FreeTargets();
 
 	Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
-	contextManager->FreeConstantBuffer(mCameraConstantBuffer);
-	mCameraConstantBuffer = NULL;
+
+    for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+    {
+        contextManager->FreeConstantBuffer(mCameraConstantBuffer[i]);
+        mCameraConstantBuffer[i] = NULL;
+    }
 	
 	{
 		Material *material = mSceneEntity->GetMaterial();
-		mGraphicsManager->GetDirect3DManager()->GetContextManager()->FreeConstantBuffer(material->GetConstantBuffer());
+        for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+        {
+            mGraphicsManager->GetDirect3DManager()->GetContextManager()->FreeConstantBuffer(material->GetConstantBuffer(i));
+        }
 		delete material;
 		delete mSceneEntity;
 	}
 	{
 		Material *material = mSceneEntity2->GetMaterial();
-		mGraphicsManager->GetDirect3DManager()->GetContextManager()->FreeConstantBuffer(material->GetConstantBuffer());
+        for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+        {
+            mGraphicsManager->GetDirect3DManager()->GetContextManager()->FreeConstantBuffer(material->GetConstantBuffer(i));
+        }
 		delete material;
 		delete mSceneEntity2;
 	}
 	{
 		Material *material = mSceneEntity3->GetMaterial();
-		mGraphicsManager->GetDirect3DManager()->GetContextManager()->FreeConstantBuffer(material->GetConstantBuffer());
+        for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+        {
+            mGraphicsManager->GetDirect3DManager()->GetContextManager()->FreeConstantBuffer(material->GetConstantBuffer(i));
+        }
 		delete material;
 		delete mSceneEntity3;
 	}
@@ -168,10 +204,10 @@ void DeferredRenderer::RenderGBuffer()
 	D3DXMatrixTranspose(&cameraBuffer.viewMatrix, &cameraBuffer.viewMatrix);
 	D3DXMatrixTranspose(&cameraBuffer.projectionMatrix, &cameraBuffer.projectionMatrix);
 
-	mCameraConstantBuffer->SetConstantBufferData(&cameraBuffer, sizeof(CameraBuffer));
+	mCameraConstantBuffer[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&cameraBuffer, sizeof(CameraBuffer));
 
 	DescriptorHeapHandle perFrameCameraHandle = gbufferSRVDescHeap->GetHeapHandleBlock(1);
-	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, perFrameCameraHandle.GetCPUHandle(), mCameraConstantBuffer->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, perFrameCameraHandle.GetCPUHandle(), mCameraConstantBuffer[direct3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	//set up the render targets
 	D3D12_CPU_DESCRIPTOR_HANDLE gbufferRtvHandles[3] = {
@@ -195,7 +231,7 @@ void DeferredRenderer::RenderGBuffer()
 	textureTypes.Add(MaterialTextureType_Normal);
 	textureTypes.Add(MaterialTextureType_Roughmetal);
 
-	RenderPassContext renderPassContext(graphicsContext, gbufferSRVDescHeap, textureTypes);
+	RenderPassContext renderPassContext(graphicsContext, gbufferSRVDescHeap, textureTypes, direct3DManager->GetFrameIndex());
 	mSceneEntity->Render(&renderPassContext);
 	mSceneEntity2->Render(&renderPassContext);
 	mSceneEntity3->Render(&renderPassContext);
@@ -247,5 +283,7 @@ void DeferredRenderer::Render()
 	RenderGBuffer();
 	CopyToBackBuffer(mGBufferTargets[0]);
 
-	graphicsContext->Flush(direct3DManager->GetContextManager()->GetQueueManager(), true);
+    direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->WaitForFence(mPreviousFrameFence);
+
+    mPreviousFrameFence = graphicsContext->Flush(direct3DManager->GetContextManager()->GetQueueManager());
 }

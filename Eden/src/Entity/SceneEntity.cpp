@@ -53,7 +53,6 @@ void SceneEntity::Render(RenderPassContext *renderPassContext)
 
     D3DXMATRIX modelMatrix = GetWorldMatrix(mPosition, mRotation, mScale);
 	mMaterial->GetMaterialBuffer()->SetWorldMatrix(modelMatrix);
-	mMaterial->CommitConstantBufferChanges();
 	mMaterial->ApplyMaterial(renderPassContext);
 
 	graphicsContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

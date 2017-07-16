@@ -13,17 +13,20 @@ class RenderPassContext;
 class Material
 {
 public:
-	Material(ConstantBuffer *constantBuffer);
+	Material(ConstantBuffer *constantBuffer[FRAME_BUFFER_COUNT]);
 	~Material();
 
 	void SetTexture(MaterialTextureType textureType, Texture *texture);
-	void CommitConstantBufferChanges();
-	ConstantBuffer *GetConstantBuffer() { return mConstantBuffer; }
+	
+	ConstantBuffer *GetConstantBuffer(uint32 frameIndex) { return mConstantBuffer[frameIndex]; }
 	MaterialBuffer *GetMaterialBuffer() { return &mMaterialBuffer; }
 	void ApplyMaterial(RenderPassContext *renderPassContext);
 
 private:
-	ConstantBuffer *mConstantBuffer;
+    void CommitConstantBufferChanges(uint32 frameIndex);
+
+	ConstantBuffer *mConstantBuffer[FRAME_BUFFER_COUNT];
 	MaterialBuffer mMaterialBuffer;
 	Texture* mTextures[MaterialTextureType_Max];
+    uint32 mDirtyCheckCount;
 };
