@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <d3dcompiler.h>
 
+#define CPU_FRAME_UPDATE_TIME                   16.7f
 #define MIN_LOGICAL_CORES                       4
 #define FRAME_BUFFER_COUNT					    2
 #define RTV_DESCRIPTOR_HEAP_SIZE			    64

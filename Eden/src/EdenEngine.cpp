@@ -50,6 +50,8 @@ EdenEngine::~EdenEngine()
 void EdenEngine::Run()
 {
 	bool shouldExit = false;
+    float cpuTimer = 0.0f;
+
 	while (!shouldExit)
 	{
 		mGameTimer->Frame();
@@ -60,7 +62,14 @@ void EdenEngine::Run()
 			OnScreenChanged();
 		}
 
-		shouldExit = mEngineWindow->ShouldQuit() || !Update(mGameTimer->GetTimeSeconds()) || !Render() || mInputManager->IsKeyboardKeyPressed(KeyboardKey_Escape);
+        cpuTimer += mGameTimer->GetTimeMilliseconds();
+        if (cpuTimer > CPU_FRAME_UPDATE_TIME)
+        {
+            shouldExit = !Update(cpuTimer / 1000.0f);
+            cpuTimer = 0;
+        }
+
+		shouldExit |= mEngineWindow->ShouldQuit() || !Render() || mInputManager->IsKeyboardKeyPressed(KeyboardKey_Escape);
 	}
 }
 
