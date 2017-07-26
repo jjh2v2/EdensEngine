@@ -24,8 +24,6 @@ EdenEngine::EdenEngine()
 
 EdenEngine::~EdenEngine()
 {
-    ThreadPoolManager::DestroySingleton();
-
 	delete mSceneManager;
 	mSceneManager = NULL;
 
@@ -42,6 +40,8 @@ EdenEngine::~EdenEngine()
 
 	delete mGraphicsManager;
 	mGraphicsManager = NULL;
+
+    ThreadPoolManager::DestroySingleton();
 
 	delete mEngineWindow;
 	mEngineWindow = NULL;

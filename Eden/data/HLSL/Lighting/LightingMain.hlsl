@@ -1,89 +1,66 @@
+#include "../Common/LightingMainShaderCommon.hlsl"
+#include "../Common/LightingShaderCommon.hlsl"
 
-struct VS_to_PS
+LightingMainVertexOutput LightingMainVertexShader(uint vertexID : SV_VertexID)
 {
-    float4 positionViewport : SV_Position;
-    float4 positionClip     : positionClip;
-    float2 texCoord         : texCoord;
-};
+    LightingMainVertexOutput output;
+    output.texCoord0 = float2((vertexID << 1) & 2, vertexID & 2);
+    output.position  = float4(output.texCoord0 * float2(2.0f, -2.0f) + float2(-1.0f, 1.0f), 1.0f, 1.0f);
 
-cbuffer MatrixBuffer
+    return output;
+}
+
+float4 LightingMainPixelShader(LightingMainVertexOutput input) : SV_Target
 {
-	matrix mCameraProj;
-	matrix mCameraViewToLightProj;
-	matrix mCameraViewInv;
-};
-
-cbuffer LightBuffer
-{
-	float4 skyColor;
-    float4 groundColor;
-	float4 lightDir;
-	float4 lightColor;
-	float lightIntensity;
-	float ambientIntensity;
-	float brdfspecular;
-};
-
-
-Texture2D gGBufferTextures[4];
-StructuredBuffer<ShadowPartition> gPartitions;
-Texture2DArray gShadowTextures[4];
-TextureCube gEnvironmentMap;
-Texture2D<float2> EnvBRDFLookupTexture;
-SamplerState gShadowSampler;
-SamplerState gEnvironmentSampler;
-
-
-float4 LightingMainPixelShader(VS_to_PS input) : SV_Target
-{
-	float3 positionView = ComputePositionView(uint2(input.positionViewport.xy));
-	float3 viewDir = normalize(positionView);
+	float3 positionView = GetViewPosition(uint2(input.position.xy));
+	LightingSurface surface = GetLightingSurfaceFromGBuffer(uint2(input.position.xy), input.texCoord0, positionView);
 	
-	LightingSurface surface = GetLightingSurfaceFromGBuffer(uint2(input.positionViewport.xy), input.texCoord, positionView);
+	float3 shadowTexCoord = float3(0,0,0);
+	float3 shadowTexCoordDX = float3(0,0,0);
+	float3 shadowTexCoordDY = float3(0,0,0);
+	float4 shadowOccluder = float4(0,0,0,0);
+	float  shadowMultiplier = 0.0;
 	
-	float3 texCoord = float3(0,0,0);
-	float3 texCoordDX = float3(0,0,0);
-	float3 texCoordDY = float3(0,0,0);
-	float4 occluder = float4(0,0,0,0);
 	ShadowPartition partition;
 	
 	if(positionView.z >= gPartitions[0].intervalBegin && positionView.z < gPartitions[0].intervalEnd)
 	{
 		partition = gPartitions[0];
-		texCoord = surface.lightTexCoord.xyz * partition.scale.xyz + partition.bias.xyz;
-	    texCoordDX = surface.lightTexCoordDX.xyz * partition.scale.xyz;
-	    texCoordDY = surface.lightTexCoordDY.xyz * partition.scale.xyz;
-		occluder = gShadowTextures[0].SampleGrad(gShadowSampler, float3(texCoord.xy, 0), texCoordDX.xy, texCoordDY.xy);
+		shadowTexCoord = surface.lightTexCoord.xyz * partition.scale.xyz + partition.bias.xyz;
+	    shadowTexCoordDX = surface.lightTexCoordDX.xyz * partition.scale.xyz;
+	    shadowTexCoordDY = surface.lightTexCoordDY.xyz * partition.scale.xyz;
+		shadowOccluder = gShadowTextures[0].SampleGrad(gShadowSampler, float3(shadowTexCoord.xy, 0), shadowTexCoordDX.xy, shadowTexCoordDY.xy);
 	}
 	else if(positionView.z >= gPartitions[1].intervalBegin && positionView.z < gPartitions[1].intervalEnd)
 	{
 		partition = gPartitions[1];
-		texCoord = surface.lightTexCoord.xyz * partition.scale.xyz + partition.bias.xyz;
-	    texCoordDX = surface.lightTexCoordDX.xyz * partition.scale.xyz;
-	    texCoordDY = surface.lightTexCoordDY.xyz * partition.scale.xyz;
-		occluder = gShadowTextures[1].SampleGrad(gShadowSampler, float3(texCoord.xy, 0), texCoordDX.xy, texCoordDY.xy);
+		shadowTexCoord = surface.lightTexCoord.xyz * partition.scale.xyz + partition.bias.xyz;
+	    shadowTexCoordDX = surface.lightTexCoordDX.xyz * partition.scale.xyz;
+	    shadowTexCoordDY = surface.lightTexCoordDY.xyz * partition.scale.xyz;
+		shadowOccluder = gShadowTextures[1].SampleGrad(gShadowSampler, float3(shadowTexCoord.xy, 0), shadowTexCoordDX.xy, shadowTexCoordDY.xy);
 	}
 	else if(positionView.z >= gPartitions[2].intervalBegin && positionView.z < gPartitions[2].intervalEnd)
 	{
 		partition = gPartitions[2];
-		texCoord = surface.lightTexCoord.xyz * partition.scale.xyz + partition.bias.xyz;
-	    texCoordDX = surface.lightTexCoordDX.xyz * partition.scale.xyz;
-	    texCoordDY = surface.lightTexCoordDY.xyz * partition.scale.xyz;
-		occluder = gShadowTextures[2].SampleGrad(gShadowSampler, float3(texCoord.xy, 0), texCoordDX.xy, texCoordDY.xy);
+		shadowTexCoord = surface.lightTexCoord.xyz * partition.scale.xyz + partition.bias.xyz;
+	    shadowTexCoordDX = surface.lightTexCoordDX.xyz * partition.scale.xyz;
+	    shadowTexCoordDY = surface.lightTexCoordDY.xyz * partition.scale.xyz;
+		shadowOccluder = gShadowTextures[2].SampleGrad(gShadowSampler, float3(shadowTexCoord.xy, 0), shadowTexCoordDX.xy, shadowTexCoordDY.xy);
 	}
 	else if(positionView.z >= gPartitions[3].intervalBegin && positionView.z < gPartitions[3].intervalEnd)
 	{
 		partition = gPartitions[3];
-		texCoord = surface.lightTexCoord.xyz * partition.scale.xyz + partition.bias.xyz;
-	    texCoordDX = surface.lightTexCoordDX.xyz * partition.scale.xyz;
-	    texCoordDY = surface.lightTexCoordDY.xyz * partition.scale.xyz;
-		occluder = gShadowTextures[3].SampleGrad(gShadowSampler, float3(texCoord.xy, 0), texCoordDX.xy, texCoordDY.xy);
+		shadowTexCoord = surface.lightTexCoord.xyz * partition.scale.xyz + partition.bias.xyz;
+	    shadowTexCoordDX = surface.lightTexCoordDX.xyz * partition.scale.xyz;
+	    shadowTexCoordDY = surface.lightTexCoordDY.xyz * partition.scale.xyz;
+		shadowOccluder = gShadowTextures[3].SampleGrad(gShadowSampler, float3(shadowTexCoord.xy, 0), shadowTexCoordDX.xy, shadowTexCoordDY.xy);
 	}
 	else
 	{
-		discard;
+		shadowMultiplier = 1.0;
 	}
 	
+	float3 viewDir = normalize(positionView);
 	float3 reflection = reflect(-viewDir, surface.normal);
 	reflection = mul(reflection, (float3x3)mCameraViewInv);
 	
@@ -101,9 +78,8 @@ float4 LightingMainPixelShader(VS_to_PS input) : SV_Target
 	if(nDotL > 0.0f)
 	{
 		float3 half = normalize(viewDir + lightDir.xyz);
-		
 		float3 surfaceSpec = lerp(float3(1.0, 1.0, 1.0), surface.albedo.rgb, metallic);
-		float specMetallic = max(metallic, 0.03);
+		float  specMetallic = max(metallic, 0.03);
 		
 		float3 specularFactor = CalculateSchlickFresnelReflectance(viewDir, half, float3(specMetallic, specMetallic, specMetallic) * surfaceSpec) *
 			  CalculateSmithGGXGeometryTerm(roughness, nDotL, nDotV) *
@@ -111,7 +87,11 @@ float4 LightingMainPixelShader(VS_to_PS input) : SV_Target
 			  nDotL * lerp(1.0f, brdfspecular, metallic);
 		
 		float3 diffuseFactor = surface.albedo.rgb * nDotL * (1.0 - metallic);
-		float shadowContrib = ShadowContribution(texCoord, texCoordDX, texCoordDY, saturate(texCoord.z), partition, occluder);
+		
+		if(shadowMultiplier < 1.0)
+		{
+			shadowMultiplier = ShadowContribution(shadowTexCoord, shadowTexCoordDX, shadowTexCoordDY, saturate(shadowTexCoord.z), partition, shadowOccluder);
+		}
 		
 		lightingOutput.rgb += (diffuseFactor + specularFactor) * shadowContrib;
 	}

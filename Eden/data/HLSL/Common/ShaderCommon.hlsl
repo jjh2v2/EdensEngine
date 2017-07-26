@@ -1,3 +1,5 @@
+static const float PI = 3.14159265;
+
 float2 EncodeSphereMap(float3 n)
 {
     float oneMinusZ = 1.0f - n.z;
@@ -29,7 +31,6 @@ float3 GetViewPosition(float2 screenPosition, float viewSpaceDepth, matrix camer
     return viewPosition;
 }
 
-
 float3 GetViewPosition(uint2 coords, float2 bufferDimensions, float zDepth, matrix cameraProj)
 {
     float2 pixelOffset = float2(2.0f, -2.0f) / bufferDimensions;
@@ -37,4 +38,10 @@ float3 GetViewPosition(uint2 coords, float2 bufferDimensions, float zDepth, matr
 	float viewSpaceDepth = cameraProj._43 / (zDepth - cameraProj._33);
 	
 	return GetViewPosition(positionScreen , viewSpaceDepth, cameraProj);
+}
+
+float3 ViewPositionToLightTexCoord(float3 positionView, matrix cameraViewToLightProj)
+{
+    float4 positionLight = mul(float4(positionView, 1.0f), cameraViewToLightProj);
+    return (positionLight.xyz / positionLight.w) * float3(0.5f, -0.5f, 1.0f) + float3(0.5f, 0.5f, 0.0f);
 }

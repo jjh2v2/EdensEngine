@@ -139,6 +139,9 @@
     <Filter Include="Source Files\Render\DirectX\Allocator">
       <UniqueIdentifier>{176a2078-a233-4a42-8dec-c3c4a9fd0b63}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render\Shadow">
+      <UniqueIdentifier>{61d6f91d-167e-4f09-8c06-429270a295fb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -357,6 +360,9 @@
     <ClInclude Include="src\Render\DirectX\Allocator\Direct3DCommandAllocatorPool.h">
       <Filter>Source Files\Render\DirectX\Allocator</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\Shadow\SDSMShadowManager.h">
+      <Filter>Source Files\Render\Shadow</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -541,6 +547,9 @@
     </ClCompile>
     <ClCompile Include="src\Render\DirectX\Allocator\Direct3DCommandAllocatorPool.cpp">
       <Filter>Source Files\Render\DirectX\Allocator</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Shadow\SDSMShadowManager.cpp">
+      <Filter>Source Files\Render\Shadow</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -197,6 +197,7 @@
     <ClInclude Include="src\Render\Shader\ShaderPSO.h" />
     <ClInclude Include="src\Render\Shader\ShaderTechnique.h" />
     <ClInclude Include="src\Render\Shader\State\ShaderPipelineStateCreator.h" />
+    <ClInclude Include="src\Render\Shadow\SDSMShadowManager.h" />
     <ClInclude Include="src\Render\Texture\Sampler\Sampler.h" />
     <ClInclude Include="src\Render\Texture\Sampler\SamplerManager.h" />
     <ClInclude Include="src\Render\Texture\Texture.h" />
@@ -264,6 +265,7 @@
     <ClCompile Include="src\Render\Shader\ShaderPSO.cpp" />
     <ClCompile Include="src\Render\Shader\ShaderTechnique.cpp" />
     <ClCompile Include="src\Render\Shader\State\ShaderPipelineStateCreator.cpp" />
+    <ClCompile Include="src\Render\Shadow\SDSMShadowManager.cpp" />
     <ClCompile Include="src\Render\Texture\Sampler\Sampler.cpp" />
     <ClCompile Include="src\Render\Texture\Sampler\SamplerManager.cpp" />
     <ClCompile Include="src\Render\Texture\Texture.cpp" />
