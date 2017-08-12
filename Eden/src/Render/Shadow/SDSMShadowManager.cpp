@@ -1,3 +1,4 @@
+/*
 #include "Render/Shadow/SDSMShadowManager.h"
 #include <d3d11.h>
 #include <d3dx11.h>
@@ -15,7 +16,7 @@ static void UnbindResources(ID3D11DeviceContext *d3dDeviceContext)
 }
 
 
-SDSMShadowManager::SDSMShadowManager(GraphicsManager *graphicsManager, int bins)
+SDSMShadowManager::SDSMShadowManager(GraphicsManager *graphicsManager, int bins) //1024)
 	: mBins(bins)
 	, mPartitionBuffer(graphicsManager->GetDevice(), mPreferences.PartitionCount)
 	, mPartitionBounds(graphicsManager->GetDevice(), mPreferences.PartitionCount)
@@ -54,7 +55,7 @@ SDSMShadowManager::SDSMShadowManager(GraphicsManager *graphicsManager, int bins)
 	device->CreateBuffer(&perFrameConstantBufferDesc, 0, &mPerFrameConstants);
 
 	mCurrentConstants.mScatterTileDim = 64;
-	mCurrentConstants.mReduceTileDim = 128;
+	mCurrentConstants.mReduceTileDim = 128; //Texture size / 8
 	mCurrentConstants.mDilationFactor = 0.01f;
 
 	mShadowMapToEVSMMaterial = graphicsManager->GetMaterialManager()->GetShadowMapToEVSMMaterial();
@@ -188,6 +189,11 @@ void SDSMShadowManager::UpdateShaderConstants(ID3D11DeviceContext *d3dDeviceCont
 	constants->mCameraNearFar = D3DXVECTOR4(cameraNear, cameraFar, 0.0f, 0.0f);
 
 	d3dDeviceContext->Unmap(mPerFrameConstants, 0);
+}
+
+void SDSMShadowManager::ComputeShadowPartitions()
+{
+
 }
 
 ID3D11ShaderResourceView* SDSMShadowManager::ComputeLogPartitionsFromGBuffer(ID3D11DeviceContext *d3dDeviceContext, unsigned int gbufferTexturesNum, ID3D11ShaderResourceView** gbufferTextures,
@@ -357,3 +363,4 @@ void SDSMShadowManager::BoxBlur(Direct3DManager *direct3DManager, unsigned int p
 	BoxBlurPass(direct3DManager, mShadowEVSMBlurTexture->GetShaderResourceView(0), mShadowEVSMTextures[partitionIndex]->GetRenderTargetView(0),
 		partitionIndex, partitionSRV, &viewport, 1, scene);
 }
+*/

@@ -21,6 +21,8 @@ ShaderManager::~ShaderManager()
 	mShaderTechniqueLookup.clear();
 
 	delete mRootSignatureManager;
+
+    ShaderPipelineStateCreator::DestroyPipelineStates();
 }
 
 ShaderPSO *ShaderManager::GetShader(std::string shaderName, ShaderPipelinePermutation permutation)

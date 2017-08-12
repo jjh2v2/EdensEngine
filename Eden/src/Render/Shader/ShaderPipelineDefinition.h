@@ -49,6 +49,10 @@ enum ShaderRenderStateType
 	Render_Standard_NoDepth = 1
 };
 
+enum ShaderInputLayoutType
+{
+    InputLayout_Standard = 0
+};
 
 struct ShaderPipelineDefinition
 {
@@ -121,25 +125,42 @@ struct ShaderPipelineRenderState
 
 struct ShaderPipelinePermutation
 {
-	ShaderPipelinePermutation(ShaderRenderStateType renderType, ShaderTargetStateType targetType)
+	ShaderPipelinePermutation(ShaderRenderStateType renderType, ShaderTargetStateType targetType, ShaderInputLayoutType layoutType)
 	{
 		RenderStateType = renderType;
 		TargetStateType = targetType;
+        InputLayoutType = layoutType;
 	}
 
 	bool operator < (const ShaderPipelinePermutation &permutation) const
 	{
-		return RenderStateType != permutation.RenderStateType ?
-			RenderStateType < permutation.RenderStateType :
-			TargetStateType < permutation.TargetStateType;
+        if (RenderStateType != permutation.RenderStateType)
+        {
+            return RenderStateType < permutation.RenderStateType;
+        }
+        else if (TargetStateType != permutation.TargetStateType)
+        {
+            return TargetStateType < permutation.TargetStateType;
+        }
+        else
+        {
+            return InputLayoutType < permutation.InputLayoutType;
+        }
 	}
 
 	bool operator == (const ShaderPipelinePermutation &permutation) const
 	{
-		return (RenderStateType == permutation.RenderStateType) && (TargetStateType == permutation.TargetStateType);
+		return (RenderStateType == permutation.RenderStateType) && (TargetStateType == permutation.TargetStateType) && (InputLayoutType == permutation.InputLayoutType);
 	}
 
 
 	ShaderRenderStateType RenderStateType;
 	ShaderTargetStateType TargetStateType;
+    ShaderInputLayoutType InputLayoutType;
+};
+
+struct ShaderPipelineInputLayout
+{
+    D3D12_INPUT_ELEMENT_DESC *InputElementDescs;
+    D3D12_INPUT_LAYOUT_DESC   InputLayoutDesc;
 };

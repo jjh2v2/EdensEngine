@@ -78,12 +78,15 @@ struct SDSMShadowPreferences
     unsigned int PartitionCount;
 };
 */
+/*
 class SDSMShadowManager
 {
 public:
 	// NOTE: tileDim must be a multiple of 32
 	SDSMShadowManager(GraphicsManager *graphicsManager, int bins);
 	~SDSMShadowManager();
+
+    void ComputeShadowPartitions();
 
 	ID3D11ShaderResourceView* ComputeLogPartitionsFromGBuffer(ID3D11DeviceContext *d3dDeviceContext, unsigned int gbufferTexturesNum, ID3D11ShaderResourceView** gbufferTextures,
 		int screenWidth, int screenHeight);
@@ -145,3 +148,4 @@ private:
 
 	D3D11_VIEWPORT mShadowViewport;
 };
+*/

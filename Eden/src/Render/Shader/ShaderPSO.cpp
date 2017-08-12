@@ -1,9 +1,12 @@
 #include "Render/Shader/ShaderPSO.h"
 
-ShaderPSO::ShaderPSO(ID3D12Device* device, Shader *shader, ShaderPipelineRenderState &renderState, ShaderPipelineTargetState &targetState, ID3D12RootSignature *rootSignature)
+ShaderPSO::ShaderPSO(ID3D12Device* device, Shader *shader, ShaderPipelineRenderState &renderState, ShaderPipelineTargetState &targetState, ShaderPipelineInputLayout &layout, ID3D12RootSignature *rootSignature)
 {
+    //D3D12_COMPUTE_PIPELINE_STATE_DESC computePipelineStateDesc = {};
+    //computePipelineStateDesc.
+
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineStateDesc = {};
-	pipelineStateDesc.InputLayout = shader->GetInputLayoutDesc();
+    pipelineStateDesc.InputLayout = layout.InputLayoutDesc;
 	pipelineStateDesc.pRootSignature = rootSignature;
 	pipelineStateDesc.VS = CD3DX12_SHADER_BYTECODE(shader->GetVertexShader());
 	pipelineStateDesc.PS = CD3DX12_SHADER_BYTECODE(shader->GetPixelShader());

@@ -22,8 +22,9 @@ void ShaderTechnique::AddAndCompilePermutation(ID3D12Device *device, const Shade
 {
 	ShaderPipelineRenderState &renderState = ShaderPipelineStateCreator::GetPipelineRenderState(permutation.RenderStateType);
 	ShaderPipelineTargetState &targetState = ShaderPipelineStateCreator::GetPipelineTargetState(permutation.TargetStateType);
+    ShaderPipelineInputLayout &inputLayout = ShaderPipelineStateCreator::GetPipelineInputLayout(permutation.InputLayoutType);
 
-	ShaderPSO *newShaderPSO = new ShaderPSO(device, mShader, renderState, targetState, rootSignature);
+	ShaderPSO *newShaderPSO = new ShaderPSO(device, mShader, renderState, targetState, inputLayout, rootSignature);
 	mShaderPipelines.Add(newShaderPSO);
 
 	mShaderPipelineMap.insert(std::pair<ShaderPipelinePermutation, ShaderPSO*>(permutation, newShaderPSO));

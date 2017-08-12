@@ -120,57 +120,6 @@ ID3DBlob *Shader::GetShaderCode(const std::string &compiledShaderFileLocation, W
 
 bool Shader::Initialize(ID3D12Device* device, ShaderPipelineDefinition &initData)
 {
-	mInputElementDescs[0].SemanticName = "POSITION";
-	mInputElementDescs[0].SemanticIndex = 0;
-	mInputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	mInputElementDescs[0].InputSlot = 0;
-	mInputElementDescs[0].AlignedByteOffset = 0;
-	mInputElementDescs[0].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-	mInputElementDescs[0].InstanceDataStepRate = 0;
-
-	mInputElementDescs[1].SemanticName = "TEXCOORD";
-	mInputElementDescs[1].SemanticIndex = 0;
-	mInputElementDescs[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	mInputElementDescs[1].InputSlot = 0;
-	mInputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-	mInputElementDescs[1].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-	mInputElementDescs[1].InstanceDataStepRate = 0;
-
-	mInputElementDescs[2].SemanticName = "NORMAL";
-	mInputElementDescs[2].SemanticIndex = 0;
-	mInputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	mInputElementDescs[2].InputSlot = 0;
-	mInputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-	mInputElementDescs[2].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-	mInputElementDescs[2].InstanceDataStepRate = 0;
-
-	mInputElementDescs[3].SemanticName = "TANGENT";
-	mInputElementDescs[3].SemanticIndex = 0;
-	mInputElementDescs[3].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	mInputElementDescs[3].InputSlot = 0;
-	mInputElementDescs[3].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-	mInputElementDescs[3].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-	mInputElementDescs[3].InstanceDataStepRate = 0;
-
-	mInputElementDescs[4].SemanticName = "BINORMAL";
-	mInputElementDescs[4].SemanticIndex = 0;
-	mInputElementDescs[4].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	mInputElementDescs[4].InputSlot = 0;
-	mInputElementDescs[4].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-	mInputElementDescs[4].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-	mInputElementDescs[4].InstanceDataStepRate = 0;
-
-	mInputElementDescs[5].SemanticName = "COLOR";
-	mInputElementDescs[5].SemanticIndex = 0;
-	mInputElementDescs[5].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	mInputElementDescs[5].InputSlot = 0;
-	mInputElementDescs[5].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-	mInputElementDescs[5].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-	mInputElementDescs[5].InstanceDataStepRate = 0;
-
-	mInputLayoutDesc.pInputElementDescs = mInputElementDescs;
-	mInputLayoutDesc.NumElements = 6;
-
 	std::string outputLocation = "../Eden/data/HLSL/Precompiled/";
 	UINT shaderFlags = D3DCOMPILE_WARNINGS_ARE_ERRORS;
 

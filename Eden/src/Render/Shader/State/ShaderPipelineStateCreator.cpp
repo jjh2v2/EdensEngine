@@ -7,6 +7,7 @@ CD3DX12_BLEND_DESC ShaderPipelineStateCreator::mBlendDescs[];
 
 std::map<ShaderRenderStateType, ShaderPipelineRenderState> ShaderPipelineStateCreator::mPipelineRenderStateMap;
 std::map<ShaderTargetStateType, ShaderPipelineTargetState> ShaderPipelineStateCreator::mPipelineTargetStateMap;
+std::map<ShaderInputLayoutType, ShaderPipelineInputLayout> ShaderPipelineStateCreator::mPipelineInputLayoutMap;
 
 ShaderPipelineStateCreator::ShaderPipelineStateCreator()
 {
@@ -16,6 +17,20 @@ ShaderPipelineStateCreator::ShaderPipelineStateCreator()
 ShaderPipelineStateCreator::~ShaderPipelineStateCreator()
 {
 
+}
+
+void ShaderPipelineStateCreator::DestroyPipelineStates()
+{
+    mPipelineRenderStateMap.clear();
+    mPipelineTargetStateMap.clear();
+
+    for (auto iter = mPipelineInputLayoutMap.begin(); iter != mPipelineInputLayoutMap.end(); iter++)
+    {
+        if (iter->second.InputElementDescs)
+        {
+            delete [] iter->second.InputElementDescs;
+        }
+    }
 }
 
 void ShaderPipelineStateCreator::BuildPipelineStates()
@@ -177,4 +192,59 @@ void ShaderPipelineStateCreator::BuildPipelineStates()
 	single16NoDepthTarget.DepthStencilFormat = DXGI_FORMAT_UNKNOWN;
 
 	mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_Single_16_NoDepth, single16NoDepthTarget));
+
+    ShaderPipelineInputLayout standardInputLayout;
+    standardInputLayout.InputElementDescs = new D3D12_INPUT_ELEMENT_DESC[6];
+    standardInputLayout.InputElementDescs[0].SemanticName = "POSITION";
+    standardInputLayout.InputElementDescs[0].SemanticIndex = 0;
+    standardInputLayout.InputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    standardInputLayout.InputElementDescs[0].InputSlot = 0;
+    standardInputLayout.InputElementDescs[0].AlignedByteOffset = 0;
+    standardInputLayout.InputElementDescs[0].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+    standardInputLayout.InputElementDescs[0].InstanceDataStepRate = 0;
+
+    standardInputLayout.InputElementDescs[1].SemanticName = "TEXCOORD";
+    standardInputLayout.InputElementDescs[1].SemanticIndex = 0;
+    standardInputLayout.InputElementDescs[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    standardInputLayout.InputElementDescs[1].InputSlot = 0;
+    standardInputLayout.InputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+    standardInputLayout.InputElementDescs[1].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+    standardInputLayout.InputElementDescs[1].InstanceDataStepRate = 0;
+
+    standardInputLayout.InputElementDescs[2].SemanticName = "NORMAL";
+    standardInputLayout.InputElementDescs[2].SemanticIndex = 0;
+    standardInputLayout.InputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+    standardInputLayout.InputElementDescs[2].InputSlot = 0;
+    standardInputLayout.InputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+    standardInputLayout.InputElementDescs[2].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+    standardInputLayout.InputElementDescs[2].InstanceDataStepRate = 0;
+
+    standardInputLayout.InputElementDescs[3].SemanticName = "TANGENT";
+    standardInputLayout.InputElementDescs[3].SemanticIndex = 0;
+    standardInputLayout.InputElementDescs[3].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+    standardInputLayout.InputElementDescs[3].InputSlot = 0;
+    standardInputLayout.InputElementDescs[3].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+    standardInputLayout.InputElementDescs[3].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+    standardInputLayout.InputElementDescs[3].InstanceDataStepRate = 0;
+
+    standardInputLayout.InputElementDescs[4].SemanticName = "BINORMAL";
+    standardInputLayout.InputElementDescs[4].SemanticIndex = 0;
+    standardInputLayout.InputElementDescs[4].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+    standardInputLayout.InputElementDescs[4].InputSlot = 0;
+    standardInputLayout.InputElementDescs[4].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+    standardInputLayout.InputElementDescs[4].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+    standardInputLayout.InputElementDescs[4].InstanceDataStepRate = 0;
+
+    standardInputLayout.InputElementDescs[5].SemanticName = "COLOR";
+    standardInputLayout.InputElementDescs[5].SemanticIndex = 0;
+    standardInputLayout.InputElementDescs[5].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    standardInputLayout.InputElementDescs[5].InputSlot = 0;
+    standardInputLayout.InputElementDescs[5].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+    standardInputLayout.InputElementDescs[5].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+    standardInputLayout.InputElementDescs[5].InstanceDataStepRate = 0;
+
+    standardInputLayout.InputLayoutDesc.pInputElementDescs = standardInputLayout.InputElementDescs;
+    standardInputLayout.InputLayoutDesc.NumElements = 6;
+    
+    mPipelineInputLayoutMap.insert(std::pair<ShaderInputLayoutType, ShaderPipelineInputLayout>(InputLayout_Standard, standardInputLayout));
 }

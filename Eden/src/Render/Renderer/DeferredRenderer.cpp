@@ -218,7 +218,7 @@ void DeferredRenderer::RenderGBuffer()
 	graphicsContext->SetRenderTargets(3, gbufferRtvHandles, mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle());
 
 	//shader setup
-	ShaderPipelinePermutation permutation(Render_Standard, Target_GBuffer);
+	ShaderPipelinePermutation permutation(Render_Standard, Target_GBuffer, InputLayout_Standard);
 	ShaderPSO *shaderPSO = mGraphicsManager->GetShaderManager()->GetShader("GBufferLit", permutation);
 	graphicsContext->SetPipelineState(shaderPSO);
 	graphicsContext->SetRootSignature(shaderPSO->GetRootSignature());
@@ -261,7 +261,7 @@ void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
 
 	graphicsContext->SetRenderTarget(backBuffer->GetRenderTargetViewHandle().GetCPUHandle());
 
-	ShaderPipelinePermutation bbPermutation(Render_Standard_NoDepth, Target_Standard_BackBuffer_NoDepth);
+	ShaderPipelinePermutation bbPermutation(Render_Standard_NoDepth, Target_Standard_BackBuffer_NoDepth, InputLayout_Standard);
 	ShaderPSO *copyShader = mGraphicsManager->GetShaderManager()->GetShader("SimpleCopy", bbPermutation);
 	graphicsContext->SetPipelineState(copyShader);
 	graphicsContext->SetRootSignature(copyShader->GetRootSignature());
