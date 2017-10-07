@@ -24,7 +24,4 @@ private:
 	ID3DBlob *mHullShader;
 	ID3DBlob *mDomainShader;
     ID3DBlob *mComputeShader;
-
-	bool mUsesTessellation;
-	bool mHasPixelShader;
 };

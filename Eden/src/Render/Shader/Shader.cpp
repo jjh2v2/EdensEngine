@@ -4,12 +4,11 @@
 
 Shader::Shader(ID3D12Device* device, ShaderPipelineDefinition &initData)
 {
-	mHasPixelShader = false;
-	mUsesTessellation = false;
 	mVertexShader = NULL;
 	mPixelShader = NULL;
 	mHullShader = NULL;
 	mDomainShader = NULL;
+    mComputeShader = NULL;
 
 	Initialize(device, initData);
 }
@@ -39,6 +38,12 @@ Shader::~Shader()
 		mHullShader->Release();
 		mHullShader = NULL;
 	}
+
+    if (mComputeShader)
+    {
+        mComputeShader->Release();
+        mComputeShader = NULL;
+    }
 }
 
 
@@ -123,25 +128,30 @@ bool Shader::Initialize(ID3D12Device* device, ShaderPipelineDefinition &initData
 	std::string outputLocation = "../Eden/data/HLSL/Precompiled/";
 	UINT shaderFlags = D3DCOMPILE_WARNINGS_ARE_ERRORS;
 
-	std::string vertexShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.VSEntry + ".ecs";
-	mVertexShader = GetShaderCode(vertexShaderCompiledLocation, initData.VSFilePath, initData.VSEntry.c_str(), "vs_5_0", shaderFlags, initData.Defines);
-	
-	if (initData.HasPixelShader)
-	{
-		std::string pixelShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.PSEntry + ".ecs";
-		mPixelShader = GetShaderCode(pixelShaderCompiledLocation, initData.PSFilePath, initData.PSEntry.c_str(), "ps_5_0", shaderFlags, initData.Defines);
-	}
+    if (initData.IsRenderShader)
+    {
+        std::string vertexShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.VSEntry + ".ecs";
+        mVertexShader = GetShaderCode(vertexShaderCompiledLocation, initData.VSFilePath, initData.VSEntry.c_str(), "vs_5_0", shaderFlags, initData.Defines);
 
-	if (initData.UsesTessellation)
-	{
-		std::string hullShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.HSEntry + ".ecs";
-		std::string domainShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.DSEntry + ".ecs";
-		mHullShader = GetShaderCode(hullShaderCompiledLocation, initData.HSFilePath, initData.HSEntry.c_str(), "hs_5_0", shaderFlags, initData.Defines);
-		mDomainShader = GetShaderCode(domainShaderCompiledLocation, initData.DSFilePath, initData.DSEntry.c_str(), "ds_5_0", shaderFlags, initData.Defines);
-	}
+        if (initData.HasPixelShader)
+        {
+            std::string pixelShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.PSEntry + ".ecs";
+            mPixelShader = GetShaderCode(pixelShaderCompiledLocation, initData.PSFilePath, initData.PSEntry.c_str(), "ps_5_0", shaderFlags, initData.Defines);
+        }
 
-	mUsesTessellation = initData.UsesTessellation;
-	mHasPixelShader = initData.HasPixelShader;
+        if (initData.HasTessellation)
+        {
+            std::string hullShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.HSEntry + ".ecs";
+            std::string domainShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.DSEntry + ".ecs";
+            mHullShader = GetShaderCode(hullShaderCompiledLocation, initData.HSFilePath, initData.HSEntry.c_str(), "hs_5_0", shaderFlags, initData.Defines);
+            mDomainShader = GetShaderCode(domainShaderCompiledLocation, initData.DSFilePath, initData.DSEntry.c_str(), "ds_5_0", shaderFlags, initData.Defines);
+        }
+    }
+    else
+    {
+        std::string computeShaderCompiledLocation = outputLocation + initData.ShaderOutputName + initData.CSEntry + ".ecs";
+        mComputeShader = GetShaderCode(computeShaderCompiledLocation, initData.CSFilePath, initData.CSEntry.c_str(), "cs_5_0", shaderFlags, initData.Defines);
+    }
 
 	return true;
 }

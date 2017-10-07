@@ -80,71 +80,95 @@ ShaderManager::ShaderTechniqueInfo ShaderManager::LoadShader(ID3D12Device *devic
 	{
 		std::getline(file, line);
 
-		if (strcmp(line.c_str(), "VertexShader") == 0)
-		{
-			std::getline(file, line);
-			StringConverter::RemoveCharsFromString(line, removeChars);
-			line.insert(0, shaderLocation);
-			StringConverter::StringToWCHAR(line, pipelineDefinition.VSFilePath, 256);
+        if (strcmp(line.c_str(), "ComputeShader") == 0)
+        {
+            pipelineDefinition.IsRenderShader = false;
 
-			std::getline(file, line);
-			StringConverter::RemoveCharsFromString(line, removeChars);
-			pipelineDefinition.VSEntry = line;
+            std::getline(file, line);
+            StringConverter::RemoveCharsFromString(line, removeChars);
+            line.insert(0, shaderLocation);
+            StringConverter::StringToWCHAR(line, pipelineDefinition.CSFilePath, 256);
 
-			std::getline(file, line);
-		}
-		if (strcmp(line.c_str(), "HullShader") == 0)
-		{
-			pipelineDefinition.UsesTessellation = true;
+            std::getline(file, line);
+            StringConverter::RemoveCharsFromString(line, removeChars);
+            pipelineDefinition.CSEntry = line;
 
-			std::getline(file, line);
-			StringConverter::RemoveCharsFromString(line, removeChars);
-			line.insert(0, shaderLocation);
-			StringConverter::StringToWCHAR(line, pipelineDefinition.HSFilePath, 256);
+            std::getline(file, line);
+        }
+        else
+        {
+            pipelineDefinition.IsRenderShader = true;
 
-			std::getline(file, line);
-			StringConverter::RemoveCharsFromString(line, removeChars);
-			pipelineDefinition.HSEntry = line;
+            if (strcmp(line.c_str(), "VertexShader") == 0)
+            {
+                std::getline(file, line);
+                StringConverter::RemoveCharsFromString(line, removeChars);
+                line.insert(0, shaderLocation);
+                StringConverter::StringToWCHAR(line, pipelineDefinition.VSFilePath, 256);
 
-			std::getline(file, line);
-		}
-		if (strcmp(line.c_str(), "DomainShader") == 0)
-		{
-			pipelineDefinition.UsesTessellation = true;
+                std::getline(file, line);
+                StringConverter::RemoveCharsFromString(line, removeChars);
+                pipelineDefinition.VSEntry = line;
 
-			std::getline(file, line);
-			StringConverter::RemoveCharsFromString(line, removeChars);
-			line.insert(0, shaderLocation);
-			StringConverter::StringToWCHAR(line, pipelineDefinition.DSFilePath, 256);
+                std::getline(file, line);
+            }
 
-			std::getline(file, line);
-			StringConverter::RemoveCharsFromString(line, removeChars);
-			pipelineDefinition.DSEntry = line;
+            if (strcmp(line.c_str(), "HullShader") == 0)
+            {
+                pipelineDefinition.HasTessellation = true;
 
-			std::getline(file, line);
-		}
-		if (strcmp(line.c_str(), "PixelShader") == 0)
-		{
-			pipelineDefinition.HasPixelShader = true;
-			
-			std::getline(file, line);
-			StringConverter::RemoveCharsFromString(line, removeChars);
-			line.insert(0, shaderLocation);
-			StringConverter::StringToWCHAR(line, pipelineDefinition.PSFilePath, 256);
+                std::getline(file, line);
+                StringConverter::RemoveCharsFromString(line, removeChars);
+                line.insert(0, shaderLocation);
+                StringConverter::StringToWCHAR(line, pipelineDefinition.HSFilePath, 256);
 
-			std::getline(file, line);
-			StringConverter::RemoveCharsFromString(line, removeChars);
-			pipelineDefinition.PSEntry = line;
+                std::getline(file, line);
+                StringConverter::RemoveCharsFromString(line, removeChars);
+                pipelineDefinition.HSEntry = line;
 
-			std::getline(file, line);
-		}
-		if (strcmp(line.c_str(), "RootSignature") == 0)
-		{
-			std::getline(file, line);
-			StringConverter::RemoveCharsFromString(line, removeChars);
-			uint32 rootSignatureID = StringConverter::StringToUint(line);
-			techniqueInfo.SignatureType = (RootSignatureType)rootSignatureID;
-		}
+                std::getline(file, line);
+            }
+
+            if (strcmp(line.c_str(), "DomainShader") == 0)
+            {
+                pipelineDefinition.HasTessellation = true;
+
+                std::getline(file, line);
+                StringConverter::RemoveCharsFromString(line, removeChars);
+                line.insert(0, shaderLocation);
+                StringConverter::StringToWCHAR(line, pipelineDefinition.DSFilePath, 256);
+
+                std::getline(file, line);
+                StringConverter::RemoveCharsFromString(line, removeChars);
+                pipelineDefinition.DSEntry = line;
+
+                std::getline(file, line);
+            }
+
+            if (strcmp(line.c_str(), "PixelShader") == 0)
+            {
+                pipelineDefinition.HasPixelShader = true;
+
+                std::getline(file, line);
+                StringConverter::RemoveCharsFromString(line, removeChars);
+                line.insert(0, shaderLocation);
+                StringConverter::StringToWCHAR(line, pipelineDefinition.PSFilePath, 256);
+
+                std::getline(file, line);
+                StringConverter::RemoveCharsFromString(line, removeChars);
+                pipelineDefinition.PSEntry = line;
+
+                std::getline(file, line);
+            }
+        }
+
+        if (strcmp(line.c_str(), "RootSignature") == 0)
+        {
+            std::getline(file, line);
+            StringConverter::RemoveCharsFromString(line, removeChars);
+            uint32 rootSignatureID = StringConverter::StringToUint(line);
+            techniqueInfo.SignatureType = (RootSignatureType)rootSignatureID;
+        }
 	}
 
 	file.close();

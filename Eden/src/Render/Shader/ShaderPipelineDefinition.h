@@ -36,45 +36,55 @@ enum ShaderBlendStateType
 
 enum ShaderTargetStateType
 {
-	Target_GBuffer = 0,
-	Target_Standard_BackBuffer = 1,
-	Target_Standard_BackBuffer_NoDepth = 2,
-	Target_Single_16 = 3,
-	Target_Single_16_NoDepth = 4
+    Target_None = 0,
+	Target_GBuffer = 1,
+	Target_Standard_BackBuffer = 2,
+	Target_Standard_BackBuffer_NoDepth = 3,
+	Target_Single_16 = 4,
+	Target_Single_16_NoDepth = 5
 };
 
 enum ShaderRenderStateType
 {
-	Render_Standard = 0,
-	Render_Standard_NoDepth = 1
+    Render_None = 0,
+	Render_Standard = 1,
+	Render_Standard_NoDepth = 2
 };
 
 enum ShaderInputLayoutType
 {
-    InputLayout_Standard = 0
+    InputLayout_None = 0,
+    InputLayout_Standard = 1
 };
 
 struct ShaderPipelineDefinition
 {
 	ShaderPipelineDefinition()
 	{
+        IsRenderShader = false;
 		HasPixelShader = false;
-		UsesTessellation = false;
+        HasTessellation = false;
 		Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 		Defines = NULL;
 	}
 
 	std::string ShaderOutputName;
+
 	WCHAR VSFilePath[256];
 	WCHAR PSFilePath[256];
 	WCHAR HSFilePath[256];
 	WCHAR DSFilePath[256];
+    WCHAR CSFilePath[256];
+
 	std::string VSEntry;
 	std::string PSEntry;
 	std::string HSEntry;
 	std::string DSEntry;
+    std::string CSEntry;
+
+    bool IsRenderShader;
 	bool HasPixelShader;
-	bool UsesTessellation;
+	bool HasTessellation;
 
 	D3D12_PRIMITIVE_TOPOLOGY_TYPE Topology;
 	D3D_SHADER_MACRO *Defines;
@@ -125,6 +135,13 @@ struct ShaderPipelineRenderState
 
 struct ShaderPipelinePermutation
 {
+    ShaderPipelinePermutation()
+    {
+        RenderStateType = Render_None;
+        TargetStateType = Target_None;
+        InputLayoutType = InputLayout_None;
+    }
+
 	ShaderPipelinePermutation(ShaderRenderStateType renderType, ShaderTargetStateType targetType, ShaderInputLayoutType layoutType)
 	{
 		RenderStateType = renderType;

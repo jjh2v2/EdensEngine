@@ -2,9 +2,6 @@
 
 ShaderPSO::ShaderPSO(ID3D12Device* device, Shader *shader, ShaderPipelineRenderState &renderState, ShaderPipelineTargetState &targetState, ShaderPipelineInputLayout &layout, ID3D12RootSignature *rootSignature)
 {
-    //D3D12_COMPUTE_PIPELINE_STATE_DESC computePipelineStateDesc = {};
-    //computePipelineStateDesc.
-
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineStateDesc = {};
     pipelineStateDesc.InputLayout = layout.InputLayoutDesc;
 	pipelineStateDesc.pRootSignature = rootSignature;
@@ -39,6 +36,17 @@ ShaderPSO::ShaderPSO(ID3D12Device* device, Shader *shader, ShaderPipelineRenderS
 	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateGraphicsPipelineState(&pipelineStateDesc, IID_PPV_ARGS(&mPipelineState)));
 
 	mRootSignature = rootSignature;
+}
+
+ShaderPSO::ShaderPSO(ID3D12Device* device, Shader *shader, ID3D12RootSignature *rootSignature)
+{
+    D3D12_COMPUTE_PIPELINE_STATE_DESC pipelineStateDesc = {};
+    pipelineStateDesc.CS = CD3DX12_SHADER_BYTECODE(shader->GetComputeShader());
+    pipelineStateDesc.pRootSignature = rootSignature;
+
+    Direct3DUtils::ThrowIfHRESULTFailed(device->CreateComputePipelineState(&pipelineStateDesc, IID_PPV_ARGS(&mPipelineState)));
+
+    mRootSignature = rootSignature;
 }
 
 ShaderPSO::~ShaderPSO()
