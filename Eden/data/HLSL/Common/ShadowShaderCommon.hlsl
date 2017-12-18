@@ -4,8 +4,16 @@ struct ShadowPartition
 {
     float3 scale; // Texture coordinate 0 - 1 space
     float3 bias;
-    float intervalBegin;
-    float intervalEnd;
+    float  intervalBegin;
+    float  intervalEnd;
+};
+
+struct ShadowPartitionUint
+{
+    uint3 scale;
+    uint3 bias;
+    uint  intervalBegin;
+    uint  intervalEnd;
 };
 
 float2 GetEVSMExponents(ShadowPartition partition)

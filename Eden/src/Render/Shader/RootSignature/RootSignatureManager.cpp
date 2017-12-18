@@ -47,7 +47,7 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 
 		mRootSignatures.Add(simpleColorSignature);
 	}
-
+    
 	{
 		//RootSignatureType_Simple_Copy
 		CD3DX12_DESCRIPTOR_RANGE ranges[2];
@@ -66,6 +66,23 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 
 		mRootSignatures.Add(simpleCopySignature);
 	}
+
+    {
+        //RootSignatureType_Clear_Shadow_Partitions
+        CD3DX12_DESCRIPTOR_RANGE ranges[1];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); //1 buffer, u0
+
+        CD3DX12_ROOT_PARAMETER rootParameters[1];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
+
+        RootSignatureInfo clearShadowPartitionSignature;
+        clearShadowPartitionSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_NONE);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&clearShadowPartitionSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &clearShadowPartitionSignature.RootSignatureBlob, &clearShadowPartitionSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, clearShadowPartitionSignature.RootSignatureBlob->GetBufferPointer(), clearShadowPartitionSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&clearShadowPartitionSignature.RootSignature)));
+
+        mRootSignatures.Add(clearShadowPartitionSignature);
+    }
 }
 
 RootSignatureManager::~RootSignatureManager()

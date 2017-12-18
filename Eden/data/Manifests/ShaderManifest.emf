@@ -2,3 +2,4 @@
 GBufferLit.esh
 SimpleColor.esh
 SimpleCopy.esh
+Compute/ClearShadowPartitions.esh

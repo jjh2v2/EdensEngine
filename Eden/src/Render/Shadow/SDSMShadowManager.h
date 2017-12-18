@@ -1,5 +1,15 @@
 #pragma once
 
+class SDSMShadowManager
+{
+public:
+    SDSMShadowManager();
+    ~SDSMShadowManager();
+
+private:
+
+};
+
 /*
 struct SDSMPartitionsConstants
 {

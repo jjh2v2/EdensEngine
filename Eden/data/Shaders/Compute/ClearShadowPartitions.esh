@@ -1,0 +1,5 @@
+ComputeShader
+[Shadow/SDSMShadows.hlsl]
+[ClearShadowPartitions]
+RootSignature
+[3]

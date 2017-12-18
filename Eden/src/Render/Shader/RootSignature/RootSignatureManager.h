@@ -8,6 +8,7 @@ enum RootSignatureType
 	RootSignatureType_GBuffer = 0,
 	RootSignatureType_Simple_Color = 1,
 	RootSignatureType_Simple_Copy = 2,
+    RootSignatureType_Clear_Shadow_Partitions = 3,
 	NumRootSignatures
 };
 
