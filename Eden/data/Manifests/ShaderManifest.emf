@@ -3,3 +3,6 @@ GBufferLit.esh
 SimpleColor.esh
 SimpleCopy.esh
 Compute/ClearShadowPartitions.esh
+Compute/CalculateDepthBufferBounds.esh
+Compute/CalculateLogPartitionsFromDepthBounds.esh
+Compute/ClearShadowPartitionBounds.esh

@@ -9,6 +9,8 @@ enum RootSignatureType
 	RootSignatureType_Simple_Color = 1,
 	RootSignatureType_Simple_Copy = 2,
     RootSignatureType_Clear_Shadow_Partitions = 3,
+    RootSignatureType_Calculate_Depth_Buffer_Bounds = 4,
+    RootSignatureType_Calculate_Log_Partitions_From_Depth = 5,
 	NumRootSignatures
 };
 

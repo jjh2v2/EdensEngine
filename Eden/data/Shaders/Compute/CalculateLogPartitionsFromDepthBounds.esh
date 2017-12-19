@@ -1,0 +1,5 @@
+ComputeShader
+[Shadow/SDSMShadows.hlsl]
+[CalculateLogPartitionsFromDepthBounds]
+RootSignature
+[5]

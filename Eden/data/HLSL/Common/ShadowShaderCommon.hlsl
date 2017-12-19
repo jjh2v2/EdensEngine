@@ -16,6 +16,32 @@ struct ShadowPartitionUint
     uint  intervalEnd;
 };
 
+struct ShadowPartitionBoundUint
+{
+    uint3 minCoord;
+    uint3 maxCoord;
+};
+
+struct ShadowPartitionBoundFloat
+{
+    float3 minCoord;
+    float3 maxCoord;
+};
+
+float GetLogPartitionFromDepthRange(uint partitionIndex, uint numPartitions, float minDepth, float maxDepth)
+{
+    float depthResult = maxDepth;
+    
+    if (partitionIndex < numPartitions) 
+    {
+        float depthRatio = maxDepth / minDepth;
+        float partitionExponent = float(partitionIndex) * (1.0f / float(numPartitions));
+        depthResult = minDepth * pow(abs(depthRatio), partitionExponent); //abs to make hlsl compiler happy
+    }
+    
+    return depthResult;
+}
+
 float2 GetEVSMExponents(ShadowPartition partition)
 {
     float2 lightSpaceExponents = float2(800.0f, 100.0f);

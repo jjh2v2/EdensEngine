@@ -83,6 +83,46 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 
         mRootSignatures.Add(clearShadowPartitionSignature);
     }
+
+    {
+        //RootSignatureType_Calculate_Depth_Buffer_Bounds
+        CD3DX12_DESCRIPTOR_RANGE ranges[3];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); //1 buffer, u0
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); //1 texture (depth buffer), t0
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv, b0
+
+        CD3DX12_ROOT_PARAMETER rootParameters[3];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[2].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_ALL);
+
+        RootSignatureInfo calculateDepthBoundsSignature;
+        calculateDepthBoundsSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_NONE);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&calculateDepthBoundsSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &calculateDepthBoundsSignature.RootSignatureBlob, &calculateDepthBoundsSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, calculateDepthBoundsSignature.RootSignatureBlob->GetBufferPointer(), calculateDepthBoundsSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&calculateDepthBoundsSignature.RootSignature)));
+
+        mRootSignatures.Add(calculateDepthBoundsSignature);
+    }
+
+    {
+        //RootSignatureType_Calculate_Log_Partitions_From_Depth
+        CD3DX12_DESCRIPTOR_RANGE ranges[2];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); //1 buffer, u0
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv, b0
+
+        CD3DX12_ROOT_PARAMETER rootParameters[2];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);
+
+        RootSignatureInfo logPartitionsFromDepthSignature;
+        logPartitionsFromDepthSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_NONE);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&logPartitionsFromDepthSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &logPartitionsFromDepthSignature.RootSignatureBlob, &logPartitionsFromDepthSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, logPartitionsFromDepthSignature.RootSignatureBlob->GetBufferPointer(), logPartitionsFromDepthSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&logPartitionsFromDepthSignature.RootSignature)));
+
+        mRootSignatures.Add(logPartitionsFromDepthSignature);
+    }
 }
 
 RootSignatureManager::~RootSignatureManager()
