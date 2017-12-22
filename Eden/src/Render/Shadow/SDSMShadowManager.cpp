@@ -1,3 +1,20 @@
+#include "Render/Shadow/SDSMShadowManager.h"
+
+SDSMShadowManager::SDSMShadowManager()
+{
+
+}
+
+SDSMShadowManager::~SDSMShadowManager()
+{
+
+}
+
+void SDSMShadowManager::ComputeShadowPartitions()
+{
+
+}
+
 /*
 #include "Render/Shadow/SDSMShadowManager.h"
 #include <d3d11.h>
@@ -56,7 +73,7 @@ SDSMShadowManager::SDSMShadowManager(GraphicsManager *graphicsManager, int bins)
 
 	mCurrentConstants.mScatterTileDim = 64;
 	mCurrentConstants.mReduceTileDim = 128; //Texture size / 8
-	mCurrentConstants.mDilationFactor = 0.01f;
+	mCurrentConstants.mDilationFactor = 0.01f; 10.0f / float(shadowTextureDim);
 
 	mShadowMapToEVSMMaterial = graphicsManager->GetMaterialManager()->GetShadowMapToEVSMMaterial();
 	mShadowMapBlurMaterial = graphicsManager->GetMaterialManager()->GetBoxBlurMaterial();

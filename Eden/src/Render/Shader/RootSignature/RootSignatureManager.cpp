@@ -123,6 +123,65 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 
         mRootSignatures.Add(logPartitionsFromDepthSignature);
     }
+
+    {
+        //RootSignatureType_Clear_Shadow_Partition_Bounds
+        CD3DX12_DESCRIPTOR_RANGE ranges[1];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1); //1 buffer, u1
+
+        CD3DX12_ROOT_PARAMETER rootParameters[1];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
+
+        RootSignatureInfo clearShadowPartitionBoundsSignature;
+        clearShadowPartitionBoundsSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_NONE);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&clearShadowPartitionBoundsSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &clearShadowPartitionBoundsSignature.RootSignatureBlob, &clearShadowPartitionBoundsSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, clearShadowPartitionBoundsSignature.RootSignatureBlob->GetBufferPointer(), clearShadowPartitionBoundsSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&clearShadowPartitionBoundsSignature.RootSignature)));
+
+        mRootSignatures.Add(clearShadowPartitionBoundsSignature);
+    }
+
+    {
+        //RootSignatureType_Calculate_Partition_Bounds
+        CD3DX12_DESCRIPTOR_RANGE ranges[3];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1); //1 buffer, u1
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0); //2 textures, depth texture and partitions
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv, b0
+
+        CD3DX12_ROOT_PARAMETER rootParameters[3];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[2].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_ALL);
+
+        RootSignatureInfo calculatePartitionBoundsSignature;
+        calculatePartitionBoundsSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_NONE);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&calculatePartitionBoundsSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &calculatePartitionBoundsSignature.RootSignatureBlob, &calculatePartitionBoundsSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, calculatePartitionBoundsSignature.RootSignatureBlob->GetBufferPointer(), calculatePartitionBoundsSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&calculatePartitionBoundsSignature.RootSignature)));
+
+        mRootSignatures.Add(calculatePartitionBoundsSignature);
+    }
+    
+    {
+        //RootSignatureType_Finalize_Partitions
+        CD3DX12_DESCRIPTOR_RANGE ranges[3];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); //1 buffer, u1
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2); //1 buffer, partition bounds
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv, b0
+
+        CD3DX12_ROOT_PARAMETER rootParameters[3];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[2].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_ALL);
+
+        RootSignatureInfo finalizePartitionsSignature;
+        finalizePartitionsSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_NONE);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&finalizePartitionsSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &finalizePartitionsSignature.RootSignatureBlob, &finalizePartitionsSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, finalizePartitionsSignature.RootSignatureBlob->GetBufferPointer(), finalizePartitionsSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&finalizePartitionsSignature.RootSignature)));
+
+        mRootSignatures.Add(finalizePartitionsSignature);
+    }
 }
 
 RootSignatureManager::~RootSignatureManager()

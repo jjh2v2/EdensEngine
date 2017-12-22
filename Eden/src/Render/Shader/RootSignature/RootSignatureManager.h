@@ -11,6 +11,9 @@ enum RootSignatureType
     RootSignatureType_Clear_Shadow_Partitions = 3,
     RootSignatureType_Calculate_Depth_Buffer_Bounds = 4,
     RootSignatureType_Calculate_Log_Partitions_From_Depth = 5,
+    RootSignatureType_Clear_Shadow_Partition_Bounds = 6,
+    RootSignatureType_Calculate_Partition_Bounds = 7,
+    RootSignatureType_Finalize_Partitions = 8,
 	NumRootSignatures
 };
 

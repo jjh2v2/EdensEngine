@@ -25,8 +25,8 @@ float3 DecodeSphereMap(float2 e)
 float3 GetViewPosition(float2 screenPosition, float viewSpaceDepth, matrix cameraProj)
 {
     float3 viewPosition;
-    viewPosition.xy = float2(screenPosition.x / cameraProj._11, screenPosition.y / cameraProj._22) * viewPosition.z;
     viewPosition.z = viewSpaceDepth;
+    viewPosition.xy = float2(screenPosition.x / cameraProj._11, screenPosition.y / cameraProj._22) * viewPosition.z;
     
     return viewPosition;
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include "Render/Buffer/GPUResource.h"
 
 class SDSMShadowManager
 {
@@ -6,7 +7,10 @@ public:
     SDSMShadowManager();
     ~SDSMShadowManager();
 
+    void ComputeShadowPartitions();
+
 private:
+    ConstantBuffer *mSDSMBuffer[FRAME_BUFFER_COUNT];
 
 };
 
@@ -96,7 +100,7 @@ public:
 	SDSMShadowManager(GraphicsManager *graphicsManager, int bins);
 	~SDSMShadowManager();
 
-    void ComputeShadowPartitions();
+    
 
 	ID3D11ShaderResourceView* ComputeLogPartitionsFromGBuffer(ID3D11DeviceContext *d3dDeviceContext, unsigned int gbufferTexturesNum, ID3D11ShaderResourceView** gbufferTextures,
 		int screenWidth, int screenHeight);

@@ -85,3 +85,33 @@ float GetShadowContribution(float3 texCoord, float3 texCoordDX, float3 texCoordD
     
     return min(posContrib, negContrib);
 }
+
+void ComputePartitionScaleAndBias(ShadowPartitionBoundFloat bounds, float4 lightSpaceBorder, float4 maxScale, float dilationFactor, out float3 scale, out float3 bias)
+{
+    float3 minTexCoord = bounds.minCoord;
+    float3 maxTexCoord = bounds.maxCoord;
+        
+    // Border gives space for softened edges
+    minTexCoord -= lightSpaceBorder.xyz;
+    maxTexCoord += lightSpaceBorder.xyz;
+        
+    scale = 1.0f / (maxTexCoord - minTexCoord);
+    bias = -minTexCoord * scale;
+
+    float oneMinusTwoFactor = 1.0f - 2.0f * dilationFactor;
+    scale *= oneMinusTwoFactor;
+    bias = dilationFactor + oneMinusTwoFactor * bias;
+    
+    // Clamp scale (but remain centered)
+    float3 center = float3(0.5f, 0.5f, 0.5f);
+    float3 clampedScale = min(scale, maxScale.xyz);
+    bias = (clampedScale / scale) * (bias - center) + center;
+    scale = clampedScale;
+    
+    if (scale.x < 0.0f) 
+    {
+        // empty partition
+        scale = asfloat(0x7F7FFFFF).xxx;
+        bias = scale;
+    }
+}

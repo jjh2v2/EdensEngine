@@ -1,5 +1,5 @@
 ComputeShader
 [Shadow/SDSMShadows.hlsl]
-[ClearShadowPartitionBounds]
+[FinalizePartitions]
 RootSignature
-[6]
+[8]

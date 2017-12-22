@@ -13,6 +13,18 @@ struct CameraBuffer	//per frame
     D3DXMATRIX viewInvMatrix;
 };
 
+struct SDSMBuffer //per frame
+{
+    D3DXMATRIX cameraProjMatrix;
+    D3DXMATRIX cameraViewToLightProjMatrix;
+    Vector4 lightSpaceBorder;
+    Vector4 maxScale;
+    Vector2 bufferDimensions;
+    Vector2 cameraNearFar;
+    float  dilationFactor;
+    uint32 reduceTileDim;
+};
+
 struct MaterialConstants
 {
 	MaterialConstants()
