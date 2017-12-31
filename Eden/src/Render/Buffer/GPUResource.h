@@ -165,6 +165,9 @@ public:
     StructuredBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, StructuredBufferAccess accessType, D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
     virtual ~StructuredBuffer();
 
+    void SetStructuredBufferData(const void* bufferData, uint32 bufferSize);
+
+
 private:
     StructuredBufferAccess mAccessType;
     D3D12_UNORDERED_ACCESS_VIEW_DESC mUAVDesc;
