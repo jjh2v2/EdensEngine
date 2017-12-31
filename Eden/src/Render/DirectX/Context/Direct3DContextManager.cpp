@@ -144,7 +144,7 @@ IndexBuffer *Direct3DContextManager::CreateIndexBuffer(void* indexData, uint32 b
 	return indexBuffer;
 }
 
-//note, usually people create constant buffers with size * frame count - so you can update while another is being used. (not sure if this works or if you need separate buffers)
+//note, possibly create constant buffers with size * frame count - so you can update while another is being used. (not sure if this works or if you need separate buffers)
 ConstantBuffer *Direct3DContextManager::CreateConstantBuffer(uint32 bufferSize)
 {
 	ID3D12Resource *constantBufferResource = NULL;
@@ -184,6 +184,43 @@ ConstantBuffer *Direct3DContextManager::CreateConstantBuffer(uint32 bufferSize)
     constantBuffer->SetIsReady(true);
 
     return constantBuffer;
+}
+
+StructuredBuffer *Direct3DContextManager::CreateStructuredBuffer(uint32 elementSize, uint32 numElements, StructuredBufferAccess accessType)
+{
+    Application::Assert(elementSize % 16 == 0); //ensure elements are 16 byte aligned so that they don't span cache lines
+
+    D3D12_RESOURCE_DESC structuredBufferDesc;
+    structuredBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    structuredBufferDesc.Alignment = 0;
+    structuredBufferDesc.Width = elementSize * numElements;
+    structuredBufferDesc.Height = 1;
+    structuredBufferDesc.DepthOrArraySize = 1;
+    structuredBufferDesc.MipLevels = 1;
+    structuredBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+    structuredBufferDesc.SampleDesc.Count = 1;
+    structuredBufferDesc.SampleDesc.Quality = 0;
+    structuredBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    structuredBufferDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    
+    switch (accessType)
+    {
+    case GPU_READ_WRITE:
+        D3D12_HEAP_PROPERTIES defaultHeapProperties;
+        defaultHeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+        defaultHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+        defaultHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+        defaultHeapProperties.CreationNodeMask = 0;
+        defaultHeapProperties.VisibleNodeMask = 0;
+
+        break;
+    case GPU_READ_WRITE_CPU_WRITE:
+        break;
+    default:
+        Application::Assert(false);
+        break;
+    }
+
 }
 
 RenderTarget *Direct3DContextManager::CreateRenderTarget(uint32 width, uint32 height, DXGI_FORMAT format, bool hasUAV, uint16 arraySize, uint32 sampleCount, uint32 quality)

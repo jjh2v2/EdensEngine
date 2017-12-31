@@ -151,3 +151,21 @@ private:
 	D3D12_CONSTANT_BUFFER_VIEW_DESC mConstantBufferViewDesc;
 	DescriptorHeapHandle mConstantBufferViewHandle;
 };
+
+
+enum StructuredBufferAccess
+{
+    GPU_READ_WRITE = 0,
+    GPU_READ_WRITE_CPU_WRITE = 1
+};
+
+class StructuredBuffer : public GPUResource
+{
+public:
+    StructuredBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, StructuredBufferAccess accessType, D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
+    virtual ~StructuredBuffer();
+
+private:
+    StructuredBufferAccess mAccessType;
+    D3D12_UNORDERED_ACCESS_VIEW_DESC mUAVDesc;
+};

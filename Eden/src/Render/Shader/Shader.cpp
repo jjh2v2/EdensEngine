@@ -108,7 +108,7 @@ ID3DBlob *Shader::GetShaderCode(const std::string &compiledShaderFileLocation, W
 	else
 	{
 		void *data = NULL;
-		unsigned int dataLength = 0;
+		uint32 dataLength = 0;
 
 		ReadShaderByteCodeFromFile(compiledShaderFileLocation, data, dataLength);
 

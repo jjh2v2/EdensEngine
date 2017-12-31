@@ -1,17 +1,53 @@
 #pragma once
-#include "Render/Buffer/GPUResource.h"
+#include "Render/Graphics/GraphicsManager.h"
+#include "Render/Shader/Definitions/ConstantBufferDefinitions.h"
+
+class Camera;
 
 class SDSMShadowManager
 {
 public:
-    SDSMShadowManager();
+    struct SDSMShadowPreferences
+    {
+        SDSMShadowPreferences()
+        {
+            AlignToFrustum = true;
+            UseSoftShadows = true;
+            SofteningAmount = 0.08f;
+            MaxSofteningFilter = 8.0f;
+            ShadowAntiAliasingSamples = 4;	//also in the evsm shader, change there
+            ShadowTextureSize = 1024;
+            PartitionCount = 4;				//only currently handling exactly 4 in the shaders
+        }
+
+        bool AlignToFrustum;
+        bool UseSoftShadows;
+        float SofteningAmount;
+        float MaxSofteningFilter;
+        uint32 ShadowAntiAliasingSamples;
+        uint32 ShadowTextureSize;
+        uint32 PartitionCount;
+    };
+
+    SDSMShadowManager(GraphicsManager *graphicsManager);
     ~SDSMShadowManager();
 
-    void ComputeShadowPartitions();
+    void ComputeShadowPartitions(Camera *camera, D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjectionMatrix);
 
 private:
-    ConstantBuffer *mSDSMBuffer[FRAME_BUFFER_COUNT];
+    GraphicsManager *mGraphicsManager;
+    ConstantBuffer *mSDSMBuffers[FRAME_BUFFER_COUNT];
 
+    ShaderPSO *mClearShadowPartitionsShader;
+    ShaderPSO *mCalculateDepthBufferBoundsShader;
+    ShaderPSO *mCalculateLogPartitionsFromDepthBoundsShader;
+    ShaderPSO *mClearShadowPartitionBoundsShader;
+    ShaderPSO *mCalculatePartitionBoundsShader;
+    ShaderPSO *mFinalizePartitionsShader;
+
+    Vector2 mBlurSizeInLightSpace;
+    SDSMShadowPreferences mShadowPreferences;
+    SDSMBuffer mCurrentSDSMBuffer;
 };
 
 /*

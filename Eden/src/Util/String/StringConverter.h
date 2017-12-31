@@ -187,7 +187,7 @@ public:
 
 	static void RemoveCharsFromString(std::string &str, char *chars)
 	{
-		for (unsigned int i = 0; i < strlen(chars); ++i)
+		for (uint32 i = 0; i < strlen(chars); ++i)
 		{
 			str.erase(std::remove(str.begin(), str.end(), chars[i]), str.end());
 		}

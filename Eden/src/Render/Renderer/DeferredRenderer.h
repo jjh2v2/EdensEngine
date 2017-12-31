@@ -5,6 +5,8 @@
 
 #define GBufferTextureInputCount 3
 
+class SDSMShadowManager;
+
 class DeferredRenderer
 {
 public:
@@ -24,6 +26,9 @@ private:
 	void CopyToBackBuffer(RenderTarget *renderTargetToCopy);
 
 	GraphicsManager *mGraphicsManager;
+
+    SDSMShadowManager *mShadowManager;
+
 	Scene *mActiveScene;
 
 	DynamicArray<RenderTarget*> mGBufferTargets;

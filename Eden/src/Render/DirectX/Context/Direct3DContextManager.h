@@ -3,6 +3,7 @@
 #include "Render/DirectX/Context/Direct3DContext.h"
 #include "Render/DirectX/Queue/Direct3DQueueManager.h"
 #include "Render/DirectX/Heap/Direct3DHeapManager.h"
+
 class Direct3DContextManager
 {
 public:
@@ -22,6 +23,7 @@ public:
 	VertexBuffer *CreateVertexBuffer(void* vertexData, uint32 vertexStride, uint32 bufferSize);
 	IndexBuffer *CreateIndexBuffer(void* indexData, uint32 bufferSize);
 	ConstantBuffer *CreateConstantBuffer(uint32 bufferSize);
+    StructuredBuffer *CreateStructuredBuffer(uint32 elementSize, uint32 numElements, StructuredBufferAccess accessType);
 
 	void FreeRenderTarget(RenderTarget *renderTarget);
 	void FreeDepthStencilTarget(DepthStencilTarget *depthStencilTarget);

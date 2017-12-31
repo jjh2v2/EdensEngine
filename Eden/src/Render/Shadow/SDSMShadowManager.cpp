@@ -1,18 +1,86 @@
 #include "Render/Shadow/SDSMShadowManager.h"
+#include "Render/Shader/Definitions/ConstantBufferDefinitions.h"
+#include "Camera/Camera.h"
 
-SDSMShadowManager::SDSMShadowManager()
+SDSMShadowManager::SDSMShadowManager(GraphicsManager *graphicsManager)
 {
+    mGraphicsManager = graphicsManager;
 
+    ShaderManager *shaderManager = mGraphicsManager->GetShaderManager();
+    ShaderPipelinePermutation computeShaderEmptyPermutation;
+
+    mClearShadowPartitionsShader = shaderManager->GetShader("ClearShadowPartitions", computeShaderEmptyPermutation);
+    mCalculateDepthBufferBoundsShader = shaderManager->GetShader("CalculateDepthBufferBounds", computeShaderEmptyPermutation);
+    mCalculateLogPartitionsFromDepthBoundsShader = shaderManager->GetShader("CalculateLogPartitionsFromDepthBounds", computeShaderEmptyPermutation);
+    mClearShadowPartitionBoundsShader = shaderManager->GetShader("ClearShadowPartitionBounds", computeShaderEmptyPermutation);
+    mCalculatePartitionBoundsShader = shaderManager->GetShader("CalculatePartitionBounds", computeShaderEmptyPermutation);
+    mFinalizePartitionsShader = shaderManager->GetShader("FinalizePartitions", computeShaderEmptyPermutation);
+
+    Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
+
+    for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+    {
+        mSDSMBuffers[i] = contextManager->CreateConstantBuffer(sizeof(SDSMBuffer));
+    }
 }
 
 SDSMShadowManager::~SDSMShadowManager()
 {
+    Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
 
+    for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+    {
+        contextManager->FreeConstantBuffer(mSDSMBuffers[i]);
+        mSDSMBuffers[i] = NULL;
+    }
+
+    mClearShadowPartitionsShader = NULL;
+    mCalculateDepthBufferBoundsShader = NULL;
+    mCalculateLogPartitionsFromDepthBoundsShader = NULL;
+    mClearShadowPartitionBoundsShader = NULL;
+    mCalculatePartitionBoundsShader = NULL;
+    mFinalizePartitionsShader = NULL;
+
+    mGraphicsManager = NULL;
 }
 
-void SDSMShadowManager::ComputeShadowPartitions()
+void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjectionMatrix)
 {
+    Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
+    Camera::CameraScreenSettings cameraSettings = camera->GetScreenSettings();
+    const float maxFloat = FLT_MAX;
+    Vector3 maxPartitionScale(maxFloat, maxFloat, maxFloat);
 
+    mBlurSizeInLightSpace = Vector2(0.0f, 0.0f);
+
+    if (mShadowPreferences.UseSoftShadows)
+    {
+        mBlurSizeInLightSpace.X = mShadowPreferences.SofteningAmount * 0.5f * lightProjectionMatrix._11;
+        mBlurSizeInLightSpace.Y = mShadowPreferences.SofteningAmount * 0.5f * lightProjectionMatrix._22;
+
+        float maxBlurLightSpace = mShadowPreferences.MaxSofteningFilter / ((float)mShadowPreferences.ShadowTextureSize);
+        maxPartitionScale.X = maxBlurLightSpace / mBlurSizeInLightSpace.X;
+        maxPartitionScale.Y = maxBlurLightSpace / mBlurSizeInLightSpace.Y;
+    }
+
+    Vector3 partitionBorderLightSpace(mBlurSizeInLightSpace.X, mBlurSizeInLightSpace.Y, 1.0f);
+    partitionBorderLightSpace.Z *= lightProjectionMatrix._33;
+
+    D3DXMATRIX cameraViewInvMatrix;
+    D3DXMATRIX cameraViewMatrix = camera->GetViewMatrix();
+    D3DXMatrixInverse(&cameraViewInvMatrix, 0, &cameraViewMatrix);
+    D3DXMATRIX lightViewProjMatrix = lightViewMatrix * lightProjectionMatrix;
+
+    mCurrentSDSMBuffer.cameraProjMatrix = camera->GetReverseProjectionMatrix();
+    mCurrentSDSMBuffer.cameraViewToLightProjMatrix = cameraViewInvMatrix * lightViewProjMatrix;
+    mCurrentSDSMBuffer.lightSpaceBorder = Vector4(partitionBorderLightSpace.X, partitionBorderLightSpace.Y, partitionBorderLightSpace.Z, 0.0f);
+    mCurrentSDSMBuffer.maxScale = Vector4(maxPartitionScale.X, maxPartitionScale.Y, maxPartitionScale.Z, 0.0f);
+    mCurrentSDSMBuffer.bufferDimensions = direct3DManager->GetScreenSize();
+    mCurrentSDSMBuffer.cameraNearFar = Vector2(cameraSettings.Far, cameraSettings.Near); //purposefully flipped
+    mCurrentSDSMBuffer.dilationFactor = 0.01f;
+    mCurrentSDSMBuffer.reduceTileDim = 128;
+
+    mSDSMBuffers[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&mCurrentSDSMBuffer, sizeof(SDSMBuffer));
 }
 
 /*

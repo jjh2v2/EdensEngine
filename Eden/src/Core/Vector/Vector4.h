@@ -10,6 +10,7 @@ public:
 	{
 		X = Y = Z = W = 0;
 	}
+
 	Vector4(float x, float y, float z, float w)
 	{
 		X = x;
@@ -17,10 +18,12 @@ public:
 		Z = z;
 		W = w;
 	}
+
 	static Vector4 Zero()
 	{
 		return Vector4();
 	}
+
 	static Vector4 One()
 	{
 		return Vector4(1, 1, 1, 1);

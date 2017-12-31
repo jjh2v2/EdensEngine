@@ -1,5 +1,6 @@
 #include "Render/Renderer/DeferredRenderer.h"
 #include "Render/Shader/Definitions/ConstantBufferDefinitions.h"
+#include "Render/Shadow/SDSMShadowManager.h"
 
 DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 {
@@ -68,10 +69,14 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 		mSceneEntity3->SetPosition(Vector3(-10, -5.0f, 20.0f));
 		mSceneEntity3->SetRotation(Vector3(0, MathHelper::Radian() * 180.0f, 0));
 	}
+
+    mShadowManager = new SDSMShadowManager(mGraphicsManager);
 }
 
 DeferredRenderer::~DeferredRenderer()
 {
+    delete mShadowManager;
+
 	FreeTargets();
 
 	Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
