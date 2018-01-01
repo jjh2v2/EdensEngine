@@ -49,6 +49,7 @@ void ClearShadowPartitionBounds(uint groupIndex : SV_GroupIndex)
     ShadowPartitionBoundUint bound;
     bound.minCoord = uint3(0x7F7FFFFF, 0x7F7FFFFF, 0x7F7FFFFF); //float max
     bound.maxCoord = uint3(0,0,0);
+    bound.padding = uint2(0,0);
     
     ShadowPartitionBoundsRWUint[groupIndex] = bound;
 }
@@ -116,6 +117,7 @@ void CalculatePartitionBounds(uint3 groupId : SV_GroupID, uint3 groupThreadId : 
     ShadowPartitionBoundFloat emptyBounds;
     emptyBounds.minCoord = asfloat(minBound);
     emptyBounds.maxCoord = float3(0,0,0);
+    emptyBounds.padding = float2(0,0);
     
     [unroll] 
     for (uint partitionIndex = 0; partitionIndex < NUM_SHADOW_PARTITIONS; partitionIndex++) 

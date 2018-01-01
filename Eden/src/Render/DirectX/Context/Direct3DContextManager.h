@@ -23,11 +23,12 @@ public:
 	VertexBuffer *CreateVertexBuffer(void* vertexData, uint32 vertexStride, uint32 bufferSize);
 	IndexBuffer *CreateIndexBuffer(void* indexData, uint32 bufferSize);
 	ConstantBuffer *CreateConstantBuffer(uint32 bufferSize);
-    StructuredBuffer *CreateStructuredBuffer(uint32 elementSize, uint32 numElements, StructuredBufferAccess accessType);
+    StructuredBuffer *CreateStructuredBuffer(uint32 elementSize, uint32 numElements, StructuredBufferAccess accessType, bool isRaw);
 
 	void FreeRenderTarget(RenderTarget *renderTarget);
 	void FreeDepthStencilTarget(DepthStencilTarget *depthStencilTarget);
 	void FreeConstantBuffer(ConstantBuffer *constantBuffer);
+    void FreeStructuredBuffer(StructuredBuffer *structuredBuffer);
 
 private:
     class VertexBufferBackgroundUpload : public UploadContext::BackgroundUpload

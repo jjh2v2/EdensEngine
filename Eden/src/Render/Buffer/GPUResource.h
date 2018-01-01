@@ -156,19 +156,27 @@ private:
 enum StructuredBufferAccess
 {
     GPU_READ_WRITE = 0,
-    GPU_READ_WRITE_CPU_WRITE = 1
+    CPU_WRITE_GPU_READ = 1,
+    CPU_WRITE_GPU_READ_WRITE = 2
 };
 
 class StructuredBuffer : public GPUResource
 {
 public:
-    StructuredBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, StructuredBufferAccess accessType, D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
+    StructuredBuffer(ID3D12Resource* resource, ID3D12Resource *uploadResource, D3D12_RESOURCE_STATES usageState, bool isRaw, StructuredBufferAccess accessType, D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, DescriptorHeapHandle uavHandle, DescriptorHeapHandle srvHandle);
     virtual ~StructuredBuffer();
 
-    void SetStructuredBufferData(const void* bufferData, uint32 bufferSize);
-
+    bool CopyToBuffer(const void* bufferData, uint32 bufferSize); //returns true if a GPU copy needs to be scheduled
+    DescriptorHeapHandle GetUnorderedAccessViewHandle() { return mUnorderedAccessViewHandle; }
+    DescriptorHeapHandle GetShaderResourceViewHandle() { return mShaderResourceViewHandle; }
 
 private:
+    void *mMappedBuffer;
+    ID3D12Resource *mUploadResource;
+
+    bool mIsRaw;
     StructuredBufferAccess mAccessType;
     D3D12_UNORDERED_ACCESS_VIEW_DESC mUAVDesc;
+    DescriptorHeapHandle mUnorderedAccessViewHandle;
+    DescriptorHeapHandle mShaderResourceViewHandle;
 };

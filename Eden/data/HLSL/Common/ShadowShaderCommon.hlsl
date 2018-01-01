@@ -20,12 +20,14 @@ struct ShadowPartitionBoundUint
 {
     uint3 minCoord;
     uint3 maxCoord;
+    uint2 padding;
 };
 
 struct ShadowPartitionBoundFloat
 {
     float3 minCoord;
     float3 maxCoord;
+    float2 padding;
 };
 
 float GetLogPartitionFromDepthRange(uint partitionIndex, uint numPartitions, float minDepth, float maxDepth)

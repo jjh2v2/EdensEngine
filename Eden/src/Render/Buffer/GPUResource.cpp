@@ -135,3 +135,71 @@ void ConstantBuffer::SetConstantBufferData(const void* bufferData, uint32 buffer
 	Application::Assert(bufferSize <= mConstantBufferViewDesc.SizeInBytes);
 	memcpy(mMappedBuffer, bufferData, bufferSize);
 }
+
+StructuredBuffer::StructuredBuffer(ID3D12Resource* resource, ID3D12Resource *uploadResource, D3D12_RESOURCE_STATES usageState, bool isRaw, StructuredBufferAccess accessType, D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, DescriptorHeapHandle uavHandle, DescriptorHeapHandle srvHandle)
+    :GPUResource(resource, usageState)
+{
+    mMappedBuffer = NULL;
+    mUploadResource = uploadResource;
+    mIsRaw = isRaw;
+    mAccessType = accessType;
+    mUAVDesc = uavDesc;
+    mUnorderedAccessViewHandle = uavHandle;
+    mShaderResourceViewHandle = srvHandle;
+    
+    if (mAccessType == CPU_WRITE_GPU_READ)
+    {
+        Direct3DUtils::ThrowIfHRESULTFailed(mResource->Map(0, NULL, &mMappedBuffer));
+    }
+}
+
+StructuredBuffer::~StructuredBuffer()
+{
+    if (mAccessType == CPU_WRITE_GPU_READ)
+    {
+        mResource->Unmap(0, NULL);
+    }
+
+    if (mUploadResource)
+    {
+        mUploadResource->Release();
+        mUploadResource = NULL;
+    }
+}
+
+bool StructuredBuffer::CopyToBuffer(const void* bufferData, uint32 bufferSize)
+{
+    bool needsGPUCopy = false;
+
+    switch (mAccessType)
+    {
+    case GPU_READ_WRITE:
+        Application::Assert(false); //Trying to copy to a buffer that was designated as never written to by the CPU
+        break;
+    case CPU_WRITE_GPU_READ:
+        //copy to the always-mapped resource
+        Application::Assert(mMappedBuffer != NULL);
+        Application::Assert(bufferSize <= (mUAVDesc.Buffer.NumElements * mUAVDesc.Buffer.StructureByteStride));
+        memcpy(mMappedBuffer, bufferData, bufferSize); 
+        break;
+    case CPU_WRITE_GPU_READ_WRITE:
+        Application::Assert(bufferSize <= (mUAVDesc.Buffer.NumElements * mUAVDesc.Buffer.StructureByteStride));
+
+        {
+            //copy data to the upload buffer
+            void *mappedUpload = NULL;
+            Direct3DUtils::ThrowIfHRESULTFailed(mUploadResource->Map(0, NULL, &mappedUpload));
+            memcpy(mappedUpload, bufferData, bufferSize);
+            mUploadResource->Unmap(0, NULL);
+        }
+
+        //then return that we need to schedule a GPU copy, but leave it up to the managing system to schedule when exactly
+        needsGPUCopy = true;
+        break;
+    default:
+        Application::Assert(false); //not implemented
+        break;
+    }
+
+    return needsGPUCopy;
+}

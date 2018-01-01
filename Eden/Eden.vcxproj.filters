@@ -363,6 +363,9 @@
     <ClInclude Include="src\Render\Shadow\SDSMShadowManager.h">
       <Filter>Source Files\Render\Shadow</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\Shader\Definitions\StructuredBufferDefinitions.h">
+      <Filter>Source Files\Render\Shader\Definitions</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">

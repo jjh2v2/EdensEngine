@@ -186,7 +186,7 @@ ConstantBuffer *Direct3DContextManager::CreateConstantBuffer(uint32 bufferSize)
     return constantBuffer;
 }
 
-StructuredBuffer *Direct3DContextManager::CreateStructuredBuffer(uint32 elementSize, uint32 numElements, StructuredBufferAccess accessType)
+StructuredBuffer *Direct3DContextManager::CreateStructuredBuffer(uint32 elementSize, uint32 numElements, StructuredBufferAccess accessType, bool isRaw)
 {
     Application::Assert(elementSize % 16 == 0); //ensure elements are 16 byte aligned so that they don't span cache lines
 
@@ -203,24 +203,87 @@ StructuredBuffer *Direct3DContextManager::CreateStructuredBuffer(uint32 elementS
     structuredBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
     structuredBufferDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     
+    ID3D12Resource *structuredBufferResource = NULL;
+    ID3D12Resource *structuredBufferUploadResource = NULL;
+    D3D12_RESOURCE_STATES bufferResourceState = D3D12_RESOURCE_STATE_COMMON;
+
+    D3D12_HEAP_PROPERTIES defaultHeapProperties;
+    defaultHeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+    defaultHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    defaultHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    defaultHeapProperties.CreationNodeMask = 0;
+    defaultHeapProperties.VisibleNodeMask = 0;
+
+    D3D12_HEAP_PROPERTIES uploadHeapProperties;
+    uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+    uploadHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    uploadHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    uploadHeapProperties.CreationNodeMask = 0;
+    uploadHeapProperties.VisibleNodeMask = 0;
+
+    //Resources for this end up being pretty different based on how it's going to be used:
+    //GPU R/W is standard, just creates a single resource that is never accessed by the CPU
+    //CPU W GPU R sets up the resource on the upload heap like a constant buffer.
+    //---The assumption being that frequent CPU writes means this is the most efficient method. Needs perf testing to back it up though.
+    //CPU W GPU R/W creates two resources, one on the default heap, and one on the upload heap. 
+    //---The CPU writes to the upload resource, and then the managing system needs to manually schedule a GPU copy to the primary resource
     switch (accessType)
     {
     case GPU_READ_WRITE:
-        D3D12_HEAP_PROPERTIES defaultHeapProperties;
-        defaultHeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-        defaultHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-        defaultHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-        defaultHeapProperties.CreationNodeMask = 0;
-        defaultHeapProperties.VisibleNodeMask = 0;
+        bufferResourceState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+
+        Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &structuredBufferDesc,
+            bufferResourceState, NULL, IID_PPV_ARGS(&structuredBufferResource)));
 
         break;
-    case GPU_READ_WRITE_CPU_WRITE:
+    case CPU_WRITE_GPU_READ:
+        bufferResourceState = D3D12_RESOURCE_STATE_GENERIC_READ;
+
+        Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &structuredBufferDesc,
+            bufferResourceState, NULL, IID_PPV_ARGS(&structuredBufferResource)));
+        break;
+    case CPU_WRITE_GPU_READ_WRITE:
+        bufferResourceState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+
+        Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &structuredBufferDesc,
+            bufferResourceState, NULL, IID_PPV_ARGS(&structuredBufferResource)));
+
+        Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &structuredBufferDesc,
+            D3D12_RESOURCE_STATE_GENERIC_READ, NULL, IID_PPV_ARGS(&structuredBufferUploadResource)));
         break;
     default:
         Application::Assert(false);
         break;
     }
 
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+    srvDesc.Buffer.FirstElement = 0;
+    srvDesc.Buffer.NumElements = numElements;
+    srvDesc.Buffer.StructureByteStride = elementSize;
+    srvDesc.Buffer.Flags = isRaw ? D3D12_BUFFER_SRV_FLAG_RAW : D3D12_BUFFER_SRV_FLAG_NONE;
+    
+    DescriptorHeapHandle srvHandle = mHeapManager->GetNewSRVDescriptorHeapHandle();
+    mDevice->CreateShaderResourceView(structuredBufferResource, &srvDesc, srvHandle.GetCPUHandle());
+
+    D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+    uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+    uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+    uavDesc.Buffer.CounterOffsetInBytes = 0;
+    uavDesc.Buffer.FirstElement = 0;
+    uavDesc.Buffer.NumElements = numElements;
+    uavDesc.Buffer.StructureByteStride = elementSize;
+    uavDesc.Buffer.Flags = isRaw ? D3D12_BUFFER_UAV_FLAG_RAW : D3D12_BUFFER_UAV_FLAG_NONE;
+
+    DescriptorHeapHandle uavHandle = mHeapManager->GetNewSRVDescriptorHeapHandle();
+    mDevice->CreateUnorderedAccessView(structuredBufferResource, NULL, &uavDesc, uavHandle.GetCPUHandle());
+
+    StructuredBuffer *structuredBuffer = new StructuredBuffer(structuredBufferResource, structuredBufferUploadResource, bufferResourceState, isRaw, accessType, uavDesc, uavHandle, srvHandle);
+    structuredBuffer->SetIsReady(true);
+
+    return structuredBuffer;
 }
 
 RenderTarget *Direct3DContextManager::CreateRenderTarget(uint32 width, uint32 height, DXGI_FORMAT format, bool hasUAV, uint16 arraySize, uint32 sampleCount, uint32 quality)
@@ -533,4 +596,11 @@ void Direct3DContextManager::FreeConstantBuffer(ConstantBuffer *constantBuffer)
 {
 	mHeapManager->FreeSRVDescriptorHeapHandle(constantBuffer->GetConstantBufferViewHandle());
 	delete constantBuffer;
+}
+
+void Direct3DContextManager::FreeStructuredBuffer(StructuredBuffer *structuredBuffer)
+{
+    mHeapManager->FreeSRVDescriptorHeapHandle(structuredBuffer->GetUnorderedAccessViewHandle());
+    mHeapManager->FreeSRVDescriptorHeapHandle(structuredBuffer->GetShaderResourceViewHandle());
+    delete structuredBuffer;
 }

@@ -1,5 +1,6 @@
 #include "Render/Shadow/SDSMShadowManager.h"
 #include "Render/Shader/Definitions/ConstantBufferDefinitions.h"
+#include "Render/Shader/Definitions/StructuredBufferDefinitions.h"
 #include "Camera/Camera.h"
 
 SDSMShadowManager::SDSMShadowManager(GraphicsManager *graphicsManager)
@@ -22,11 +23,17 @@ SDSMShadowManager::SDSMShadowManager(GraphicsManager *graphicsManager)
     {
         mSDSMBuffers[i] = contextManager->CreateConstantBuffer(sizeof(SDSMBuffer));
     }
+
+    mShadowPartitionBuffer = contextManager->CreateStructuredBuffer(sizeof(SDSMPartition), mShadowPreferences.PartitionCount, GPU_READ_WRITE, false);
+    mShadowPartitionBoundsBuffer = contextManager->CreateStructuredBuffer(sizeof(SDSMBounds), mShadowPreferences.PartitionCount, GPU_READ_WRITE, false);
 }
 
 SDSMShadowManager::~SDSMShadowManager()
 {
     Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
+
+    contextManager->FreeStructuredBuffer(mShadowPartitionBoundsBuffer);
+    contextManager->FreeStructuredBuffer(mShadowPartitionBuffer);
 
     for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
     {

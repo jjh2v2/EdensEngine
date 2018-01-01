@@ -107,6 +107,8 @@ public:
 	void DrawIndexedInstanced(uint32 indexCountPerInstance, uint32 instanceCount, uint32 startIndexLocation,
 		int32 baseVertexLocation, uint32 startInstanceLocation);
 
+    void CopyResourceRegion(ID3D12Resource *destination, uint64 destOffset, ID3D12Resource *source, uint64 sourceOffset, uint64 numBytes);
+
 private:
 };
 

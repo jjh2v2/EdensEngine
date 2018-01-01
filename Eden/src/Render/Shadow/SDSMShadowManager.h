@@ -37,6 +37,8 @@ public:
 private:
     GraphicsManager *mGraphicsManager;
     ConstantBuffer *mSDSMBuffers[FRAME_BUFFER_COUNT];
+    StructuredBuffer *mShadowPartitionBuffer;
+    StructuredBuffer *mShadowPartitionBoundsBuffer;
 
     ShaderPSO *mClearShadowPartitionsShader;
     ShaderPSO *mCalculateDepthBufferBoundsShader;

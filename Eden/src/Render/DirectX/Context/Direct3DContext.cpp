@@ -424,6 +424,11 @@ void GraphicsContext::DrawIndexedInstanced(uint32 indexCountPerInstance, uint32 
 	mCommandList->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
+void GraphicsContext::CopyResourceRegion(ID3D12Resource *destination, uint64 destOffset, ID3D12Resource *source, uint64 sourceOffset, uint64 numBytes)
+{
+    mCommandList->CopyBufferRegion(destination, destOffset, source, sourceOffset, numBytes);
+}
+
 ComputeContext::ComputeContext(ID3D12Device *device)
     : Direct3DContext(device, D3D12_COMMAND_LIST_TYPE_COMPUTE)
 {

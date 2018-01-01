@@ -19,7 +19,7 @@
 
 #define UPLOAD_BUFFER_SIZE					    2048 * 2048 * 32
 #define MAX_GPU_UPLOADS						    16
-#define MAX_UPLOADS_PROCESSED_PER_BATCH         5
+#define MAX_UPLOADS_PROCESSED_PER_BATCH         5 //TDA: might need more upload allocators to accomodate this
 #define D3D12_GPU_VIRTUAL_ADDRESS_NULL          ((D3D12_GPU_VIRTUAL_ADDRESS)0)
 #define D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN       ((D3D12_GPU_VIRTUAL_ADDRESS)-1)
 #define D3D12_GPU_RESOURCE_STATE_UNKNOWN        ((D3D12_RESOURCE_STATES)-1)
