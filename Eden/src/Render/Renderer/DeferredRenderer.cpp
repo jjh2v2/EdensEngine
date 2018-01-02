@@ -242,6 +242,14 @@ void DeferredRenderer::RenderGBuffer()
 	mSceneEntity3->Render(&renderPassContext);
 }
 
+void DeferredRenderer::RenderShadows()
+{
+    D3DXMATRIX lightViewMatrix;
+    D3DXMATRIX lightProjMatrix;
+
+    mShadowManager->ComputeShadowPartitions(mActiveScene->GetMainCamera(), lightViewMatrix, lightProjMatrix);
+}
+
 void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
 {
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
@@ -286,6 +294,7 @@ void DeferredRenderer::Render()
 
 	ClearGBuffer();
 	RenderGBuffer();
+    RenderShadows();
 	CopyToBackBuffer(mGBufferTargets[0]);
 
     direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->WaitForFence(mPreviousFrameFence);

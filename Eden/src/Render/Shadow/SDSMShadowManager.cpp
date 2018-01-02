@@ -26,6 +26,8 @@ SDSMShadowManager::SDSMShadowManager(GraphicsManager *graphicsManager)
 
     mShadowPartitionBuffer = contextManager->CreateStructuredBuffer(sizeof(SDSMPartition), mShadowPreferences.PartitionCount, GPU_READ_WRITE, false);
     mShadowPartitionBoundsBuffer = contextManager->CreateStructuredBuffer(sizeof(SDSMBounds), mShadowPreferences.PartitionCount, GPU_READ_WRITE, false);
+
+    mPreviousShadowPassFence = 0;
 }
 
 SDSMShadowManager::~SDSMShadowManager()
@@ -54,6 +56,7 @@ SDSMShadowManager::~SDSMShadowManager()
 void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjectionMatrix)
 {
     Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
+
     Camera::CameraScreenSettings cameraSettings = camera->GetScreenSettings();
     const float maxFloat = FLT_MAX;
     Vector3 maxPartitionScale(maxFloat, maxFloat, maxFloat);
@@ -88,6 +91,27 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     mCurrentSDSMBuffer.reduceTileDim = 128;
 
     mSDSMBuffers[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&mCurrentSDSMBuffer, sizeof(SDSMBuffer));
+
+    direct3DManager->GetContextManager()->GetQueueManager()->GetComputeQueue()->WaitForFence(mPreviousShadowPassFence);
+
+    uint32 shadowNumSRVDescs = 1;
+    Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
+    RenderPassDescriptorHeap *shadowSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_Shadows, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), shadowNumSRVDescs);
+
+    ComputeContext *computeContext = direct3DManager->GetContextManager()->GetComputeContext();
+    computeContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, shadowSRVDescHeap->GetHeap());
+
+    DescriptorHeapHandle shadowPartitionUAVHandle = shadowSRVDescHeap->GetHeapHandleBlock(1);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowPartitionUAVHandle.GetCPUHandle(), mShadowPartitionBuffer->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    ShaderPipelinePermutation computeShaderPermutation;
+    ShaderPSO *shaderPSO = mGraphicsManager->GetShaderManager()->GetShader("ClearShadowPartitions", computeShaderPermutation);
+    computeContext->SetPipelineState(shaderPSO);
+    computeContext->SetRootSignature(shaderPSO->GetRootSignature());
+    computeContext->SetDescriptorTable(0, shadowPartitionUAVHandle.GetGPUHandle());
+
+    computeContext->Dispatch(1, 1, 1);
+    mPreviousShadowPassFence = computeContext->Flush(direct3DManager->GetContextManager()->GetQueueManager());
 }
 
 /*

@@ -76,7 +76,9 @@ uint64 Direct3DContext::Flush(Direct3DQueueManager *queueManager, bool waitForCo
 
         //flush current state, rebind descriptor heaps
         mCurrentGraphicsRootSignature = NULL;
+        mCurrentGraphicsPipelineState = NULL;
         mCurrentComputeRootSignature = NULL;
+        mCurrentComputePipelineState = NULL;
 
         BindDescriptorHeaps();
     }

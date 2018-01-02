@@ -23,6 +23,7 @@ private:
 
 	void ClearGBuffer();
 	void RenderGBuffer();
+    void RenderShadows();
 	void CopyToBackBuffer(RenderTarget *renderTargetToCopy);
 
 	GraphicsManager *mGraphicsManager;

@@ -6,12 +6,14 @@ Direct3DContextManager::Direct3DContextManager(ID3D12Device* device)
 	mHeapManager = new Direct3DHeapManager(mDevice);
 	mQueueManager = new Direct3DQueueManager(mDevice);
 	mUploadContext = new UploadContext(mDevice);
+    mComputeContext = new ComputeContext(mDevice);
 	mGraphicsContext = new GraphicsContext(mDevice);
 }
 
 Direct3DContextManager::~Direct3DContextManager()
 {
 	delete mUploadContext;
+    delete mComputeContext;
 	delete mGraphicsContext;
 	delete mQueueManager;
 	delete mHeapManager;
@@ -19,10 +21,12 @@ Direct3DContextManager::~Direct3DContextManager()
 
 void Direct3DContextManager::FinishContextsAndWaitForIdle()
 {
+    mComputeContext->Flush(mQueueManager, true, true);
     mGraphicsContext->Flush(mQueueManager, true, true);
     mUploadContext->Flush(mQueueManager, true, true);
 
     mUploadContext->WaitForCommandIdle(mQueueManager);
+    mComputeContext->WaitForCommandIdle(mQueueManager);
     mGraphicsContext->WaitForCommandIdle(mQueueManager);
 }
 

@@ -50,6 +50,8 @@ private:
     Vector2 mBlurSizeInLightSpace;
     SDSMShadowPreferences mShadowPreferences;
     SDSMBuffer mCurrentSDSMBuffer;
+
+    uint64 mPreviousShadowPassFence;
 };
 
 /*

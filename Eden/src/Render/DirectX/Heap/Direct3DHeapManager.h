@@ -5,6 +5,7 @@
 enum RenderPassDescriptorHeapType
 {
     RenderPassDescriptorHeapType_GBuffer,
+    RenderPassDescriptorHeapType_Shadows,
     RenderPassDescriptorHeapType_PostProcess
 };
 

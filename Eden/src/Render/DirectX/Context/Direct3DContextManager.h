@@ -16,6 +16,7 @@ public:
 
 	Direct3DQueueManager *GetQueueManager() { return mQueueManager; }
 	GraphicsContext *GetGraphicsContext() { return mGraphicsContext; }
+    ComputeContext *GetComputeContext() { return mComputeContext; }
 	UploadContext *GetUploadContext() { return mUploadContext; }
 
 	RenderTarget *CreateRenderTarget(uint32 width, uint32 height, DXGI_FORMAT format, bool hasUAV, uint16 arraySize, uint32 sampleCount, uint32 quality);
@@ -61,5 +62,6 @@ private:
 	Direct3DHeapManager *mHeapManager;
 	Direct3DQueueManager *mQueueManager;
 	GraphicsContext *mGraphicsContext;
+    ComputeContext *mComputeContext;
 	UploadContext *mUploadContext;
 };
