@@ -165,7 +165,7 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
     {
         //RootSignatureType_Finalize_Partitions
         CD3DX12_DESCRIPTOR_RANGE ranges[3];
-        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); //1 buffer, u1
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); //1 buffer, u0
         ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2); //1 buffer, partition bounds
         ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv, b0
 

@@ -11,7 +11,6 @@ public:
     {
         SDSMShadowPreferences()
         {
-            AlignToFrustum = true;
             UseSoftShadows = true;
             SofteningAmount = 0.08f;
             MaxSofteningFilter = 8.0f;
@@ -20,7 +19,6 @@ public:
             PartitionCount = 4;				//only currently handling exactly 4 in the shaders
         }
 
-        bool AlignToFrustum;
         bool UseSoftShadows;
         float SofteningAmount;
         float MaxSofteningFilter;
@@ -32,7 +30,8 @@ public:
     SDSMShadowManager(GraphicsManager *graphicsManager);
     ~SDSMShadowManager();
 
-    void ComputeShadowPartitions(Camera *camera, D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjectionMatrix);
+    void ComputeShadowPartitions(Camera *camera, D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjectionMatrix, DepthStencilTarget *depthStencil);
+    //void RenderShadowPartitions();
 
 private:
     GraphicsManager *mGraphicsManager;

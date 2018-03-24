@@ -142,6 +142,9 @@
     <Filter Include="Source Files\Render\Shadow">
       <UniqueIdentifier>{61d6f91d-167e-4f09-8c06-429270a295fb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render\Light">
+      <UniqueIdentifier>{5fc0c578-bda8-40d6-a632-51a6a5aacadc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -366,6 +369,15 @@
     <ClInclude Include="src\Render\Shader\Definitions\StructuredBufferDefinitions.h">
       <Filter>Source Files\Render\Shader\Definitions</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\Light\DirectionalLight.h">
+      <Filter>Source Files\Render\Light</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\Light\LightManager.h">
+      <Filter>Source Files\Render\Light</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Util\Math\MatrixHelper.h">
+      <Filter>Source Files\Util\Math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -553,6 +565,12 @@
     </ClCompile>
     <ClCompile Include="src\Render\Shadow\SDSMShadowManager.cpp">
       <Filter>Source Files\Render\Shadow</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Light\DirectionalLight.cpp">
+      <Filter>Source Files\Render\Light</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\Light\LightManager.cpp">
+      <Filter>Source Files\Render\Light</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

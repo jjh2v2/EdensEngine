@@ -37,10 +37,10 @@ bool Direct3DQueueManager::IsFenceComplete(uint64 fenceValue)
 	return GetQueue(D3D12_COMMAND_LIST_TYPE(fenceValue >> 56))->IsFenceComplete(fenceValue);
 }
 
-void Direct3DQueueManager::WaitForFence(uint64 fenceValue)
+void Direct3DQueueManager::WaitForFenceCPUBlocking(uint64 fenceValue)
 {
 	Direct3DQueue *commandQueue = GetQueue((D3D12_COMMAND_LIST_TYPE)(fenceValue >> 56));
-	commandQueue->WaitForFence(fenceValue);
+	commandQueue->WaitForFenceCPUBlocking(fenceValue);
 }
 
 void Direct3DQueueManager::WaitForAllIdle()

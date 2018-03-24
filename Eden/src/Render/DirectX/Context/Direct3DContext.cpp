@@ -62,7 +62,7 @@ uint64 Direct3DContext::Flush(Direct3DQueueManager *queueManager, bool waitForCo
 
 	if (waitForCompletion || finalize)
 	{
-		queueManager->WaitForFence(queueFence);
+		queueManager->WaitForFenceCPUBlocking(queueFence);
 	}
 
     if (!finalize)
@@ -630,7 +630,7 @@ uint32 UploadContext::ClearFinishedUploads(uint64 flushCount, Direct3DQueueManag
         Direct3DUpload &submission = mUploads[(uploadStart + i) % MAX_GPU_UPLOADS];
         if (submission.IsUploading && !queueManager->GetCopyQueue()->IsFenceComplete(submission.FenceValue))
         {
-            queueManager->GetCopyQueue()->WaitForFence(submission.FenceValue);
+            queueManager->GetCopyQueue()->WaitForFenceCPUBlocking(submission.FenceValue);
         }
 
         numFlushed += ClearSubmissionIfFinished(submission, queueManager) ? 1 : 0;

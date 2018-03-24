@@ -182,6 +182,8 @@
     <ClInclude Include="src\Render\DirectX\Resources\Direct3DResources.h" />
     <ClInclude Include="src\Render\Display\DisplayOrientation.h" />
     <ClInclude Include="src\Render\Graphics\GraphicsManager.h" />
+    <ClInclude Include="src\Render\Light\DirectionalLight.h" />
+    <ClInclude Include="src\Render\Light\LightManager.h" />
     <ClInclude Include="src\Render\Material\Material.h" />
     <ClInclude Include="src\Render\Material\MaterialManager.h" />
     <ClInclude Include="src\Render\Mesh\FBX\FBXLoader.h" />
@@ -207,6 +209,7 @@
     <ClInclude Include="src\Scene\SceneManager.h" />
     <ClInclude Include="src\Util\File\FileUtil.h" />
     <ClInclude Include="src\Util\Math\MathHelper.h" />
+    <ClInclude Include="src\Util\Math\MatrixHelper.h" />
     <ClInclude Include="src\Util\Math\RandomGen.h" />
     <ClInclude Include="src\Util\String\StringConverter.h" />
   </ItemGroup>
@@ -253,6 +256,8 @@
     <ClCompile Include="src\Render\DirectX\Queue\Direct3DQueueManager.cpp" />
     <ClCompile Include="src\Render\DirectX\Resources\Direct3DResources.cpp" />
     <ClCompile Include="src\Render\Graphics\GraphicsManager.cpp" />
+    <ClCompile Include="src\Render\Light\DirectionalLight.cpp" />
+    <ClCompile Include="src\Render\Light\LightManager.cpp" />
     <ClCompile Include="src\Render\Material\Material.cpp" />
     <ClCompile Include="src\Render\Material\MaterialManager.cpp" />
     <ClCompile Include="src\Render\Mesh\FBX\FBXLoader.cpp" />

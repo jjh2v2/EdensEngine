@@ -17,7 +17,7 @@ public:
 	Direct3DQueue *GetQueue(D3D12_COMMAND_LIST_TYPE commandType);
 
 	bool IsFenceComplete(uint64 fenceValue);
-	void WaitForFence(uint64 fenceValue);
+	void WaitForFenceCPUBlocking(uint64 fenceValue);
 	void WaitForAllIdle();
 
 private:

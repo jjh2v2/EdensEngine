@@ -182,3 +182,11 @@ bool Camera::IsSphereInView(float xCenter, float yCenter, float zCenter, float r
 	}
 	return true;
 }
+
+Vector3 Camera::ComputeInverseRight()
+{
+    D3DXMATRIX viewInv;
+    D3DXMatrixInverse(&viewInv, NULL, &mViewMatrix);
+
+    return Vector3(viewInv._11, viewInv._12, viewInv._13);
+}

@@ -25,7 +25,7 @@
 #define D3D12_GPU_RESOURCE_STATE_UNKNOWN        ((D3D12_RESOURCE_STATES)-1)
 #define BARRIER_LIMIT						    16
 #define UPLOAD_BUFFER_ALIGNMENT				    512									//upload buffers need to be 512 aligned
-#define NUM_STARTING_COMMAND_ALLOCATORS         3
+#define NUM_STARTING_COMMAND_ALLOCATORS         10 //TDA: obviously this needs to be intelligently driven rather than hardcoded
 
 #define VALID_COMPUTE_QUEUE_RESOURCE_STATES \
 	( D3D12_RESOURCE_STATE_UNORDERED_ACCESS \

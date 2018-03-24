@@ -6,10 +6,12 @@ Scene::Scene(GraphicsManager *graphicsManager)
 {
 	mGraphicsManager = graphicsManager;
 	mCameraManager = new CameraManager(mGraphicsManager->GetDirect3DManager()->GetScreenSize());
+    mLightManager = new LightManager();
 }
 
 Scene::~Scene()
 {
+    delete mLightManager;
 	delete mCameraManager;
 }
 

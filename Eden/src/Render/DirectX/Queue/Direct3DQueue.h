@@ -12,11 +12,12 @@ public:
 
 	uint64 IncrementFence();
 	bool IsFenceComplete(uint64 fenceValue);
-	void StallForFence(Direct3DQueue* otherQueue, uint64 fenceValue);
-	void StallForQueue(Direct3DQueue* otherQueue);
+    void InsertWait(uint64 fenceValue);
+	void InsertWaitForQueueFence(Direct3DQueue* otherQueue, uint64 fenceValue);
+	void InsertWaitForQueue(Direct3DQueue* otherQueue);
 
-	void WaitForFence(uint64 fenceValue);
-	void WaitForIdle() { WaitForFence(mNextFenceValue - 1); }
+	void WaitForFenceCPUBlocking(uint64 fenceValue);
+	void WaitForIdle() { WaitForFenceCPUBlocking(mNextFenceValue - 1); }
 
 	ID3D12CommandQueue* GetCommandQueue() { return mCommandQueue; }
 

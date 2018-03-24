@@ -115,7 +115,7 @@ Texture *TextureManager::LoadTexture(WCHAR *filePath, bool async)
     uploadContext->LockUploads();
     TextureBackgroundUpload uploadJob(mDirect3DManager->GetDevice(), queueManager, newTextureUpload);
     uploadJob.ProcessUpload(uploadContext);
-    queueManager->GetCopyQueue()->WaitForFence(newTextureUpload->UploadFence);
+    queueManager->GetCopyQueue()->WaitForFenceCPUBlocking(newTextureUpload->UploadFence);
     uploadContext->UnlockUploads();
 
     uint64 currentUploadFence = queueManager->GetCopyQueue()->PollCurrentFenceValue();

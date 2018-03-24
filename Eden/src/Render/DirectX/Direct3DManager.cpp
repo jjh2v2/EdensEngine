@@ -281,8 +281,8 @@ void Direct3DManager::MoveToNextFrame()
 {
 	// Advance the frame index.
 	mCurrentBackBuffer = (mCurrentBackBuffer + 1) % FRAME_BUFFER_COUNT;
-	uint64 fenceValue = mContextManager->GetQueueManager()->GetGraphicsQueue()->IncrementFence();
-	mContextManager->GetQueueManager()->GetGraphicsQueue()->WaitForFence(fenceValue);
+	//uint64 fenceValue = mContextManager->GetQueueManager()->GetGraphicsQueue()->IncrementFence();
+	//mContextManager->GetQueueManager()->GetGraphicsQueue()->WaitForFence(fenceValue);
 }
 
 DXGI_MODE_ROTATION Direct3DManager::ComputeDisplayRotation()

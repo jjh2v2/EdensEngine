@@ -1,6 +1,7 @@
 #include "Render/Renderer/DeferredRenderer.h"
 #include "Render/Shader/Definitions/ConstantBufferDefinitions.h"
 #include "Render/Shadow/SDSMShadowManager.h"
+#include "Util/Math/MatrixHelper.h"
 
 DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 {
@@ -198,19 +199,6 @@ void DeferredRenderer::RenderGBuffer()
 		gBufferSamplersHandleOffset.ptr += gbufferSamplerDescHeap->GetDescriptorSize();
 	}
 
-	//set up the camera buffer
-    D3DXMATRIX identity;
-    D3DXMatrixIdentity(&identity);
-	CameraBuffer cameraBuffer;
-	cameraBuffer.viewMatrix = mActiveScene->GetMainCamera()->GetViewMatrix();
-	cameraBuffer.projectionMatrix = mActiveScene->GetMainCamera()->GetReverseProjectionMatrix();
-    cameraBuffer.viewToLightProjMatrix = identity;  //TDA need to fill these out
-    cameraBuffer.viewInvMatrix = identity;
-	D3DXMatrixTranspose(&cameraBuffer.viewMatrix, &cameraBuffer.viewMatrix);
-	D3DXMatrixTranspose(&cameraBuffer.projectionMatrix, &cameraBuffer.projectionMatrix);
-
-	mCameraConstantBuffer[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&cameraBuffer, sizeof(CameraBuffer));
-
 	DescriptorHeapHandle perFrameCameraHandle = gbufferSRVDescHeap->GetHeapHandleBlock(1);
 	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, perFrameCameraHandle.GetCPUHandle(), mCameraConstantBuffer[direct3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
@@ -242,12 +230,9 @@ void DeferredRenderer::RenderGBuffer()
 	mSceneEntity3->Render(&renderPassContext);
 }
 
-void DeferredRenderer::RenderShadows()
+void DeferredRenderer::RenderShadows(D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjMatrix)
 {
-    D3DXMATRIX lightViewMatrix;
-    D3DXMATRIX lightProjMatrix;
-
-    mShadowManager->ComputeShadowPartitions(mActiveScene->GetMainCamera(), lightViewMatrix, lightProjMatrix);
+    mShadowManager->ComputeShadowPartitions(mActiveScene->GetMainCamera(), lightViewMatrix, lightProjMatrix, mGBufferDepth);
 }
 
 void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
@@ -291,13 +276,54 @@ void DeferredRenderer::Render()
 {
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
 	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
+    Camera *mainCamera = mActiveScene->GetMainCamera();
 
+    
+    //set up the camera buffer
+    D3DXMATRIXA16 lightProj;
+    D3DXMATRIXA16 lightView;
+    D3DXMATRIX lightViewProj;
+    D3DXMATRIXA16 centerTransform;
+    Vector3 eye = mActiveScene->GetSunLight()->GetDirection() * -1.0f;
+    Vector3 at(0.0f, 0.0f, 0.0f);
+    Vector3 up(0.0f, 1.0f, 0.0f);
+    Vector3 frustumMin;
+    Vector3 frustumMax;
+
+    //to align to frustum
+    up = mainCamera->ComputeInverseRight();
+    D3DXMatrixLookAtLH(&lightView, &eye.AsD3DVector3(), &at.AsD3DVector3(), &up.AsD3DVector3());
+
+    MatrixHelper::CalculateFrustumExtentsD3DX(mainCamera->GetViewMatrix(), mainCamera->GetReverseProjectionMatrix(), mainCamera->GetScreenSettings().Far, 
+        mainCamera->GetScreenSettings().Near, lightView, frustumMin, frustumMax);
+
+    Vector3 center = (frustumMin + frustumMax) * 0.5f;
+    Vector3 dimensions = frustumMax - frustumMin;
+        
+    D3DXMatrixOrthoLH(&lightProj, dimensions.X, dimensions.Y, 0.0f, dimensions.Z);
+    D3DXMatrixTranslation(&centerTransform, -center.X, -center.Y, -frustumMin.Z);
+    lightView *= centerTransform;
+    lightViewProj = lightView * lightProj;
+
+    CameraBuffer cameraBuffer;
+    cameraBuffer.viewMatrix = mainCamera->GetViewMatrix();
+    D3DXMatrixInverse(&cameraBuffer.viewInvMatrix, NULL, &cameraBuffer.viewMatrix);
+    cameraBuffer.projectionMatrix = mainCamera->GetReverseProjectionMatrix();
+    cameraBuffer.viewToLightProjMatrix = cameraBuffer.viewInvMatrix *lightViewProj;
+
+    D3DXMatrixTranspose(&cameraBuffer.viewMatrix, &cameraBuffer.viewMatrix);
+    D3DXMatrixTranspose(&cameraBuffer.viewInvMatrix, &cameraBuffer.viewInvMatrix);
+    D3DXMatrixTranspose(&cameraBuffer.projectionMatrix, &cameraBuffer.projectionMatrix);
+    D3DXMatrixTranspose(&cameraBuffer.viewToLightProjMatrix, &cameraBuffer.viewToLightProjMatrix);
+
+    mCameraConstantBuffer[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&cameraBuffer, sizeof(CameraBuffer));
+    
 	ClearGBuffer();
 	RenderGBuffer();
-    RenderShadows();
+    RenderShadows(lightView, lightProj);
 	CopyToBackBuffer(mGBufferTargets[0]);
 
-    direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->WaitForFence(mPreviousFrameFence);
+    direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->WaitForFenceCPUBlocking(mPreviousFrameFence);
 
     mPreviousFrameFence = graphicsContext->Flush(direct3DManager->GetContextManager()->GetQueueManager());
 }

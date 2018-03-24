@@ -23,7 +23,7 @@ private:
 
 	void ClearGBuffer();
 	void RenderGBuffer();
-    void RenderShadows();
+    void RenderShadows(D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjMatrix);
 	void CopyToBackBuffer(RenderTarget *renderTargetToCopy);
 
 	GraphicsManager *mGraphicsManager;

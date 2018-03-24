@@ -59,17 +59,22 @@ bool Direct3DQueue::IsFenceComplete(uint64 fenceValue)
 	return fenceValue <= mLastCompletedFenceValue;
 }
 
-void Direct3DQueue::StallForFence(Direct3DQueue* otherQueue, uint64 fenceValue)
+void Direct3DQueue::InsertWait(uint64 fenceValue)
+{
+    mCommandQueue->Wait(mFence, fenceValue);
+}
+
+void Direct3DQueue::InsertWaitForQueueFence(Direct3DQueue* otherQueue, uint64 fenceValue)
 {
 	mCommandQueue->Wait(otherQueue->GetFence(), fenceValue);
 }
 
-void Direct3DQueue::StallForQueue(Direct3DQueue* otherQueue)
+void Direct3DQueue::InsertWaitForQueue(Direct3DQueue* otherQueue)
 {
 	mCommandQueue->Wait(otherQueue->GetFence(), otherQueue->GetNextFenceValue() - 1);
 }
 
-void Direct3DQueue::WaitForFence(uint64 fenceValue)
+void Direct3DQueue::WaitForFenceCPUBlocking(uint64 fenceValue)
 {
 	if (IsFenceComplete(fenceValue))
 	{

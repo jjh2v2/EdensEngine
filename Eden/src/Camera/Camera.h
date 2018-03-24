@@ -52,6 +52,8 @@ public:
 	bool IsBoxInView(Box box);
 	bool IsSphereInView(float xCenter, float yCenter, float zCenter, float radius);
 
+    Vector3 ComputeInverseRight();
+
 private:
 	void RebuildFrustum();
 
