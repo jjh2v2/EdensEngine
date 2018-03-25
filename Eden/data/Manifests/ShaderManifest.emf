@@ -8,3 +8,4 @@ Compute/CalculateLogPartitionsFromDepthBounds.esh
 Compute/ClearShadowPartitionBounds.esh
 Compute/CalculatePartitionBounds.esh
 Compute/FinalizePartitions.esh
+ShadowMap.esh

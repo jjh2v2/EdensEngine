@@ -8,6 +8,8 @@ Direct3DContextManager::Direct3DContextManager(ID3D12Device* device)
 	mUploadContext = new UploadContext(mDevice);
     mComputeContext = new ComputeContext(mDevice);
 	mGraphicsContext = new GraphicsContext(mDevice);
+
+    memset(mBufferTracking, 0, ContextTrackingType_Max * sizeof(uint32));
 }
 
 Direct3DContextManager::~Direct3DContextManager()
@@ -17,6 +19,11 @@ Direct3DContextManager::~Direct3DContextManager()
 	delete mGraphicsContext;
 	delete mQueueManager;
 	delete mHeapManager;
+
+    for (uint32 i = 0; i < ContextTrackingType_Max; i++)
+    {
+        Application::Assert(mBufferTracking[i] == 0);
+    }
 }
 
 void Direct3DContextManager::FinishContextsAndWaitForIdle()
@@ -187,6 +194,8 @@ ConstantBuffer *Direct3DContextManager::CreateConstantBuffer(uint32 bufferSize)
 	ConstantBuffer *constantBuffer = new ConstantBuffer(constantBufferResource, D3D12_RESOURCE_STATE_GENERIC_READ, constantBufferViewDesc, constantBufferHeapHandle);
     constantBuffer->SetIsReady(true);
 
+    mBufferTracking[ContextTrackingType_ConstantBuffer]++;
+
     return constantBuffer;
 }
 
@@ -287,17 +296,19 @@ StructuredBuffer *Direct3DContextManager::CreateStructuredBuffer(uint32 elementS
     StructuredBuffer *structuredBuffer = new StructuredBuffer(structuredBufferResource, structuredBufferUploadResource, bufferResourceState, isRaw, accessType, uavDesc, uavHandle, srvHandle);
     structuredBuffer->SetIsReady(true);
 
+    mBufferTracking[ContextTrackingType_StructuredBuffer]++;
+
     return structuredBuffer;
 }
 
-RenderTarget *Direct3DContextManager::CreateRenderTarget(uint32 width, uint32 height, DXGI_FORMAT format, bool hasUAV, uint16 arraySize, uint32 sampleCount, uint32 quality)
+RenderTarget *Direct3DContextManager::CreateRenderTarget(uint32 width, uint32 height, DXGI_FORMAT format, bool hasUAV, uint16 arraySize, uint32 sampleCount, uint32 quality, uint32 mipLevels)
 {
 	D3D12_RESOURCE_DESC targetDesc = {};
 	targetDesc.Width = width;
 	targetDesc.Height = height;
 	targetDesc.Format = format;
 	targetDesc.DepthOrArraySize = arraySize;
-	targetDesc.MipLevels = 1;
+	targetDesc.MipLevels = mipLevels;               //TDA need to actually implement this
 	targetDesc.Alignment = 0;
 	targetDesc.SampleDesc.Count = sampleCount;
 	targetDesc.SampleDesc.Quality = sampleCount > 1 ? quality : 0;
@@ -376,6 +387,8 @@ RenderTarget *Direct3DContextManager::CreateRenderTarget(uint32 width, uint32 he
 
 	RenderTarget *renderTarget = new RenderTarget(renderTargetResource, D3D12_RESOURCE_STATE_RENDER_TARGET, targetDesc, rtvHandle, rtvArrayHeapHandles,
 		srvHandle, uavHandle);
+
+    mBufferTracking[ContextTrackingType_RenderTarget]++;
 
 	return renderTarget;
 }
@@ -557,6 +570,8 @@ DepthStencilTarget *Direct3DContextManager::CreateDepthStencilTarget(uint32 widt
 	DepthStencilTarget *newDepthStencilTarget = new DepthStencilTarget(depthStencilResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, textureDesc, dsvHandle, readOnlyDSVHandle,
 		dsvArrayHeapHandles, readOnlyDSVArrayHeapHandles, srvHandle);
 
+    mBufferTracking[ContextTrackingType_DepthStencil]++;
+
 	return newDepthStencilTarget;
 }
 
@@ -578,6 +593,7 @@ void Direct3DContextManager::FreeRenderTarget(RenderTarget *renderTarget)
 	}
 
 	delete renderTarget;
+    mBufferTracking[ContextTrackingType_RenderTarget]--;
 }
 
 void Direct3DContextManager::FreeDepthStencilTarget(DepthStencilTarget *depthStencilTarget)
@@ -594,12 +610,14 @@ void Direct3DContextManager::FreeDepthStencilTarget(DepthStencilTarget *depthSte
 	}
 
 	delete depthStencilTarget;
+    mBufferTracking[ContextTrackingType_DepthStencil]--;
 }
 
 void Direct3DContextManager::FreeConstantBuffer(ConstantBuffer *constantBuffer)
 {
 	mHeapManager->FreeSRVDescriptorHeapHandle(constantBuffer->GetConstantBufferViewHandle());
 	delete constantBuffer;
+    mBufferTracking[ContextTrackingType_ConstantBuffer]--;
 }
 
 void Direct3DContextManager::FreeStructuredBuffer(StructuredBuffer *structuredBuffer)
@@ -607,4 +625,5 @@ void Direct3DContextManager::FreeStructuredBuffer(StructuredBuffer *structuredBu
     mHeapManager->FreeSRVDescriptorHeapHandle(structuredBuffer->GetUnorderedAccessViewHandle());
     mHeapManager->FreeSRVDescriptorHeapHandle(structuredBuffer->GetShaderResourceViewHandle());
     delete structuredBuffer;
+    mBufferTracking[ContextTrackingType_StructuredBuffer]--;
 }

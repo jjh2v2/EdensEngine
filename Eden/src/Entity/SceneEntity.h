@@ -1,14 +1,18 @@
 #pragma once
 #include "Render/Mesh/Mesh.h"
-#include "Render/Material/Material.h"
+
+class Material;
+class ShadowMaterial;
+class RenderPassContext;
 
 class SceneEntity
 {
 public:
-	SceneEntity(Mesh *mesh, Material *material);
+	SceneEntity(Mesh *mesh, Material *material, ShadowMaterial *shadowMaterial = NULL);
 	~SceneEntity();
 
 	Material *GetMaterial() { return mMaterial; }
+    ShadowMaterial *GetShadowMaterial() { return mShadowMaterial; }
 	Vector3 GetPosition() { return mPosition; }
 	Vector3 GetRotation() { return mRotation; }
 	Vector3 GetScale() { return mScale; }
@@ -18,14 +22,17 @@ public:
 
 	void Update();
 	void Render(RenderPassContext *renderPassContext);
+    void RenderShadows(RenderPassContext *renderPassContext, const D3DXMATRIX &lightViewProjMatrix);
 
 private:
     D3DXMATRIX GetWorldMatrix(const Vector3 &position, const Vector3 &rotation, const Vector3 &scale);
 
 	Mesh *mMesh;
 	Material *mMaterial;
+    ShadowMaterial *mShadowMaterial;
 
 	Vector3 mPosition;
 	Vector3 mRotation;
 	Vector3 mScale;
+    D3DXMATRIX mCachedWorldMatrix;
 };

@@ -18,7 +18,7 @@ public:
     ComputeContext *GetComputeContext() { return mComputeContext; }
 	UploadContext *GetUploadContext() { return mUploadContext; }
 
-	RenderTarget *CreateRenderTarget(uint32 width, uint32 height, DXGI_FORMAT format, bool hasUAV, uint16 arraySize, uint32 sampleCount, uint32 quality);
+	RenderTarget *CreateRenderTarget(uint32 width, uint32 height, DXGI_FORMAT format, bool hasUAV, uint16 arraySize, uint32 sampleCount, uint32 quality, uint32 mipLevels = 1);
 	DepthStencilTarget *CreateDepthStencilTarget(uint32 width, uint32 height, DXGI_FORMAT format, uint16 arraySize, uint32 sampleCount, uint32 quality);
 	VertexBuffer *CreateVertexBuffer(void* vertexData, uint32 vertexStride, uint32 bufferSize);
 	IndexBuffer *CreateIndexBuffer(void* indexData, uint32 bufferSize);
@@ -57,10 +57,21 @@ private:
         void *mIndexData;
     };
 
+    enum ContextTrackingType
+    {
+        ContextTrackingType_RenderTarget = 0,
+        ContextTrackingType_DepthStencil,
+        ContextTrackingType_ConstantBuffer,
+        ContextTrackingType_StructuredBuffer,
+        ContextTrackingType_Max
+    };
+
 	ID3D12Device *mDevice;
 	Direct3DHeapManager *mHeapManager;
 	Direct3DQueueManager *mQueueManager;
 	GraphicsContext *mGraphicsContext;
     ComputeContext *mComputeContext;
 	UploadContext *mUploadContext;
+
+    uint32 mBufferTracking[ContextTrackingType_Max];
 };

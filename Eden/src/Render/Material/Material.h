@@ -28,5 +28,24 @@ private:
 	ConstantBuffer *mConstantBuffer[FRAME_BUFFER_COUNT];
 	MaterialBuffer mMaterialBuffer;
 	Texture* mTextures[MaterialTextureType_Max];
-    uint32 mDirtyCheckCount;
+    bool mIsBufferDirty[FRAME_BUFFER_COUNT];
+};
+
+
+class ShadowMaterial
+{
+public:
+    ShadowMaterial(ConstantBuffer *constantBuffer[FRAME_BUFFER_COUNT]);
+    ~ShadowMaterial();
+
+    ConstantBuffer *GetConstantBuffer(uint32 frameIndex) { return mConstantBuffer[frameIndex]; }
+    ShadowMaterialBuffer *GetMaterialBuffer() { return &mMaterialBuffer; }
+    void ApplyMaterial(RenderPassContext *renderPassContext);
+
+private:
+    void CommitConstantBufferChanges(uint32 frameIndex);
+
+    ConstantBuffer *mConstantBuffer[FRAME_BUFFER_COUNT];
+    bool mIsBufferDirty[FRAME_BUFFER_COUNT];
+    ShadowMaterialBuffer mMaterialBuffer;
 };

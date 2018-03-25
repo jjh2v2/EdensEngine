@@ -1,10 +1,12 @@
 #include "Entity/SceneEntity.h"
 #include "Render/DirectX/Context/Direct3DContext.h"
+#include "Render/Material/Material.h"
 
-SceneEntity::SceneEntity(Mesh *mesh, Material *material)
+SceneEntity::SceneEntity(Mesh *mesh, Material *material, ShadowMaterial *shadowMaterial /*= NULL*/)
 {
 	mMesh = mesh;
 	mMaterial = material;
+    mShadowMaterial = shadowMaterial;
 	mPosition = Vector3(0, 0, 0);
 	mRotation = Vector3(0, 0, 0);
 	mScale = Vector3(1, 1, 1);
@@ -39,6 +41,8 @@ D3DXMATRIX SceneEntity::GetWorldMatrix(const Vector3 &position, const Vector3 &r
     D3DXMatrixMultiply(&modelMatrix, &modelMatrix, &positionMatrix);
     D3DXMatrixTranspose(&modelMatrix, &modelMatrix);
 
+    mCachedWorldMatrix = modelMatrix;
+
     return modelMatrix;
 }
 
@@ -59,4 +63,23 @@ void SceneEntity::Render(RenderPassContext *renderPassContext)
 	graphicsContext->SetVertexBuffer(0, mMesh->GetVertexBuffer());
 	graphicsContext->SetIndexBuffer(mMesh->GetIndexBuffer());
 	graphicsContext->Draw(mMesh->GetVertexCount());
+}
+
+void SceneEntity::RenderShadows(RenderPassContext *renderPassContext, const D3DXMATRIX &lightViewProjMatrix)
+{
+    if (!mMesh->IsReady() || !mShadowMaterial)
+    {
+        return;
+    }
+
+    GraphicsContext *graphicsContext = renderPassContext->GetGraphicsContext();
+
+    D3DXMATRIX lightWorldViewProjMatrix = mCachedWorldMatrix * lightViewProjMatrix;             //use cached matrix because it should not change between passes
+    mShadowMaterial->GetMaterialBuffer()->SetLightWorldViewProjMatrix(lightWorldViewProjMatrix);
+    mShadowMaterial->ApplyMaterial(renderPassContext);
+
+    graphicsContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    graphicsContext->SetVertexBuffer(0, mMesh->GetVertexBuffer());
+    graphicsContext->SetIndexBuffer(mMesh->GetIndexBuffer());
+    graphicsContext->Draw(mMesh->GetVertexCount());
 }

@@ -27,6 +27,18 @@ SDSMShadowManager::SDSMShadowManager(GraphicsManager *graphicsManager)
     mShadowPartitionBuffer = contextManager->CreateStructuredBuffer(sizeof(SDSMPartition), mShadowPreferences.PartitionCount, GPU_READ_WRITE, false);
     mShadowPartitionBoundsBuffer = contextManager->CreateStructuredBuffer(sizeof(SDSMBounds), mShadowPreferences.PartitionCount, GPU_READ_WRITE, false);
 
+    mShadowDepthTarget = contextManager->CreateDepthStencilTarget(mShadowPreferences.ShadowTextureSize, mShadowPreferences.ShadowTextureSize, DXGI_FORMAT_D32_FLOAT_S8X24_UINT,
+        1, mShadowPreferences.ShadowAntiAliasingSamples, 0);
+
+    for (uint32 i = 0; i < SDSM_SHADOW_PARTITION_COUNT; i++)
+    {
+        mShadowEVSMTextures[i] = contextManager->CreateRenderTarget(mShadowPreferences.ShadowTextureSize, mShadowPreferences.ShadowTextureSize, 
+            DXGI_FORMAT_R32G32B32A32_FLOAT, false, 1, 1, 0, 0);
+    }
+
+    mShadowEVSMBlurTexture = contextManager->CreateRenderTarget(mShadowPreferences.ShadowTextureSize, mShadowPreferences.ShadowTextureSize,
+        DXGI_FORMAT_R32G32B32A32_FLOAT, false, 1, 1, 0);
+
     mPreviousShadowPassFence = 0;
 }
 
@@ -34,6 +46,14 @@ SDSMShadowManager::~SDSMShadowManager()
 {
     Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
 
+    contextManager->FreeRenderTarget(mShadowEVSMBlurTexture);
+
+    for (uint32 i = 0; i < SDSM_SHADOW_PARTITION_COUNT; i++)
+    {
+        contextManager->FreeRenderTarget(mShadowEVSMTextures[i]);
+    }
+
+    contextManager->FreeDepthStencilTarget(mShadowDepthTarget);
     contextManager->FreeStructuredBuffer(mShadowPartitionBoundsBuffer);
     contextManager->FreeStructuredBuffer(mShadowPartitionBuffer);
 

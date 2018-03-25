@@ -2,6 +2,7 @@
 #include "Render/Shader/Definitions/ConstantBufferDefinitions.h"
 #include "Render/Shadow/SDSMShadowManager.h"
 #include "Util/Math/MatrixHelper.h"
+#include "Render/Material/Material.h"
 
 DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 {
@@ -26,13 +27,22 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
             materialConstantBuffers[i] = contextManager->CreateConstantBuffer(sizeof(MaterialConstants));
         }
 
+        ConstantBuffer *shadowConstantBuffers[FRAME_BUFFER_COUNT];
+        for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+        {
+            shadowConstantBuffers[i] = contextManager->CreateConstantBuffer(sizeof(D3DXMATRIX));
+        }
+
+        //TDA implement material manager
 		Material *newMaterial = new Material(materialConstantBuffers);
+        ShadowMaterial *shadowMaterial = new ShadowMaterial(shadowConstantBuffers);
+
 		newMaterial->SetTexture(MaterialTextureType_Diffuse, mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire"));
 		newMaterial->SetTexture(MaterialTextureType_Normal, mGraphicsManager->GetTextureManager()->GetTexture("MageNormal"));
 		newMaterial->SetTexture(MaterialTextureType_Roughmetal, mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal"));
 		newMaterial->GetMaterialBuffer()->SetUsesNormalMap(true);
 		newMaterial->GetMaterialBuffer()->SetUsesRoughmetalMap(true);
-		mSceneEntity = new SceneEntity(mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals"), newMaterial);
+		mSceneEntity = new SceneEntity(mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals"), newMaterial, shadowMaterial);
 		mSceneEntity->SetPosition(Vector3(0, -5.0f, 20.0f));
 		mSceneEntity->SetRotation(Vector3(0, MathHelper::Radian() * 180.0f, 0));
 	}
@@ -43,13 +53,21 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
             materialConstantBuffers[i] = contextManager->CreateConstantBuffer(sizeof(MaterialConstants));
         }
 
+        ConstantBuffer *shadowConstantBuffers[FRAME_BUFFER_COUNT];
+        for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+        {
+            shadowConstantBuffers[i] = contextManager->CreateConstantBuffer(sizeof(D3DXMATRIX));
+        }
+
 		Material *newMaterial = new Material(materialConstantBuffers);
+        ShadowMaterial *shadowMaterial = new ShadowMaterial(shadowConstantBuffers);
+
 		newMaterial->SetTexture(MaterialTextureType_Diffuse, mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire"));
 		newMaterial->SetTexture(MaterialTextureType_Normal, mGraphicsManager->GetTextureManager()->GetTexture("MageNormal"));
 		newMaterial->SetTexture(MaterialTextureType_Roughmetal, mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal"));
 		newMaterial->GetMaterialBuffer()->SetUsesNormalMap(true);
 		newMaterial->GetMaterialBuffer()->SetUsesRoughmetalMap(true);
-		mSceneEntity2 = new SceneEntity(mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals"), newMaterial);
+		mSceneEntity2 = new SceneEntity(mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals"), newMaterial, shadowMaterial);
 		mSceneEntity2->SetPosition(Vector3(10, -5.0f, 20.0f));
 		mSceneEntity2->SetRotation(Vector3(0, MathHelper::Radian() * 180.0f, 0));
 	}
@@ -60,13 +78,21 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
             materialConstantBuffers[i] = contextManager->CreateConstantBuffer(sizeof(MaterialConstants));
         }
 
+        ConstantBuffer *shadowConstantBuffers[FRAME_BUFFER_COUNT];
+        for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+        {
+            shadowConstantBuffers[i] = contextManager->CreateConstantBuffer(sizeof(D3DXMATRIX));
+        }
+
 		Material *newMaterial = new Material(materialConstantBuffers);
+        ShadowMaterial *shadowMaterial = new ShadowMaterial(shadowConstantBuffers);
+
 		newMaterial->SetTexture(MaterialTextureType_Diffuse, mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire"));
 		newMaterial->SetTexture(MaterialTextureType_Normal, mGraphicsManager->GetTextureManager()->GetTexture("MageNormal"));
 		newMaterial->SetTexture(MaterialTextureType_Roughmetal, mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal"));
 		newMaterial->GetMaterialBuffer()->SetUsesNormalMap(true);
 		newMaterial->GetMaterialBuffer()->SetUsesRoughmetalMap(true);
-		mSceneEntity3 = new SceneEntity(mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals"), newMaterial);
+		mSceneEntity3 = new SceneEntity(mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals"), newMaterial, shadowMaterial);
 		mSceneEntity3->SetPosition(Vector3(-10, -5.0f, 20.0f));
 		mSceneEntity3->SetRotation(Vector3(0, MathHelper::Radian() * 180.0f, 0));
 	}
@@ -90,29 +116,38 @@ DeferredRenderer::~DeferredRenderer()
 	
 	{
 		Material *material = mSceneEntity->GetMaterial();
+        ShadowMaterial *shadowMaterial = mSceneEntity->GetShadowMaterial();
         for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
         {
-            mGraphicsManager->GetDirect3DManager()->GetContextManager()->FreeConstantBuffer(material->GetConstantBuffer(i));
+            contextManager->FreeConstantBuffer(material->GetConstantBuffer(i));
+            contextManager->FreeConstantBuffer(shadowMaterial->GetConstantBuffer(i));
         }
 		delete material;
+        delete shadowMaterial;
 		delete mSceneEntity;
 	}
 	{
 		Material *material = mSceneEntity2->GetMaterial();
+        ShadowMaterial *shadowMaterial = mSceneEntity2->GetShadowMaterial();
         for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
         {
-            mGraphicsManager->GetDirect3DManager()->GetContextManager()->FreeConstantBuffer(material->GetConstantBuffer(i));
+            contextManager->FreeConstantBuffer(material->GetConstantBuffer(i));
+            contextManager->FreeConstantBuffer(shadowMaterial->GetConstantBuffer(i));
         }
 		delete material;
+        delete shadowMaterial;
 		delete mSceneEntity2;
 	}
 	{
 		Material *material = mSceneEntity3->GetMaterial();
+        ShadowMaterial *shadowMaterial = mSceneEntity3->GetShadowMaterial();
         for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
         {
-            mGraphicsManager->GetDirect3DManager()->GetContextManager()->FreeConstantBuffer(material->GetConstantBuffer(i));
+            contextManager->FreeConstantBuffer(material->GetConstantBuffer(i));
+            contextManager->FreeConstantBuffer(shadowMaterial->GetConstantBuffer(i));
         }
 		delete material;
+        delete shadowMaterial;
 		delete mSceneEntity3;
 	}
 }
@@ -267,6 +302,10 @@ void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
 	graphicsContext->SetDescriptorTable(0, copyTextureHandle.GetGPUHandle());
 	graphicsContext->SetDescriptorTable(1, copySamplerHandle.GetGPUHandle());
 
+    Vector2 screenSize = direct3DManager->GetScreenSize();
+    graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
+    graphicsContext->SetScissorRect(0, 0, (uint32)screenSize.X, (uint32)screenSize.Y);
+
 	graphicsContext->DrawFullScreenTriangle();
 
 	graphicsContext->TransitionResource(backBuffer, D3D12_RESOURCE_STATE_PRESENT, true);
@@ -320,10 +359,15 @@ void DeferredRenderer::Render()
     
 	ClearGBuffer();
 	RenderGBuffer();
+    uint64 gbufferPassFence = graphicsContext->Flush(direct3DManager->GetContextManager()->GetQueueManager());
+    
     RenderShadows(lightView, lightProj);
-	CopyToBackBuffer(mGBufferTargets[0]);
+
+    direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->InsertWait(gbufferPassFence);
 
     direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->WaitForFenceCPUBlocking(mPreviousFrameFence);
+
+	CopyToBackBuffer(mGBufferTargets[0]);
 
     mPreviousFrameFence = graphicsContext->Flush(direct3DManager->GetContextManager()->GetQueueManager());
 }

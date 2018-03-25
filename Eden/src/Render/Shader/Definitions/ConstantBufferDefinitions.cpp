@@ -89,3 +89,28 @@ void MaterialBuffer::SetUsesRoughmetalMap(const bool &usesRoughMetalMap)
 		mConstants.usesRoughMetalMap = usesRoughMetalMap ? 1 : 0;
 	}
 }
+
+void ShadowMaterialBuffer::SetLightWorldViewProjMatrix(const D3DXMATRIX &matrix)
+{
+    //usually might use memcmp but with floating point precision, better to only update when the difference > Epsilon
+    if (!MathHelper::FloatsAreEqual(matrix._11, mLightWorldViewProjMatrix._11) ||
+        !MathHelper::FloatsAreEqual(matrix._12, mLightWorldViewProjMatrix._12) ||
+        !MathHelper::FloatsAreEqual(matrix._13, mLightWorldViewProjMatrix._13) ||
+        !MathHelper::FloatsAreEqual(matrix._14, mLightWorldViewProjMatrix._14) ||
+        !MathHelper::FloatsAreEqual(matrix._21, mLightWorldViewProjMatrix._21) ||
+        !MathHelper::FloatsAreEqual(matrix._22, mLightWorldViewProjMatrix._22) ||
+        !MathHelper::FloatsAreEqual(matrix._23, mLightWorldViewProjMatrix._23) ||
+        !MathHelper::FloatsAreEqual(matrix._24, mLightWorldViewProjMatrix._24) ||
+        !MathHelper::FloatsAreEqual(matrix._31, mLightWorldViewProjMatrix._31) ||
+        !MathHelper::FloatsAreEqual(matrix._32, mLightWorldViewProjMatrix._32) ||
+        !MathHelper::FloatsAreEqual(matrix._33, mLightWorldViewProjMatrix._33) ||
+        !MathHelper::FloatsAreEqual(matrix._34, mLightWorldViewProjMatrix._34) ||
+        !MathHelper::FloatsAreEqual(matrix._41, mLightWorldViewProjMatrix._41) ||
+        !MathHelper::FloatsAreEqual(matrix._42, mLightWorldViewProjMatrix._42) ||
+        !MathHelper::FloatsAreEqual(matrix._43, mLightWorldViewProjMatrix._43) ||
+        !MathHelper::FloatsAreEqual(matrix._44, mLightWorldViewProjMatrix._44))
+    {
+        mIsDirty = true;
+        mLightWorldViewProjMatrix = matrix;
+    }
+}

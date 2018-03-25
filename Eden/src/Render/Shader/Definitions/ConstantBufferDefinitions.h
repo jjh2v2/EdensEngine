@@ -25,6 +25,12 @@ struct SDSMBuffer //per frame
     uint32 reduceTileDim;
 };
 
+
+struct ShadowRenderPartitionBuffer
+{
+    uint32 partitionIndex;
+};
+
 struct MaterialConstants
 {
 	MaterialConstants()
@@ -62,7 +68,7 @@ struct MaterialBuffer	//per object
 	const MaterialConstants &GetMaterialConstants() { return mConstants; }
 
 	void SetWorldMatrix(const D3DXMATRIX &matrix);
-	D3DXMATRIX GetWorldMatrix() { return mConstants.worldMatrix; }
+	const D3DXMATRIX &GetWorldMatrix() { return mConstants.worldMatrix; }
 
 	void SetDiffuseColor(const Color &color);
 	Color GetDiffuseColor() { return mConstants.diffuseColor; }
@@ -88,4 +94,23 @@ struct MaterialBuffer	//per object
 private:
 	bool mIsDirty;
 	MaterialConstants mConstants;
+};
+
+struct ShadowMaterialBuffer
+{
+public:
+    ShadowMaterialBuffer()
+    {
+        mIsDirty = false;
+    }
+
+    bool GetIsDirty() { return mIsDirty; }
+    void SetIsDirty(const bool &isDirty) { mIsDirty = isDirty; }
+
+    void SetLightWorldViewProjMatrix(const D3DXMATRIX &matrix);
+    const D3DXMATRIX &GetLightWorldViewProjMatrix() { return mLightWorldViewProjMatrix; }
+
+private:
+    bool mIsDirty;
+    D3DXMATRIX mLightWorldViewProjMatrix;
 };

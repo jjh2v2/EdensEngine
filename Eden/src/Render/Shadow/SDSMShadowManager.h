@@ -2,6 +2,8 @@
 #include "Render/Graphics/GraphicsManager.h"
 #include "Render/Shader/Definitions/ConstantBufferDefinitions.h"
 
+#define SDSM_SHADOW_PARTITION_COUNT 4
+
 class Camera;
 
 class SDSMShadowManager
@@ -16,7 +18,7 @@ public:
             MaxSofteningFilter = 8.0f;
             ShadowAntiAliasingSamples = 4;	//also in the evsm shader, change there
             ShadowTextureSize = 1024;
-            PartitionCount = 4;				//only currently handling exactly 4 in the shaders
+            PartitionCount = SDSM_SHADOW_PARTITION_COUNT;  //only currently handling exactly 4 in the shaders
         }
 
         bool UseSoftShadows;
@@ -38,6 +40,9 @@ private:
     ConstantBuffer *mSDSMBuffers[FRAME_BUFFER_COUNT];
     StructuredBuffer *mShadowPartitionBuffer;
     StructuredBuffer *mShadowPartitionBoundsBuffer;
+    DepthStencilTarget *mShadowDepthTarget;
+    RenderTarget *mShadowEVSMTextures[SDSM_SHADOW_PARTITION_COUNT];
+    RenderTarget *mShadowEVSMBlurTexture;
 
     ShaderPSO *mClearShadowPartitionsShader;
     ShaderPSO *mCalculateDepthBufferBoundsShader;
