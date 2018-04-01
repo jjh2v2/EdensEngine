@@ -359,11 +359,7 @@ void DeferredRenderer::Render()
     
 	ClearGBuffer();
 	RenderGBuffer();
-    uint64 gbufferPassFence = graphicsContext->Flush(direct3DManager->GetContextManager()->GetQueueManager());
-    
     RenderShadows(lightView, lightProj);
-
-    direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->InsertWait(gbufferPassFence);
 
     direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->WaitForFenceCPUBlocking(mPreviousFrameFence);
 

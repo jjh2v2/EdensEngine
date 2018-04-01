@@ -5,6 +5,7 @@
 #define SDSM_SHADOW_PARTITION_COUNT 4
 
 class Camera;
+class SceneEntity;
 
 class SDSMShadowManager
 {
@@ -33,9 +34,11 @@ public:
     ~SDSMShadowManager();
 
     void ComputeShadowPartitions(Camera *camera, D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjectionMatrix, DepthStencilTarget *depthStencil);
-    //void RenderShadowPartitions();
+    void RenderShadowMapPartitions(const D3DXMATRIX &lightViewProjMatrix);
 
 private:
+    void RenderShadowDepth(uint32 partitionIndex, const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities);
+
     GraphicsManager *mGraphicsManager;
     ConstantBuffer *mSDSMBuffers[FRAME_BUFFER_COUNT];
     StructuredBuffer *mShadowPartitionBuffer;
@@ -54,6 +57,8 @@ private:
     Vector2 mBlurSizeInLightSpace;
     SDSMShadowPreferences mShadowPreferences;
     SDSMBuffer mCurrentSDSMBuffer;
+
+    D3D12_VIEWPORT mShadowMapViewport;
 
     uint64 mPreviousShadowPassFence;
 };

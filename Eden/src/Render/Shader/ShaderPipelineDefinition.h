@@ -41,14 +41,16 @@ enum ShaderTargetStateType
 	Target_Standard_BackBuffer = 2,
 	Target_Standard_BackBuffer_NoDepth = 3,
 	Target_Single_16 = 4,
-	Target_Single_16_NoDepth = 5
+	Target_Single_16_NoDepth = 5,
+    Target_Single_32_NoDepth = 6
 };
 
 enum ShaderRenderStateType
 {
     Render_None = 0,
 	Render_Standard = 1,
-	Render_Standard_NoDepth = 2
+	Render_Standard_NoDepth = 2,
+    Render_ShadowMap = 3
 };
 
 enum ShaderInputLayoutType

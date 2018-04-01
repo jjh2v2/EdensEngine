@@ -2,6 +2,7 @@
 #include "Render/Shader/Definitions/ConstantBufferDefinitions.h"
 #include "Render/Shader/Definitions/StructuredBufferDefinitions.h"
 #include "Camera/Camera.h"
+#include "Entity/SceneEntity.h"
 
 SDSMShadowManager::SDSMShadowManager(GraphicsManager *graphicsManager)
 {
@@ -38,6 +39,14 @@ SDSMShadowManager::SDSMShadowManager(GraphicsManager *graphicsManager)
 
     mShadowEVSMBlurTexture = contextManager->CreateRenderTarget(mShadowPreferences.ShadowTextureSize, mShadowPreferences.ShadowTextureSize,
         DXGI_FORMAT_R32G32B32A32_FLOAT, false, 1, 1, 0);
+
+
+    mShadowMapViewport.Width = (float)mShadowPreferences.ShadowTextureSize;
+    mShadowMapViewport.Height = (float)mShadowPreferences.ShadowTextureSize;
+    mShadowMapViewport.MinDepth = 0.0f;
+    mShadowMapViewport.MaxDepth = 1.0f;
+    mShadowMapViewport.TopLeftX = 0.0f;
+    mShadowMapViewport.TopLeftY = 0.0f;
 
     mPreviousShadowPassFence = 0;
 }
@@ -145,8 +154,6 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     computeContext->SetDescriptorTable(0, shadowPartitionBoundsUAVHandle.GetGPUHandle());
 
     computeContext->Dispatch(1, 1, 1);
-    uint64 shadowPassFence = computeContext->Flush(queueManager);
-    computeQueue->InsertWait(shadowPassFence);
 
     ////// Find Depth Bounds
 
@@ -169,8 +176,6 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     uint32 dispatchHeight = ((uint32)direct3DManager->GetScreenSize().Y + mCurrentSDSMBuffer.reduceTileDim - 1) / mCurrentSDSMBuffer.reduceTileDim;
 
     computeContext->Dispatch(dispatchWidth, dispatchHeight, 1);
-    shadowPassFence = computeContext->Flush(queueManager);
-    computeQueue->InsertWait(shadowPassFence);
 
     ////// Get Partitions From Depth Bounds
 
@@ -186,8 +191,6 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     computeContext->SetDescriptorTable(1, shadowPartitionCBVHandle.GetGPUHandle());
 
     computeContext->Dispatch(1, 1, 1);
-    shadowPassFence = computeContext->Flush(queueManager);
-    computeQueue->InsertWait(shadowPassFence);
 
     ////// Get Partition Bounds Range From Partitions
 
@@ -211,8 +214,6 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     computeContext->SetDescriptorTable(2, shadowPartitionCBVHandle.GetGPUHandle());
 
     computeContext->Dispatch(dispatchWidth, dispatchHeight, 1);
-    shadowPassFence = computeContext->Flush(queueManager);
-    computeQueue->InsertWait(shadowPassFence);
 
     ////// Finalize Partition Bounds
 
@@ -235,44 +236,49 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     mPreviousShadowPassFence = computeContext->Flush(queueManager);
 }
 
-/*
 
-void SDSMShadowManager::RenderShadowMapPartition(Direct3DManager *direct3DManager, ID3D11ShaderResourceView* partitionSRV, unsigned int partitionIndex, D3DXMATRIX &lightView, 
-	D3DXMATRIX &lightProj, Scene &scene)
+
+void SDSMShadowManager::RenderShadowMapPartitions(const D3DXMATRIX &lightViewProjMatrix)
 {
 	// Generate raw depth map
-	RenderShadowDepth(direct3DManager, partitionSRV, lightView, lightProj, scene, partitionIndex);
+    for (uint32 i = 0; i < SDSM_SHADOW_PARTITION_COUNT; i++)
+    {
+        RenderShadowDepth(i, lightViewProjMatrix);
+    }
 
 	// Convert single depth map to an EVSM in the proper array slice
-	ConvertToEVSM(direct3DManager, partitionSRV, partitionIndex);
+	//ConvertToEVSM(direct3DManager, partitionSRV, partitionIndex);
 
-	if (mPreferences.UseSoftShadows) 
-	{
-		BoxBlur(direct3DManager, partitionIndex, partitionSRV, scene);
-	}
+	//if (mPreferences.UseSoftShadows) 
+	//{
+	//	BoxBlur(direct3DManager, partitionIndex, partitionSRV, scene);
+	//}
 
-	direct3DManager->GetDeviceContext()->GenerateMips(mShadowEVSMTextures[partitionIndex]->GetShaderResourceView());
+	//direct3DManager->GetDeviceContext()->GenerateMips(mShadowEVSMTextures[partitionIndex]->GetShaderResourceView());
 }
 
-void SDSMShadowManager::RenderShadowDepth(Direct3DManager *direct3DManager, ID3D11ShaderResourceView* partitionSRV,
-	D3DXMATRIX &lightView, D3DXMATRIX &lightProj, Scene &scene,	int partitionIndex)
+void SDSMShadowManager::RenderShadowDepth(uint32 partitionIndex, const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities)
 {
-	direct3DManager->GetDeviceContext()->ClearDepthStencilView(mShadowDepthTexture->GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+    Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
+    GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
 
-	direct3DManager->GetDeviceContext()->RSSetState(mShadowRasterizerState);
-	direct3DManager->GetDeviceContext()->RSSetViewports(1, &mShadowViewport);
+    graphicsContext->ClearDepthStencilTarget(mShadowDepthTarget->GetDepthStencilViewHandle().GetCPUHandle(), 1.0f, 0);
 
-	direct3DManager->GetDeviceContext()->OMSetDepthStencilState(mShadowDepthStencilState, 0);
-	direct3DManager->GetDeviceContext()->OMSetRenderTargets(0, 0, mShadowDepthTexture->GetDepthStencilView());
-	direct3DManager->DisableAlphaBlending();
+    graphicsContext->SetViewport(mShadowMapViewport);
+    graphicsContext->SetScissorRect(0, 0, mShadowPreferences.ShadowTextureSize, mShadowPreferences.ShadowTextureSize);
+    graphicsContext->SetDepthStencilTarget(mShadowDepthTarget->GetDepthStencilViewHandle().GetCPUHandle());
 
-	D3DXMATRIX lightViewProject = lightView * lightProj;
+    ShaderPipelinePermutation shaderPermutation(Render_ShadowMap, Target_Single_32_NoDepth, InputLayout_Standard);
+    ShaderPSO *shaderPSO = mGraphicsManager->GetShaderManager()->GetShader("ShadowMap", shaderPermutation);
+    graphicsContext->SetPipelineState(shaderPSO);
+    graphicsContext->SetRootSignature(shaderPSO->GetRootSignature());
 
-	scene.RenderToShadowMap(direct3DManager->GetDeviceContext(), partitionSRV, lightViewProject, partitionIndex);
+	//scene.RenderToShadowMap(direct3DManager->GetDeviceContext(), partitionSRV, lightViewProject, partitionIndex);
 
-	direct3DManager->ClearDeviceTargetsAndResources();
+	//direct3DManager->ClearDeviceTargetsAndResources();*/
 }
 
+/*
 void SDSMShadowManager::ConvertToEVSM(Direct3DManager *direct3DManager,	ID3D11ShaderResourceView* partitionSRV,	int partitionIndex)
 {
 	direct3DManager->SetupForFullScreenTriangle();

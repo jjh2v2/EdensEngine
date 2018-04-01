@@ -630,7 +630,7 @@ uint32 UploadContext::ClearFinishedUploads(uint64 flushCount, Direct3DQueueManag
         Direct3DUpload &submission = mUploads[(uploadStart + i) % MAX_GPU_UPLOADS];
         if (submission.IsUploading && !queueManager->GetCopyQueue()->IsFenceComplete(submission.FenceValue))
         {
-            queueManager->GetCopyQueue()->WaitForFenceCPUBlocking(submission.FenceValue);
+            queueManager->GetCopyQueue()->WaitForFenceCPUBlocking(submission.FenceValue); //TDA need to revisit this because it's not how I want this to eventually work
         }
 
         numFlushed += ClearSubmissionIfFinished(submission, queueManager) ? 1 : 0;

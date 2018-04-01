@@ -156,6 +156,9 @@ void ShaderPipelineStateCreator::BuildPipelineStates()
 	mPipelineRenderStateMap.insert(std::pair<ShaderRenderStateType, ShaderPipelineRenderState>(Render_Standard_NoDepth,
 		ShaderPipelineRenderState(mDepthStencilDescs[DepthStencil_Disabled], mRasterDescs[Raster_BackFaceCull], mBlendDescs[Blend_Disabled], D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE)));
 
+    mPipelineRenderStateMap.insert(std::pair<ShaderRenderStateType, ShaderPipelineRenderState>(Render_ShadowMap,
+        ShaderPipelineRenderState(mDepthStencilDescs[DepthStencil_WriteLessEqual], mRasterDescs[Raster_BackFaceCullNoClip], mBlendDescs[Blend_Disabled], D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE)));
+
 	ShaderPipelineTargetState gbufferTarget;
 	gbufferTarget.NumRenderTargets = 3;
 	gbufferTarget.RenderTargetFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;	//albedo
@@ -192,6 +195,13 @@ void ShaderPipelineStateCreator::BuildPipelineStates()
 	single16NoDepthTarget.DepthStencilFormat = DXGI_FORMAT_UNKNOWN;
 
 	mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_Single_16_NoDepth, single16NoDepthTarget));
+
+    ShaderPipelineTargetState single32NoDepthTarget;
+    single32NoDepthTarget.NumRenderTargets = 1;
+    single32NoDepthTarget.RenderTargetFormats[0] = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    single32NoDepthTarget.DepthStencilFormat = DXGI_FORMAT_UNKNOWN;
+
+    mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_Single_32_NoDepth, single32NoDepthTarget));
 
     ShaderPipelineInputLayout standardInputLayout;
     standardInputLayout.InputElementDescs = new D3D12_INPUT_ELEMENT_DESC[6];
