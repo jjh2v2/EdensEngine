@@ -8,6 +8,7 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 {
 	mGraphicsManager = graphicsManager;
     mPreviousFrameFence = 0;
+    mGBufferPassFence = 0;
 
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
 	Direct3DContextManager *contextManager = direct3DManager->GetContextManager();
@@ -197,7 +198,8 @@ void DeferredRenderer::ClearGBuffer()
 
 	graphicsContext->TransitionResource(mGBufferTargets[0], D3D12_RESOURCE_STATE_RENDER_TARGET, false);
 	graphicsContext->TransitionResource(mGBufferTargets[1], D3D12_RESOURCE_STATE_RENDER_TARGET, false);
-	graphicsContext->TransitionResource(mGBufferTargets[2], D3D12_RESOURCE_STATE_RENDER_TARGET, true);
+	graphicsContext->TransitionResource(mGBufferTargets[2], D3D12_RESOURCE_STATE_RENDER_TARGET, false);
+    graphicsContext->TransitionResource(mGBufferDepth, D3D12_RESOURCE_STATE_DEPTH_WRITE, true);
 
 	graphicsContext->ClearRenderTarget(mGBufferTargets[0]->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
 	graphicsContext->ClearRenderTarget(mGBufferTargets[1]->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
@@ -263,11 +265,14 @@ void DeferredRenderer::RenderGBuffer()
 	mSceneEntity->Render(&renderPassContext);
 	mSceneEntity2->Render(&renderPassContext);
 	mSceneEntity3->Render(&renderPassContext);
+
+    graphicsContext->TransitionResource(mGBufferDepth, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, true);
+    mGBufferPassFence = graphicsContext->Flush(direct3DManager->GetContextManager()->GetQueueManager());
 }
 
 void DeferredRenderer::RenderShadows(D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjMatrix)
 {
-    mShadowManager->ComputeShadowPartitions(mActiveScene->GetMainCamera(), lightViewMatrix, lightProjMatrix, mGBufferDepth);
+    mShadowManager->ComputeShadowPartitions(mActiveScene->GetMainCamera(), lightViewMatrix, lightProjMatrix, mGBufferDepth, mGBufferPassFence);
 }
 
 void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
@@ -293,6 +298,9 @@ void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
 	graphicsContext->TransitionResource(renderTargetToCopy, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
 
 	graphicsContext->SetRenderTarget(backBuffer->GetRenderTargetViewHandle().GetCPUHandle());
+    Vector2 screenSize = direct3DManager->GetScreenSize();
+    graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
+    graphicsContext->SetScissorRect(0, 0, (uint32)screenSize.X, (uint32)screenSize.Y);
 
 	ShaderPipelinePermutation bbPermutation(Render_Standard_NoDepth, Target_Standard_BackBuffer_NoDepth, InputLayout_Standard);
 	ShaderPSO *copyShader = mGraphicsManager->GetShaderManager()->GetShader("SimpleCopy", bbPermutation);
@@ -301,10 +309,6 @@ void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
 
 	graphicsContext->SetDescriptorTable(0, copyTextureHandle.GetGPUHandle());
 	graphicsContext->SetDescriptorTable(1, copySamplerHandle.GetGPUHandle());
-
-    Vector2 screenSize = direct3DManager->GetScreenSize();
-    graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
-    graphicsContext->SetScissorRect(0, 0, (uint32)screenSize.X, (uint32)screenSize.Y);
 
 	graphicsContext->DrawFullScreenTriangle();
 

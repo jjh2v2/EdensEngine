@@ -33,8 +33,8 @@ public:
     SDSMShadowManager(GraphicsManager *graphicsManager);
     ~SDSMShadowManager();
 
-    void ComputeShadowPartitions(Camera *camera, D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjectionMatrix, DepthStencilTarget *depthStencil);
-    void RenderShadowMapPartitions(const D3DXMATRIX &lightViewProjMatrix);
+    void ComputeShadowPartitions(Camera *camera, D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjectionMatrix, DepthStencilTarget *depthStencil, uint64 gbufferPassFence);
+    void RenderShadowMapPartitions(const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities);
 
 private:
     void RenderShadowDepth(uint32 partitionIndex, const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities);
@@ -46,6 +46,8 @@ private:
     DepthStencilTarget *mShadowDepthTarget;
     RenderTarget *mShadowEVSMTextures[SDSM_SHADOW_PARTITION_COUNT];
     RenderTarget *mShadowEVSMBlurTexture;
+
+    DynamicArray<ConstantBuffer*> mPartitionIndexBuffers; //these get set once at construction and never again, so we don't need them per frame buffer
 
     ShaderPSO *mClearShadowPartitionsShader;
     ShaderPSO *mCalculateDepthBufferBoundsShader;
@@ -60,7 +62,7 @@ private:
 
     D3D12_VIEWPORT mShadowMapViewport;
 
-    uint64 mPreviousShadowPassFence;
+    uint64 mComputeShadowPassFence;
 };
 
 /*

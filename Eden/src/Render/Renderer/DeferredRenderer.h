@@ -42,4 +42,5 @@ private:
 	SceneEntity *mSceneEntity3;
 
     uint64 mPreviousFrameFence;
+    uint64 mGBufferPassFence;
 };
