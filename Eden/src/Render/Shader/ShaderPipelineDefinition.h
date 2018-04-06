@@ -42,7 +42,8 @@ enum ShaderTargetStateType
 	Target_Standard_BackBuffer_NoDepth = 3,
 	Target_Single_16 = 4,
 	Target_Single_16_NoDepth = 5,
-    Target_Single_32_NoDepth = 6
+    Target_Single_32_NoDepth = 6,
+    Target_Depth_Stencil_Only_32 = 7
 };
 
 enum ShaderRenderStateType

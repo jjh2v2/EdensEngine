@@ -265,14 +265,16 @@ void SDSMShadowManager::RenderShadowMapPartitions(const D3DXMATRIX &lightViewPro
     Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
     GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
     Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
+    Direct3DQueueManager *queueManager = direct3DManager->GetContextManager()->GetQueueManager();
 
     //TDA: * mShadowPreferences.PartitionCount <--- is only for testing. Can just fill those cbv descs on the first partition and then reuse them
     uint32 numCBVSRVDescsShadowMap = shadowEntities.CurrentSize() * mShadowPreferences.PartitionCount + mShadowPreferences.PartitionCount + 1; //1 cbv per entity + X partition cbvs + 1 partition srv
-    RenderPassDescriptorHeap *shadowSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_ShadowCompute, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numCBVSRVDescsShadowMap);
+    RenderPassDescriptorHeap *shadowSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_ShadowRender, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numCBVSRVDescsShadowMap);
 
-    ShaderPipelinePermutation shadowMapPermutation(Render_ShadowMap, Target_Single_32_NoDepth, InputLayout_Standard);
+    ShaderPipelinePermutation shadowMapPermutation(Render_ShadowMap, Target_Depth_Stencil_Only_32, InputLayout_Standard);
     ShaderPSO *shadowMapShader = mGraphicsManager->GetShaderManager()->GetShader("ShadowMap", shadowMapPermutation);
 
+    queueManager->GetGraphicsQueue()->InsertWaitForQueueFence(queueManager->GetComputeQueue(), mComputeShadowPassFence);
     graphicsContext->TransitionResource(mShadowPartitionBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
 
     graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, shadowSRVDescHeap->GetHeap());
@@ -282,19 +284,21 @@ void SDSMShadowManager::RenderShadowMapPartitions(const D3DXMATRIX &lightViewPro
     DescriptorHeapHandle shadowParitionReadBuffer = shadowSRVDescHeap->GetHeapHandleBlock(1);
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowParitionReadBuffer.GetCPUHandle(), mShadowPartitionBuffer->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
+    DynamicArray<MaterialTextureType> noTexturesForThisPass;
+    RenderPassContext shadowPassContext(graphicsContext, shadowSRVDescHeap, noTexturesForThisPass, direct3DManager->GetFrameIndex());
 
 	// Generate raw depth map
     for (uint32 i = 0; i < SDSM_SHADOW_PARTITION_COUNT; i++)
     {
-        graphicsContext->SetPipelineState(shadowMapShader);
-        graphicsContext->SetRootSignature(shadowMapShader->GetRootSignature());
-
         DescriptorHeapHandle perPassParitionBuffer = shadowSRVDescHeap->GetHeapHandleBlock(1);
         direct3DManager->GetDevice()->CopyDescriptorsSimple(1, perPassParitionBuffer.GetCPUHandle(), mPartitionIndexBuffers[i]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-        
-        graphicsContext->SetDescriptorTable(1, perPassParitionBuffer.GetGPUHandle());
 
-        RenderShadowDepth(i, lightViewProjMatrix, shadowEntities);
+        graphicsContext->SetPipelineState(shadowMapShader);
+        graphicsContext->SetRootSignature(shadowMapShader->GetRootSignature());
+        graphicsContext->SetDescriptorTable(1, perPassParitionBuffer.GetGPUHandle());
+        graphicsContext->SetDescriptorTable(2, shadowParitionReadBuffer.GetGPUHandle());
+
+        RenderShadowDepth(i, &shadowPassContext, lightViewProjMatrix, shadowEntities);
     }
 
 	// Convert single depth map to an EVSM in the proper array slice
@@ -308,7 +312,7 @@ void SDSMShadowManager::RenderShadowMapPartitions(const D3DXMATRIX &lightViewPro
 	//direct3DManager->GetDeviceContext()->GenerateMips(mShadowEVSMTextures[partitionIndex]->GetShaderResourceView());
 }
 
-void SDSMShadowManager::RenderShadowDepth(uint32 partitionIndex, const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities)
+void SDSMShadowManager::RenderShadowDepth(uint32 partitionIndex, RenderPassContext *renderPassContext, const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities)
 {
     Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
     GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
@@ -316,29 +320,23 @@ void SDSMShadowManager::RenderShadowDepth(uint32 partitionIndex, const D3DXMATRI
     graphicsContext->ClearDepthStencilTarget(mShadowDepthTarget->GetDepthStencilViewHandle().GetCPUHandle(), 1.0f, 0);
     graphicsContext->SetDepthStencilTarget(mShadowDepthTarget->GetDepthStencilViewHandle().GetCPUHandle());
 
-    
-
-	//scene.RenderToShadowMap(direct3DManager->GetDeviceContext(), partitionSRV, lightViewProject, partitionIndex);
-
-	//direct3DManager->ClearDeviceTargetsAndResources();*/
+    for (uint32 i = 0; i < shadowEntities.CurrentSize(); i++)
+    {
+        shadowEntities[i]->RenderShadows(renderPassContext, lightViewProjMatrix);
+    }
 }
 
-/*
+
 void SDSMShadowManager::ConvertToEVSM(Direct3DManager *direct3DManager,	ID3D11ShaderResourceView* partitionSRV,	int partitionIndex)
 {
 	direct3DManager->SetupForFullScreenTriangle();
 	direct3DManager->UseDefaultRasterState();
 	direct3DManager->DisableAlphaBlending();
 
-	direct3DManager->GetDeviceContext()->RSSetViewports(1, &mShadowViewport);
 
 	ID3D11RenderTargetView *target = mShadowEVSMTextures[partitionIndex]->GetRenderTargetView();
 	direct3DManager->GetDeviceContext()->OMSetRenderTargets(1, &target, 0);
 
-	ShaderParams shaderParams;
-	shaderParams.ShadowMap = mShadowDepthTexture->GetShaderResourceView();
-	shaderParams.PartitionResourceView = partitionSRV;
-	shaderParams.PartitionIndex = partitionIndex;
 
 	mShadowMapToEVSMMaterial->SetShaderParameters(direct3DManager->GetDeviceContext(), shaderParams);
 	mShadowMapToEVSMMaterial->Render(direct3DManager->GetDeviceContext());
@@ -347,6 +345,7 @@ void SDSMShadowManager::ConvertToEVSM(Direct3DManager *direct3DManager,	ID3D11Sh
 	direct3DManager->ClearDeviceTargetsAndResources();
 }
 
+/*
 void SDSMShadowManager::BoxBlurPass(Direct3DManager *direct3DManager, ID3D11ShaderResourceView* input, ID3D11RenderTargetView* output, unsigned int partitionIndex,
 	ID3D11ShaderResourceView* partitionSRV, const D3D11_VIEWPORT* viewport, unsigned int dimension, Scene &scene)
 {

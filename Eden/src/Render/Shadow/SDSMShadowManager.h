@@ -37,7 +37,7 @@ public:
     void RenderShadowMapPartitions(const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities);
 
 private:
-    void RenderShadowDepth(uint32 partitionIndex, const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities);
+    void RenderShadowDepth(uint32 partitionIndex, RenderPassContext *renderPassContext, const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities);
 
     GraphicsManager *mGraphicsManager;
     ConstantBuffer *mSDSMBuffers[FRAME_BUFFER_COUNT];
