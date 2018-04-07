@@ -203,6 +203,27 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 
         mRootSignatures.Add(shadowMapSignature);
     }
+
+    {
+        //RootSignatureType_ShadowMapToEVSM
+        CD3DX12_DESCRIPTOR_RANGE ranges[3];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv at b0, partition index buffer
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); //1 srv, shadowmap, at t0
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1); //1 srv, partitions, at t1
+
+        CD3DX12_ROOT_PARAMETER rootParameters[3];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
+        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_PIXEL);
+        rootParameters[2].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_PIXEL);
+
+        RootSignatureInfo shadowMapEVSMSignature;
+        shadowMapEVSMSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&shadowMapEVSMSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &shadowMapEVSMSignature.RootSignatureBlob, &shadowMapEVSMSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, shadowMapEVSMSignature.RootSignatureBlob->GetBufferPointer(), shadowMapEVSMSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&shadowMapEVSMSignature.RootSignature)));
+
+        mRootSignatures.Add(shadowMapEVSMSignature);
+    }
 }
 
 RootSignatureManager::~RootSignatureManager()

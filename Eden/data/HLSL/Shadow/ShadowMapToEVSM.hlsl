@@ -27,7 +27,7 @@ float4 ShadowMapToEVSMPixelShader(VertexOutput input) : SV_Target
 {
     float sampleWeight = 1.0f / float(SHADOWMAP_SAMPLE_COUNT);
     int2  shadowMapCoords = int2(input.positionViewport.xy);
-    float2 exponents = GetEVSMExponents(ShadowPartitionsR[partitionIndex]);
+    float2 exponents = GetEVSMExponents(ShadowPartitionsR[pfPartitionIndex]);
     float4 average = float4(0.0f, 0.0f, 0.0f, 0.0f);
     
     [unroll] 

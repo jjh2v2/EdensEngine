@@ -1,0 +1,8 @@
+VertexShader
+[Shadow/ShadowMapToEVSM.hlsl]
+[ShadowMapToEVSMVertexShader]
+PixelShader
+[Shadow/ShadowMapToEVSM.hlsl]
+[ShadowMapToEVSMPixelShader]
+RootSignature
+[10]
