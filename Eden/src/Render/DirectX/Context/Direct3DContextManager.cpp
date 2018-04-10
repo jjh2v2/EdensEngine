@@ -308,7 +308,7 @@ RenderTarget *Direct3DContextManager::CreateRenderTarget(uint32 width, uint32 he
 	targetDesc.Height = height;
 	targetDesc.Format = format;
 	targetDesc.DepthOrArraySize = arraySize;
-	targetDesc.MipLevels = mipLevels;               //TDA need to actually implement this
+	targetDesc.MipLevels = mipLevels;
 	targetDesc.Alignment = 0;
 	targetDesc.SampleDesc.Count = sampleCount;
 	targetDesc.SampleDesc.Quality = sampleCount > 1 ? quality : 0;
@@ -403,7 +403,7 @@ DXGI_FORMAT_UNKNOWN
 A depth-stencil view can't use a typeless format. If the format chosen is DXGI_FORMAT_UNKNOWN, the format of the parent resource is used.
 https://msdn.microsoft.com/en-us/library/windows/desktop/dn770357(v=vs.85).aspx
 */
-DepthStencilTarget *Direct3DContextManager::CreateDepthStencilTarget(uint32 width, uint32 height, DXGI_FORMAT format, uint16 arraySize, uint32 sampleCount, uint32 quality)
+DepthStencilTarget *Direct3DContextManager::CreateDepthStencilTarget(uint32 width, uint32 height, DXGI_FORMAT format, uint16 arraySize, uint32 sampleCount, uint32 quality, float depthClearValue, uint8 stencilClearValue)
 {
 	DXGI_FORMAT depthStencilResourceFormat = DXGI_FORMAT_UNKNOWN;
 	DXGI_FORMAT shaderResourceViewFormat = DXGI_FORMAT_UNKNOWN;
@@ -447,8 +447,8 @@ DepthStencilTarget *Direct3DContextManager::CreateDepthStencilTarget(uint32 widt
 
 	D3D12_CLEAR_VALUE clearValue = {};
 	clearValue.Format = format;
-	clearValue.DepthStencil.Depth = 0.0f;
-	clearValue.DepthStencil.Stencil = 0;
+	clearValue.DepthStencil.Depth = depthClearValue;
+	clearValue.DepthStencil.Stencil = stencilClearValue;
 
 	D3D12_HEAP_PROPERTIES defaultHeapProperties;
 	defaultHeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;

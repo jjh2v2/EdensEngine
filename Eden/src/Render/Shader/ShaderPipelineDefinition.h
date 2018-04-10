@@ -43,7 +43,7 @@ enum ShaderTargetStateType
 	Target_Single_16 = 4,
 	Target_Single_16_NoDepth = 5,
     Target_Single_32_NoDepth = 6,
-    Target_Depth_Stencil_Only_32 = 7
+    Target_Depth_Stencil_Only_32_Sample_4 = 7
 };
 
 enum ShaderRenderStateType
@@ -105,11 +105,15 @@ struct ShaderPipelineTargetState
 		}
 
 		DepthStencilFormat = DXGI_FORMAT_UNKNOWN;
+        SampleCount = 1;
+        SampleQuality = 0;
 	}
 
 	UINT NumRenderTargets;
 	DXGI_FORMAT RenderTargetFormats[8];
 	DXGI_FORMAT DepthStencilFormat;
+    UINT SampleCount;
+    UINT SampleQuality;
 };
 
 struct ShaderPipelineRenderState

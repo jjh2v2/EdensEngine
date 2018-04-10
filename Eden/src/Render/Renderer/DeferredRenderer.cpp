@@ -251,10 +251,10 @@ void DeferredRenderer::RenderGBuffer()
 	ShaderPipelinePermutation permutation(Render_Standard, Target_GBuffer, InputLayout_Standard);
 	ShaderPSO *shaderPSO = mGraphicsManager->GetShaderManager()->GetShader("GBufferLit", permutation);
 	graphicsContext->SetPipelineState(shaderPSO);
-	graphicsContext->SetRootSignature(shaderPSO->GetRootSignature());
+	graphicsContext->SetRootSignature(shaderPSO->GetRootSignature(), NULL);
 
-	graphicsContext->SetDescriptorTable(2, perFrameCameraHandle.GetGPUHandle());
-	graphicsContext->SetDescriptorTable(3, gBufferSamplersHandle.GetGPUHandle());
+	graphicsContext->SetGraphicsDescriptorTable(2, perFrameCameraHandle.GetGPUHandle());
+	graphicsContext->SetGraphicsDescriptorTable(3, gBufferSamplersHandle.GetGPUHandle());
 
 	DynamicArray<MaterialTextureType> textureTypes;
 	textureTypes.Add(MaterialTextureType_Diffuse);
@@ -267,12 +267,20 @@ void DeferredRenderer::RenderGBuffer()
 	mSceneEntity3->Render(&renderPassContext);
 
     graphicsContext->TransitionResource(mGBufferDepth, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, true);
-    mGBufferPassFence = graphicsContext->Flush(direct3DManager->GetContextManager()->GetQueueManager());
+    //mGBufferPassFence = graphicsContext->Flush(direct3DManager->GetContextManager()->GetQueueManager());
 }
 
 void DeferredRenderer::RenderShadows(D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjMatrix)
 {
     mShadowManager->ComputeShadowPartitions(mActiveScene->GetMainCamera(), lightViewMatrix, lightProjMatrix, mGBufferDepth, mGBufferPassFence);
+    
+    D3DXMATRIX lightViewProjMatrix = lightViewMatrix * lightProjMatrix;
+    DynamicArray<SceneEntity*> sceneEntities;
+    sceneEntities.Add(mSceneEntity);
+    sceneEntities.Add(mSceneEntity2);
+    sceneEntities.Add(mSceneEntity3);
+
+    mShadowManager->RenderShadowMapPartitions(lightViewProjMatrix, sceneEntities);
 }
 
 void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
@@ -305,10 +313,10 @@ void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
 	ShaderPipelinePermutation bbPermutation(Render_Standard_NoDepth, Target_Standard_BackBuffer_NoDepth, InputLayout_Standard);
 	ShaderPSO *copyShader = mGraphicsManager->GetShaderManager()->GetShader("SimpleCopy", bbPermutation);
 	graphicsContext->SetPipelineState(copyShader);
-	graphicsContext->SetRootSignature(copyShader->GetRootSignature());
+	graphicsContext->SetRootSignature(copyShader->GetRootSignature(), NULL);
 
-	graphicsContext->SetDescriptorTable(0, copyTextureHandle.GetGPUHandle());
-	graphicsContext->SetDescriptorTable(1, copySamplerHandle.GetGPUHandle());
+	graphicsContext->SetGraphicsDescriptorTable(0, copyTextureHandle.GetGPUHandle());
+	graphicsContext->SetGraphicsDescriptorTable(1, copySamplerHandle.GetGPUHandle());
 
 	graphicsContext->DrawFullScreenTriangle();
 
@@ -364,10 +372,9 @@ void DeferredRenderer::Render()
 	ClearGBuffer();
 	RenderGBuffer();
     RenderShadows(lightView, lightProj);
+    CopyToBackBuffer(mGBufferTargets[0]);
 
     direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->WaitForFenceCPUBlocking(mPreviousFrameFence);
-
-	CopyToBackBuffer(mGBufferTargets[0]);
 
     mPreviousFrameFence = graphicsContext->Flush(direct3DManager->GetContextManager()->GetQueueManager());
 }

@@ -206,8 +206,10 @@ void ShaderPipelineStateCreator::BuildPipelineStates()
     ShaderPipelineTargetState depthStencilOnly32Target;
     depthStencilOnly32Target.NumRenderTargets = 0;
     depthStencilOnly32Target.DepthStencilFormat = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+    depthStencilOnly32Target.SampleCount = 4;
+    depthStencilOnly32Target.SampleQuality = 0;
 
-    mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_Depth_Stencil_Only_32, depthStencilOnly32Target));
+    mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_Depth_Stencil_Only_32_Sample_4, depthStencilOnly32Target));
 
     ShaderPipelineInputLayout standardInputLayout;
     standardInputLayout.InputElementDescs = new D3D12_INPUT_ELEMENT_DESC[6];

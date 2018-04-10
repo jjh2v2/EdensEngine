@@ -72,7 +72,7 @@ public:
 	GraphicsContext(ID3D12Device *device);
 	virtual ~GraphicsContext();
 
-	void SetRootSignature(ID3D12RootSignature *rootSignature);
+	void SetRootSignature(ID3D12RootSignature *graphicsRootSignature, ID3D12RootSignature *computeRootSignature);
 
 	void SetRenderTargets(uint32 numRenderTargets, const D3D12_CPU_DESCRIPTOR_HANDLE renderTargets[]);
 	void SetRenderTargets(uint32 numRenderTargets, const D3D12_CPU_DESCRIPTOR_HANDLE renderTargets[], D3D12_CPU_DESCRIPTOR_HANDLE depthStencil);
@@ -89,9 +89,9 @@ public:
 	void SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY topology);
 
 	void SetPipelineState(ShaderPSO *pipeline);
-	void SetConstants(uint32 index, uint32 numConstants, const void *bufferData);
-	void SetRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer);
-	void SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle);
+	void SetGraphicsConstants(uint32 index, uint32 numConstants, const void *bufferData);
+	void SetGraphicsRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer);
+	void SetGraphicsDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle);
 
 	void SetIndexBuffer(IndexBuffer *indexBuffer);
 	void SetVertexBuffer(uint32 slot, VertexBuffer *vertexBuffer);
@@ -106,6 +106,14 @@ public:
 		uint32 startVertexLocation = 0, uint32 startInstanceLocation = 0);
 	void DrawIndexedInstanced(uint32 indexCountPerInstance, uint32 instanceCount, uint32 startIndexLocation,
 		int32 baseVertexLocation, uint32 startInstanceLocation);
+
+    void SetComputeConstants(uint32 index, uint32 numConstants, const void *bufferData);
+    void SetComputeRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer);
+    void SetComputeDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle);
+    void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
+    void Dispatch1D(uint32 threadCountX, uint32 groupSizeX);
+    void Dispatch2D(uint32 threadCountX, uint32 threadCountY, uint32 groupSizeX, uint32 groupSizeY);
+    void Dispatch3D(uint32 threadCountX, uint32 threadCountY, uint32 threadCountZ, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ);
 
     void CopyResourceRegion(ID3D12Resource *destination, uint64 destOffset, ID3D12Resource *source, uint64 sourceOffset, uint64 numBytes);
 

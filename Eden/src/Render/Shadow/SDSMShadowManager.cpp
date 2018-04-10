@@ -29,7 +29,7 @@ SDSMShadowManager::SDSMShadowManager(GraphicsManager *graphicsManager)
     mShadowPartitionBoundsBuffer = contextManager->CreateStructuredBuffer(sizeof(SDSMBounds), mShadowPreferences.PartitionCount, GPU_READ_WRITE, false);
 
     mShadowDepthTarget = contextManager->CreateDepthStencilTarget(mShadowPreferences.ShadowTextureSize, mShadowPreferences.ShadowTextureSize, DXGI_FORMAT_D32_FLOAT_S8X24_UINT,
-        1, mShadowPreferences.ShadowAntiAliasingSamples, 0);
+        1, mShadowPreferences.ShadowAntiAliasingSamples, 0, 1.0f);
 
     for (uint32 i = 0; i < SDSM_SHADOW_PARTITION_COUNT; i++)
     {
@@ -56,8 +56,6 @@ SDSMShadowManager::SDSMShadowManager(GraphicsManager *graphicsManager)
     mShadowMapViewport.MaxDepth = 1.0f;
     mShadowMapViewport.TopLeftX = 0.0f;
     mShadowMapViewport.TopLeftY = 0.0f;
-
-    mComputeShadowPassFence = 0;
 }
 
 SDSMShadowManager::~SDSMShadowManager()
@@ -138,43 +136,35 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
 
     mSDSMBuffers[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&mCurrentSDSMBuffer, sizeof(SDSMBuffer));
 
-    Direct3DQueueManager *queueManager = direct3DManager->GetContextManager()->GetQueueManager();
-    Direct3DQueue *computeQueue = queueManager->GetComputeQueue();
-
-    computeQueue->WaitForFenceCPUBlocking(mComputeShadowPassFence); //TDA: To remove this, will need to double-buffer, but we probably won't stall on this
-
     uint32 shadowNumSRVDescs = 1;
     Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
     RenderPassDescriptorHeap *shadowSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_ShadowCompute, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), shadowNumSRVDescs);
 
-    ComputeContext *computeContext = direct3DManager->GetContextManager()->GetComputeContext();
-    computeContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, shadowSRVDescHeap->GetHeap());
+    GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
+    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, shadowSRVDescHeap->GetHeap());
 
     ////// Clear partitions
-    computeContext->TransitionResource(mShadowPartitionBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false);
-    computeContext->TransitionResource(mShadowPartitionBoundsBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
+    graphicsContext->TransitionResource(mShadowPartitionBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false);
+    graphicsContext->TransitionResource(mShadowPartitionBoundsBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
 
     DescriptorHeapHandle shadowPartitionUAVHandle = shadowSRVDescHeap->GetHeapHandleBlock(1);
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowPartitionUAVHandle.GetCPUHandle(), mShadowPartitionBuffer->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    computeContext->SetPipelineState(mClearShadowPartitionsShader);
-    computeContext->SetRootSignature(mClearShadowPartitionsShader->GetRootSignature());
-    computeContext->SetDescriptorTable(0, shadowPartitionUAVHandle.GetGPUHandle());
+    graphicsContext->SetPipelineState(mClearShadowPartitionsShader);
+    graphicsContext->SetRootSignature(NULL, mClearShadowPartitionsShader->GetRootSignature());
+    graphicsContext->SetComputeDescriptorTable(0, shadowPartitionUAVHandle.GetGPUHandle());
 
-    computeContext->Dispatch(1, 1, 1);
+    graphicsContext->Dispatch(1, 1, 1);
 
     ////// Clear Partition Bounds
     DescriptorHeapHandle shadowPartitionBoundsUAVHandle = shadowSRVDescHeap->GetHeapHandleBlock(1);
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowPartitionBoundsUAVHandle.GetCPUHandle(), mShadowPartitionBoundsBuffer->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    computeContext->SetPipelineState(mClearShadowPartitionBoundsShader);
-    computeContext->SetRootSignature(mClearShadowPartitionBoundsShader->GetRootSignature());
-    computeContext->SetDescriptorTable(0, shadowPartitionBoundsUAVHandle.GetGPUHandle());
+    graphicsContext->SetPipelineState(mClearShadowPartitionBoundsShader);
+    graphicsContext->SetRootSignature(NULL, mClearShadowPartitionBoundsShader->GetRootSignature());
+    graphicsContext->SetComputeDescriptorTable(0, shadowPartitionBoundsUAVHandle.GetGPUHandle());
 
-    computeContext->Dispatch(1, 1, 1);
-
-    ////// Find Depth Bounds
-    computeQueue->InsertWaitForQueueFence(queueManager->GetGraphicsQueue(), gbufferPassFence); //wait for the depth stencil to be done
+    graphicsContext->Dispatch(1, 1, 1);
 
     shadowPartitionUAVHandle = shadowSRVDescHeap->GetHeapHandleBlock(1);
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowPartitionUAVHandle.GetCPUHandle(), mShadowPartitionBuffer->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -185,16 +175,16 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     DescriptorHeapHandle shadowPartitionCBVHandle = shadowSRVDescHeap->GetHeapHandleBlock(1);
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowPartitionCBVHandle.GetCPUHandle(), mSDSMBuffers[direct3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    computeContext->SetPipelineState(mCalculateDepthBufferBoundsShader);
-    computeContext->SetRootSignature(mCalculateDepthBufferBoundsShader->GetRootSignature());
-    computeContext->SetDescriptorTable(0, shadowPartitionUAVHandle.GetGPUHandle());
-    computeContext->SetDescriptorTable(1, shadowPartitionSRVHandle.GetGPUHandle());
-    computeContext->SetDescriptorTable(2, shadowPartitionCBVHandle.GetGPUHandle());
+    graphicsContext->SetPipelineState(mCalculateDepthBufferBoundsShader);
+    graphicsContext->SetRootSignature(NULL, mCalculateDepthBufferBoundsShader->GetRootSignature());
+    graphicsContext->SetComputeDescriptorTable(0, shadowPartitionUAVHandle.GetGPUHandle());
+    graphicsContext->SetComputeDescriptorTable(1, shadowPartitionSRVHandle.GetGPUHandle());
+    graphicsContext->SetComputeDescriptorTable(2, shadowPartitionCBVHandle.GetGPUHandle());
 
     uint32 dispatchWidth  = ((uint32)direct3DManager->GetScreenSize().X + mCurrentSDSMBuffer.reduceTileDim - 1) / mCurrentSDSMBuffer.reduceTileDim;
     uint32 dispatchHeight = ((uint32)direct3DManager->GetScreenSize().Y + mCurrentSDSMBuffer.reduceTileDim - 1) / mCurrentSDSMBuffer.reduceTileDim;
 
-    computeContext->Dispatch(dispatchWidth, dispatchHeight, 1);
+    graphicsContext->Dispatch(dispatchWidth, dispatchHeight, 1);
 
     ////// Get Partitions From Depth Bounds
 
@@ -204,15 +194,15 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     shadowPartitionCBVHandle = shadowSRVDescHeap->GetHeapHandleBlock(1);
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowPartitionCBVHandle.GetCPUHandle(), mSDSMBuffers[direct3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    computeContext->SetPipelineState(mCalculateLogPartitionsFromDepthBoundsShader);
-    computeContext->SetRootSignature(mCalculateLogPartitionsFromDepthBoundsShader->GetRootSignature());
-    computeContext->SetDescriptorTable(0, shadowPartitionUAVHandle.GetGPUHandle());
-    computeContext->SetDescriptorTable(1, shadowPartitionCBVHandle.GetGPUHandle());
+    graphicsContext->SetPipelineState(mCalculateLogPartitionsFromDepthBoundsShader);
+    graphicsContext->SetRootSignature(NULL, mCalculateLogPartitionsFromDepthBoundsShader->GetRootSignature());
+    graphicsContext->SetComputeDescriptorTable(0, shadowPartitionUAVHandle.GetGPUHandle());
+    graphicsContext->SetComputeDescriptorTable(1, shadowPartitionCBVHandle.GetGPUHandle());
 
-    computeContext->Dispatch(1, 1, 1);
+    graphicsContext->Dispatch(1, 1, 1);
 
     ////// Get Partition Bounds Range From Partitions
-    computeContext->TransitionResource(mShadowPartitionBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, true);
+    graphicsContext->TransitionResource(mShadowPartitionBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, true);
 
     shadowPartitionBoundsUAVHandle = shadowSRVDescHeap->GetHeapHandleBlock(1);
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowPartitionBoundsUAVHandle.GetCPUHandle(), mShadowPartitionBoundsBuffer->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -227,17 +217,17 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     shadowPartitionCBVHandle = shadowSRVDescHeap->GetHeapHandleBlock(1);
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowPartitionCBVHandle.GetCPUHandle(), mSDSMBuffers[direct3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    computeContext->SetPipelineState(mCalculatePartitionBoundsShader);
-    computeContext->SetRootSignature(mCalculatePartitionBoundsShader->GetRootSignature());
-    computeContext->SetDescriptorTable(0, shadowPartitionBoundsUAVHandle.GetGPUHandle());
-    computeContext->SetDescriptorTable(1, shadowPartitionSRVHandle.GetGPUHandle());
-    computeContext->SetDescriptorTable(2, shadowPartitionCBVHandle.GetGPUHandle());
+    graphicsContext->SetPipelineState(mCalculatePartitionBoundsShader);
+    graphicsContext->SetRootSignature(NULL, mCalculatePartitionBoundsShader->GetRootSignature());
+    graphicsContext->SetComputeDescriptorTable(0, shadowPartitionBoundsUAVHandle.GetGPUHandle());
+    graphicsContext->SetComputeDescriptorTable(1, shadowPartitionSRVHandle.GetGPUHandle());
+    graphicsContext->SetComputeDescriptorTable(2, shadowPartitionCBVHandle.GetGPUHandle());
 
-    computeContext->Dispatch(dispatchWidth, dispatchHeight, 1);
+    graphicsContext->Dispatch(dispatchWidth, dispatchHeight, 1);
 
     ////// Finalize Partition Bounds
-    computeContext->TransitionResource(mShadowPartitionBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false);
-    computeContext->TransitionResource(mShadowPartitionBoundsBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, true);
+    graphicsContext->TransitionResource(mShadowPartitionBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false);
+    graphicsContext->TransitionResource(mShadowPartitionBoundsBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, true);
 
     shadowPartitionUAVHandle = shadowSRVDescHeap->GetHeapHandleBlock(1);
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowPartitionUAVHandle.GetCPUHandle(), mShadowPartitionBuffer->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -248,14 +238,13 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     shadowPartitionCBVHandle = shadowSRVDescHeap->GetHeapHandleBlock(1);
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowPartitionCBVHandle.GetCPUHandle(), mSDSMBuffers[direct3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    computeContext->SetPipelineState(mFinalizePartitionsShader);
-    computeContext->SetRootSignature(mFinalizePartitionsShader->GetRootSignature());
-    computeContext->SetDescriptorTable(0, shadowPartitionUAVHandle.GetGPUHandle());
-    computeContext->SetDescriptorTable(1, shadowPartitionSRVHandle.GetGPUHandle());
-    computeContext->SetDescriptorTable(2, shadowPartitionCBVHandle.GetGPUHandle());
+    graphicsContext->SetPipelineState(mFinalizePartitionsShader);
+    graphicsContext->SetRootSignature(NULL, mFinalizePartitionsShader->GetRootSignature());
+    graphicsContext->SetComputeDescriptorTable(0, shadowPartitionUAVHandle.GetGPUHandle());
+    graphicsContext->SetComputeDescriptorTable(1, shadowPartitionSRVHandle.GetGPUHandle());
+    graphicsContext->SetComputeDescriptorTable(2, shadowPartitionCBVHandle.GetGPUHandle());
 
-    computeContext->Dispatch(1, 1, 1);
-    mComputeShadowPassFence = computeContext->Flush(queueManager);
+    graphicsContext->Dispatch(1, 1, 1);
 }
 
 
@@ -272,12 +261,11 @@ void SDSMShadowManager::RenderShadowMapPartitions(const D3DXMATRIX &lightViewPro
     uint32 numCBVSRVDescsEVSM = 1;
     RenderPassDescriptorHeap *shadowSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_ShadowRender, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numCBVSRVDescsShadowMap + numCBVSRVDescsEVSM);
 
-    ShaderPipelinePermutation shadowMapPermutation(Render_ShadowMap, Target_Depth_Stencil_Only_32, InputLayout_Standard);
-    ShaderPipelinePermutation shadowMapEVSMPermutation(Render_ShadowMap, Target_Single_32_NoDepth, InputLayout_Standard);
+    ShaderPipelinePermutation shadowMapPermutation(Render_ShadowMap, Target_Depth_Stencil_Only_32_Sample_4, InputLayout_Standard);
+    ShaderPipelinePermutation shadowMapEVSMPermutation(Render_Standard_NoDepth, Target_Single_32_NoDepth, InputLayout_Standard);
     ShaderPSO *shadowMapShader = mGraphicsManager->GetShaderManager()->GetShader("ShadowMap", shadowMapPermutation);
     ShaderPSO *shadowMapEVSMShader = mGraphicsManager->GetShaderManager()->GetShader("ShadowMapToEVSM", shadowMapEVSMPermutation);
 
-    queueManager->GetGraphicsQueue()->InsertWaitForQueueFence(queueManager->GetComputeQueue(), mComputeShadowPassFence);
     graphicsContext->TransitionResource(mShadowPartitionBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
 
     graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, shadowSRVDescHeap->GetHeap());
@@ -300,30 +288,27 @@ void SDSMShadowManager::RenderShadowMapPartitions(const D3DXMATRIX &lightViewPro
         direct3DManager->GetDevice()->CopyDescriptorsSimple(1, perPassParitionBuffer.GetCPUHandle(), mPartitionIndexBuffers[i]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
         graphicsContext->SetPipelineState(shadowMapShader);
-        graphicsContext->SetRootSignature(shadowMapShader->GetRootSignature());
-        graphicsContext->SetDescriptorTable(1, perPassParitionBuffer.GetGPUHandle());
-        graphicsContext->SetDescriptorTable(2, shadowParitionReadBuffer.GetGPUHandle());
+        graphicsContext->SetRootSignature(shadowMapShader->GetRootSignature(), NULL);
+        graphicsContext->SetGraphicsDescriptorTable(1, perPassParitionBuffer.GetGPUHandle());
+        graphicsContext->SetGraphicsDescriptorTable(2, shadowParitionReadBuffer.GetGPUHandle());
 
         RenderShadowDepth(i, &shadowPassContext, lightViewProjMatrix, shadowEntities);
 
         graphicsContext->SetPipelineState(shadowMapEVSMShader);
-        graphicsContext->SetRootSignature(shadowMapEVSMShader->GetRootSignature());
-        graphicsContext->SetDescriptorTable(0, perPassParitionBuffer.GetGPUHandle());
-        graphicsContext->SetDescriptorTable(1, shadowMapDepthHandle.GetGPUHandle());
-        graphicsContext->SetDescriptorTable(2, shadowParitionReadBuffer.GetGPUHandle());
+        graphicsContext->SetRootSignature(shadowMapEVSMShader->GetRootSignature(), NULL);
+        graphicsContext->SetGraphicsDescriptorTable(0, perPassParitionBuffer.GetGPUHandle());
+        graphicsContext->SetGraphicsDescriptorTable(1, shadowMapDepthHandle.GetGPUHandle());
+        graphicsContext->SetGraphicsDescriptorTable(2, shadowParitionReadBuffer.GetGPUHandle());
 
         ConvertToEVSM(i);
+
+        if (mShadowPreferences.UseSoftShadows)
+        {
+            //insert blur support here
+        }
+
+        //Generate mips. Need to implement UAV per mip in render target creation.
     }
-
-	// Convert single depth map to an EVSM in the proper array slice
-	//ConvertToEVSM(direct3DManager, partitionSRV, partitionIndex);
-
-	//if (mPreferences.UseSoftShadows) 
-	//{
-	//	BoxBlur(direct3DManager, partitionIndex, partitionSRV, scene);
-	//}
-
-	//direct3DManager->GetDeviceContext()->GenerateMips(mShadowEVSMTextures[partitionIndex]->GetShaderResourceView());
 }
 
 void SDSMShadowManager::RenderShadowDepth(uint32 partitionIndex, RenderPassContext *renderPassContext, const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities)
@@ -345,7 +330,8 @@ void SDSMShadowManager::ConvertToEVSM(uint32 partitionIndex)
 {
     GraphicsContext *graphicsContext = mGraphicsManager->GetDirect3DManager()->GetContextManager()->GetGraphicsContext();
 
-    graphicsContext->TransitionResource(mShadowDepthTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
+    graphicsContext->TransitionResource(mShadowDepthTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
+    graphicsContext->TransitionResource(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, true);
     graphicsContext->SetRenderTarget(mShadowEVSMTextures[partitionIndex]->GetRenderTargetViewHandle().GetCPUHandle());
 
     graphicsContext->DrawFullScreenTriangle();

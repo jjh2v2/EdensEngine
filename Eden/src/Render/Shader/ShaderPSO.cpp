@@ -6,7 +6,11 @@ ShaderPSO::ShaderPSO(ID3D12Device* device, Shader *shader, ShaderPipelineRenderS
     pipelineStateDesc.InputLayout = layout.InputLayoutDesc;
 	pipelineStateDesc.pRootSignature = rootSignature;
 	pipelineStateDesc.VS = CD3DX12_SHADER_BYTECODE(shader->GetVertexShader());
-	pipelineStateDesc.PS = CD3DX12_SHADER_BYTECODE(shader->GetPixelShader());
+
+    if (shader->GetPixelShader())
+    {
+        pipelineStateDesc.PS = CD3DX12_SHADER_BYTECODE(shader->GetPixelShader());
+    }
 
 	if (shader->GetHullShader())
 	{
@@ -31,7 +35,8 @@ ShaderPSO::ShaderPSO(ID3D12Device* device, Shader *shader, ShaderPipelineRenderS
 	}
 
 	pipelineStateDesc.DSVFormat = targetState.DepthStencilFormat;
-	pipelineStateDesc.SampleDesc.Count = 1;
+	pipelineStateDesc.SampleDesc.Count = targetState.SampleCount;
+    pipelineStateDesc.SampleDesc.Quality = targetState.SampleQuality;
 
 	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateGraphicsPipelineState(&pipelineStateDesc, IID_PPV_ARGS(&mPipelineState)));
 

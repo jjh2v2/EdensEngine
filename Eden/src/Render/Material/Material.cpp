@@ -71,8 +71,8 @@ void Material::ApplyMaterial(RenderPassContext *renderPassContext)
 		currentTextureHandle.ptr += cbvHeap->GetDescriptorSize();
 	}
 
-	graphicsContext->SetDescriptorTable(0, textureHandle.GetGPUHandle());
-	graphicsContext->SetDescriptorTable(1, cbvHandle.GetGPUHandle());
+	graphicsContext->SetGraphicsDescriptorTable(0, textureHandle.GetGPUHandle());
+	graphicsContext->SetGraphicsDescriptorTable(1, cbvHandle.GetGPUHandle());
 }
 
 ShadowMaterial::ShadowMaterial(ConstantBuffer *constantBuffer[FRAME_BUFFER_COUNT])
@@ -119,5 +119,5 @@ void ShadowMaterial::ApplyMaterial(RenderPassContext *renderPassContext)
     CommitConstantBufferChanges(renderPassContext->GetFrameIndex());
     graphicsContext->CopyDescriptors(1, cbvHandle.GetCPUHandle(), mConstantBuffer[renderPassContext->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    graphicsContext->SetDescriptorTable(0, cbvHandle.GetGPUHandle());
+    graphicsContext->SetGraphicsDescriptorTable(0, cbvHandle.GetGPUHandle());
 }

@@ -14,7 +14,7 @@ public:
     {
         SDSMShadowPreferences()
         {
-            UseSoftShadows = true;
+            UseSoftShadows = false; //not supported yet
             SofteningAmount = 0.08f;
             MaxSofteningFilter = 8.0f;
             ShadowAntiAliasingSamples = 4;	//also in the evsm shader, change there
@@ -62,8 +62,6 @@ private:
     SDSMBuffer mCurrentSDSMBuffer;
 
     D3D12_VIEWPORT mShadowMapViewport;
-
-    uint64 mComputeShadowPassFence;
 };
 
 /*

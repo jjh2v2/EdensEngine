@@ -269,15 +269,19 @@ GraphicsContext::~GraphicsContext()
 
 }
 
-void GraphicsContext::SetRootSignature(ID3D12RootSignature *rootSignature)
+void GraphicsContext::SetRootSignature(ID3D12RootSignature *graphicsRootSignature, ID3D12RootSignature *computeRootSignature)
 {
-	if (rootSignature == mCurrentGraphicsRootSignature)
+	if (graphicsRootSignature != mCurrentGraphicsRootSignature)
 	{
-		return;
+        mCurrentGraphicsRootSignature = graphicsRootSignature;
+        mCommandList->SetGraphicsRootSignature(mCurrentGraphicsRootSignature);
 	}
 
-	mCurrentGraphicsRootSignature = rootSignature;
-	mCommandList->SetGraphicsRootSignature(mCurrentGraphicsRootSignature);
+    if (computeRootSignature != mCurrentComputeRootSignature)
+    {
+        mCurrentComputeRootSignature = computeRootSignature;
+        mCommandList->SetComputeRootSignature(mCurrentComputeRootSignature);
+    }
 }
 
 void GraphicsContext::SetRenderTargets(uint32 numRenderTargets, const D3D12_CPU_DESCRIPTOR_HANDLE renderTargets[])
@@ -345,17 +349,17 @@ void GraphicsContext::SetPipelineState(ShaderPSO *pipeline)
 	mCommandList->SetPipelineState(mCurrentGraphicsPipelineState);
 }
 
-void GraphicsContext::SetConstants(uint32 index, uint32 numConstants, const void *bufferData)
+void GraphicsContext::SetGraphicsConstants(uint32 index, uint32 numConstants, const void *bufferData)
 {
 	mCommandList->SetGraphicsRoot32BitConstants(index, numConstants, bufferData, 0);
 }
 
-void GraphicsContext::SetRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer)
+void GraphicsContext::SetGraphicsRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer)
 {
 	mCommandList->SetGraphicsRootConstantBufferView(index, constantBuffer->GetGpuAddress());
 }
 
-void GraphicsContext::SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle)
+void GraphicsContext::SetGraphicsDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle)
 {
 	mCommandList->SetGraphicsRootDescriptorTable(index, handle);
 }
@@ -424,6 +428,42 @@ void GraphicsContext::DrawIndexedInstanced(uint32 indexCountPerInstance, uint32 
 {
 	FlushResourceBarriers();
 	mCommandList->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+}
+
+void GraphicsContext::SetComputeConstants(uint32 index, uint32 numConstants, const void *bufferData)
+{
+    mCommandList->SetComputeRoot32BitConstants(index, numConstants, bufferData, 0);
+}
+
+void GraphicsContext::SetComputeRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer)
+{
+    mCommandList->SetComputeRootConstantBufferView(index, constantBuffer->GetGpuAddress());
+}
+
+void GraphicsContext::SetComputeDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle)
+{
+    mCommandList->SetComputeRootDescriptorTable(index, handle);
+}
+
+void GraphicsContext::Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
+{
+    FlushResourceBarriers();
+    mCommandList->Dispatch(groupCountX, groupCountY, groupCountZ);
+}
+
+void GraphicsContext::Dispatch1D(uint32 threadCountX, uint32 groupSizeX)
+{
+    Dispatch(MathHelper::DivideByMultipleOf(threadCountX, groupSizeX), 1, 1);
+}
+
+void GraphicsContext::Dispatch2D(uint32 threadCountX, uint32 threadCountY, uint32 groupSizeX, uint32 groupSizeY)
+{
+    Dispatch(MathHelper::DivideByMultipleOf(threadCountX, groupSizeX), MathHelper::DivideByMultipleOf(threadCountY, groupSizeY), 1);
+}
+
+void GraphicsContext::Dispatch3D(uint32 threadCountX, uint32 threadCountY, uint32 threadCountZ, uint32 groupSizeX, uint32 groupSizeY, uint32 groupSizeZ)
+{
+    Dispatch(MathHelper::DivideByMultipleOf(threadCountX, groupSizeX), MathHelper::DivideByMultipleOf(threadCountY, groupSizeY), MathHelper::DivideByMultipleOf(threadCountZ, groupSizeZ));
 }
 
 void GraphicsContext::CopyResourceRegion(ID3D12Resource *destination, uint64 destOffset, ID3D12Resource *source, uint64 sourceOffset, uint64 numBytes)
