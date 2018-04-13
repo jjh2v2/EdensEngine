@@ -16,6 +16,7 @@ enum RootSignatureType
     RootSignatureType_Finalize_Partitions = 8,
     RootSignatureType_ShadowMap = 9,
     RootSignatureType_ShadowMapToEVSM = 10,
+    RootSignatureType_GenerateMip = 11,
 	NumRootSignatures
 };
 

@@ -31,7 +31,7 @@ public:
 	void SetDescriptorHeaps(uint32 numHeaps, D3D12_DESCRIPTOR_HEAP_TYPE heapTypes[], ID3D12DescriptorHeap *heaps[]);
 	void CopyDescriptors(uint32 numDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE destinationStart, D3D12_CPU_DESCRIPTOR_HANDLE sourceStart, D3D12_DESCRIPTOR_HEAP_TYPE heapType);
 
-	void TransitionResource(GPUResource *resource, D3D12_RESOURCE_STATES newState, bool flushTransitionsImmediate = false);
+	void TransitionResource(GPUResource *resource, D3D12_RESOURCE_STATES newState, bool flushTransitionsImmediate = false, uint32 subresourceIndex = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
     void TransitionResourceDeferred(GPUResource *resource, D3D12_RESOURCE_STATES newState, bool setResourceReady = false);
 	void InsertUAVBarrier(GPUResource *resource, bool flushImmediate = false);
 	void InsertAliasBarrier(GPUResource *before, GPUResource *after, bool flushImmediate = false);
@@ -90,7 +90,9 @@ public:
 
 	void SetPipelineState(ShaderPSO *pipeline);
 	void SetGraphicsConstants(uint32 index, uint32 numConstants, const void *bufferData);
-	void SetGraphicsRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer);
+	void SetGraphicsRootConstantBuffer(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS gpuAddress);
+    void SetGraphicsRootShaderResourceView(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS gpuAddress);
+    void SetGraphicsRootUnorderedAccessView(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS gpuAddress);
 	void SetGraphicsDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle);
 
 	void SetIndexBuffer(IndexBuffer *indexBuffer);
@@ -108,8 +110,11 @@ public:
 		int32 baseVertexLocation, uint32 startInstanceLocation);
 
     void SetComputeConstants(uint32 index, uint32 numConstants, const void *bufferData);
-    void SetComputeRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer);
+    void SetComputeRootConstantBuffer(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS gpuAddress);
+    void SetComputeRootShaderResourceView(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS gpuAddress);
+    void SetComputeRootUnorderedAccessView(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS gpuAddress);
     void SetComputeDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle);
+
     void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
     void Dispatch1D(uint32 threadCountX, uint32 groupSizeX);
     void Dispatch2D(uint32 threadCountX, uint32 threadCountY, uint32 groupSizeX, uint32 groupSizeY);
@@ -129,7 +134,7 @@ public:
     void SetRootSignature(ID3D12RootSignature *rootSignature);
     void SetPipelineState(ShaderPSO *pipeline);
     void SetConstants(uint32 index, uint32 numConstants, const void *bufferData);
-    void SetRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer);
+    void SetRootConstantBuffer(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS gpuAddress);
     void SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle);
 
     void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);

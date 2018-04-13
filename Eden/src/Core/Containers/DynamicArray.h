@@ -27,7 +27,7 @@ public:
 		delete [] mArray;
 	}
 
-	T& operator[] (const uint32 index)
+	T& operator[] (const uint32 index) const
 	{
 		assert(index < mSize);
 		return mArray[index];
@@ -84,17 +84,17 @@ public:
 		return removed;
 	}
 
-	uint32 CurrentSize()
+	const uint32 CurrentSize() const 
 	{
 		return mSize;
 	}
 
-    int32 CurrentSizeSigned()
+    const int32 CurrentSizeSigned() const
     {
         return (int32)mSize;
     }
 
-	uint32 MaxSize()
+    const uint32 MaxSize() const
 	{
 		return mMaxSize;
 	}

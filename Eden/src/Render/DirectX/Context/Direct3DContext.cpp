@@ -178,7 +178,7 @@ void Direct3DContext::CopyDescriptors(uint32 numDescriptors, D3D12_CPU_DESCRIPTO
 	mDevice->CopyDescriptorsSimple(1, destinationStart, sourceStart, heapType);
 }
 
-void Direct3DContext::TransitionResource(GPUResource *resource, D3D12_RESOURCE_STATES newState, bool flushTransitionsImmediate /* = false */)
+void Direct3DContext::TransitionResource(GPUResource *resource, D3D12_RESOURCE_STATES newState, bool flushTransitionsImmediate /* = false */, uint32 subresourceIndex /*= D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES*/)
 {
 	D3D12_RESOURCE_STATES oldState = resource->GetUsageState();
 
@@ -196,7 +196,7 @@ void Direct3DContext::TransitionResource(GPUResource *resource, D3D12_RESOURCE_S
 
 		barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 		barrierDesc.Transition.pResource = resource->GetResource();
-		barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		barrierDesc.Transition.Subresource = subresourceIndex;
 		barrierDesc.Transition.StateBefore = oldState;
 		barrierDesc.Transition.StateAfter = newState;
 
@@ -354,14 +354,24 @@ void GraphicsContext::SetGraphicsConstants(uint32 index, uint32 numConstants, co
 	mCommandList->SetGraphicsRoot32BitConstants(index, numConstants, bufferData, 0);
 }
 
-void GraphicsContext::SetGraphicsRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer)
+void GraphicsContext::SetGraphicsRootConstantBuffer(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS gpuAddress)
 {
-	mCommandList->SetGraphicsRootConstantBufferView(index, constantBuffer->GetGpuAddress());
+	mCommandList->SetGraphicsRootConstantBufferView(index, gpuAddress);
+}
+
+void GraphicsContext::SetGraphicsRootShaderResourceView(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS gpuAddress)
+{
+    mCommandList->SetGraphicsRootShaderResourceView(index, gpuAddress);
+}
+
+void GraphicsContext::SetGraphicsRootUnorderedAccessView(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS gpuAddress)
+{
+    mCommandList->SetGraphicsRootUnorderedAccessView(index, gpuAddress);
 }
 
 void GraphicsContext::SetGraphicsDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle)
 {
-	mCommandList->SetGraphicsRootDescriptorTable(index, handle);
+    mCommandList->SetGraphicsRootDescriptorTable(index, handle);
 }
 
 void GraphicsContext::SetIndexBuffer(IndexBuffer *indexBuffer)
@@ -435,9 +445,19 @@ void GraphicsContext::SetComputeConstants(uint32 index, uint32 numConstants, con
     mCommandList->SetComputeRoot32BitConstants(index, numConstants, bufferData, 0);
 }
 
-void GraphicsContext::SetComputeRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer)
+void GraphicsContext::SetComputeRootConstantBuffer(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS gpuAddress)
 {
-    mCommandList->SetComputeRootConstantBufferView(index, constantBuffer->GetGpuAddress());
+    mCommandList->SetComputeRootConstantBufferView(index, gpuAddress);
+}
+
+void GraphicsContext::SetComputeRootShaderResourceView(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS gpuAddress)
+{
+    mCommandList->SetComputeRootShaderResourceView(index, gpuAddress);
+}
+
+void GraphicsContext::SetComputeRootUnorderedAccessView(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS gpuAddress)
+{
+    mCommandList->SetComputeRootUnorderedAccessView(index, gpuAddress);
 }
 
 void GraphicsContext::SetComputeDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle)
@@ -509,9 +529,9 @@ void ComputeContext::SetConstants(uint32 index, uint32 numConstants, const void 
     mCommandList->SetComputeRoot32BitConstants(index, numConstants, bufferData, 0);
 }
 
-void ComputeContext::SetRootConstantBuffer(uint32 index, ConstantBuffer *constantBuffer)
+void ComputeContext::SetRootConstantBuffer(uint32 index, D3D12_GPU_VIRTUAL_ADDRESS gpuAddress)
 {
-    mCommandList->SetComputeRootConstantBufferView(index, constantBuffer->GetGpuAddress());
+    mCommandList->SetComputeRootConstantBufferView(index, gpuAddress);
 }
 
 void ComputeContext::SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle)

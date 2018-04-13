@@ -19,6 +19,7 @@ public:
             MaxSofteningFilter = 8.0f;
             ShadowAntiAliasingSamples = 4;	//also in the evsm shader, change there
             ShadowTextureSize = 1024;
+            ShadowTextureMipLevels = 6;
             PartitionCount = SDSM_SHADOW_PARTITION_COUNT;  //only currently handling exactly 4 in the shaders
         }
 
@@ -28,6 +29,7 @@ public:
         uint32 ShadowAntiAliasingSamples;
         uint32 ShadowTextureSize;
         uint32 PartitionCount;
+        uint32 ShadowTextureMipLevels;
     };
 
     SDSMShadowManager(GraphicsManager *graphicsManager);
@@ -39,6 +41,7 @@ public:
 private:
     void RenderShadowDepth(uint32 partitionIndex, RenderPassContext *renderPassContext, const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities);
     void ConvertToEVSM(uint32 partitionIndex);
+    void GenerateMipsForShadowMap(uint32 partitionIndex, RenderPassContext *renderPassContext);
 
     GraphicsManager *mGraphicsManager;
     ConstantBuffer *mSDSMBuffers[FRAME_BUFFER_COUNT];
@@ -56,6 +59,10 @@ private:
     ShaderPSO *mClearShadowPartitionBoundsShader;
     ShaderPSO *mCalculatePartitionBoundsShader;
     ShaderPSO *mFinalizePartitionsShader;
+
+    ShaderPSO *mShadowMapShader;
+    ShaderPSO *mShadowMapEVSMShader;
+    ShaderPSO *mGenerateMipShader;
 
     Vector2 mBlurSizeInLightSpace;
     SDSMShadowPreferences mShadowPreferences;

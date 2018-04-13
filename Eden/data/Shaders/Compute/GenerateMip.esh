@@ -1,0 +1,5 @@
+ComputeShader
+[Simple/GenerateMip.hlsl]
+[GenerateMip]
+RootSignature
+[11]

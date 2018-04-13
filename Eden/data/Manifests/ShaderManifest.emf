@@ -10,3 +10,4 @@ Compute/CalculatePartitionBounds.esh
 Compute/FinalizePartitions.esh
 ShadowMap.esh
 ShadowMapToEVSM.esh
+Compute/GenerateMip.esh

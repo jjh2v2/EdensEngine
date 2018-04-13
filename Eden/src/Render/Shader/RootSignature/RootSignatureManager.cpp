@@ -1,6 +1,6 @@
 #include "Render/Shader/RootSignature/RootSignatureManager.h"
 
-//TDA: Serialize root signatures to files
+//TDA: Serialize root signatures to files, and automate this when I finally get fed up with manually adding them
 RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 {
 	//Performance is best if ranges are ordered from most frequent to least frequently changed
@@ -223,6 +223,28 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
         Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, shadowMapEVSMSignature.RootSignatureBlob->GetBufferPointer(), shadowMapEVSMSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&shadowMapEVSMSignature.RootSignature)));
 
         mRootSignatures.Add(shadowMapEVSMSignature);
+    }
+
+    {
+        //RootSignatureType_GenerateMip
+        CD3DX12_DESCRIPTOR_RANGE ranges[3];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);      //destination mip, u0
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);  //1 sampler at s0, mip sampler
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);      //source mip, t0
+
+        CD3DX12_ROOT_PARAMETER rootParameters[4];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[1].InitAsConstants(3, 0, 0, D3D12_SHADER_VISIBILITY_ALL);                //mip info, b0
+        rootParameters[2].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);    
+        rootParameters[3].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_ALL);
+
+        RootSignatureInfo generateMipSignature;
+        generateMipSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&generateMipSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &generateMipSignature.RootSignatureBlob, &generateMipSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, generateMipSignature.RootSignatureBlob->GetBufferPointer(), generateMipSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&generateMipSignature.RootSignature)));
+
+        mRootSignatures.Add(generateMipSignature);
     }
 }
 

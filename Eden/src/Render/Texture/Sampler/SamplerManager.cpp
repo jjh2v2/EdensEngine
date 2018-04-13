@@ -29,7 +29,7 @@ SamplerManager::SamplerManager(Direct3DManager *direct3DManager)
 		mSamplerLookup.insert(std::pair<SamplerType, Sampler*>(SAMPLER_DEFAULT_ANISO, newSampler));
 		mSamplers.Add(newSampler);
 	}
-	
+
 	{
 		D3D12_SAMPLER_DESC desc;
 		desc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
@@ -54,6 +54,31 @@ SamplerManager::SamplerManager(Direct3DManager *direct3DManager)
 		mSamplerLookup.insert(std::pair<SamplerType, Sampler*>(SAMPLER_DEFAULT_POINT, newSampler));
 		mSamplers.Add(newSampler);
 	}
+
+    {
+        D3D12_SAMPLER_DESC desc;
+        desc.Filter = D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+        desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        desc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        desc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        desc.MipLODBias = 0.0f;
+        desc.MaxAnisotropy = 1;
+        desc.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+        desc.BorderColor[0] = 0;
+        desc.BorderColor[1] = 0;
+        desc.BorderColor[2] = 0;
+        desc.BorderColor[3] = 0;
+        desc.MinLOD = 0;
+        desc.MaxLOD = D3D12_FLOAT32_MAX;
+
+        DescriptorHeapHandle samplerHandle = mHeapManager->GetNewSamplerDescriptorHeapHandle();
+        device->CreateSampler(&desc, samplerHandle.GetCPUHandle());
+
+        Sampler *newSampler = new Sampler(samplerHandle);
+
+        mSamplerLookup.insert(std::pair<SamplerType, Sampler*>(SAMPLER_DEFAULT_LINEAR_POINT, newSampler));
+        mSamplers.Add(newSampler);
+    }
 }
 
 SamplerManager::~SamplerManager()

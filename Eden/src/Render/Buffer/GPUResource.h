@@ -65,25 +65,30 @@ public:
 		}
 
 		bool HasUAV;
-		DescriptorHeapHandle Handle;
+        DescriptorHeapHandle BaseHandle;
+		DynamicArray<DescriptorHeapHandle> Handles;
 	};
 
 	RenderTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_RESOURCE_DESC renderTargetDesc, DescriptorHeapHandle renderTargetViewHandle, 
-		DynamicArray<DescriptorHeapHandle> &renderTargetViewArray, DescriptorHeapHandle shaderResourceViewHandle, UAVHandle unorderedAccessViewHandle);
+		DynamicArray<DescriptorHeapHandle> &renderTargetViewArray, DescriptorHeapHandle shaderResourceViewHandle, const UAVHandle &unorderedAccessView);
 	virtual ~RenderTarget();
 
 	DescriptorHeapHandle GetRenderTargetViewHandle() { return mRenderTargetViewHandle; }
 	DescriptorHeapHandle GetRenderTargetViewHandle(uint32 index) { return mRenderTargetViewArray[index]; }
 	const DynamicArray<DescriptorHeapHandle> &GetRenderTargetViewArray() { return mRenderTargetViewArray; }
 	DescriptorHeapHandle GetShaderResourceViewHandle() { return mShaderResourceViewHandle; }
-	UAVHandle GetUnorderedAccessViewHandle() { return mUnorderedAccessViewHandle; }
+    DescriptorHeapHandle GetUnorderedAccessViewHandle(uint32 mipIndex, uint32 arrayIndex = 0);
+    DescriptorHeapHandle GetUnorderedAccessViewHandle() { return mUnorderedAccessView.BaseHandle; }
+
+    bool GetHasUAV() { return mUnorderedAccessView.HasUAV; }
 	uint16 GetArraySize() { return mRenderTargetDesc.DepthOrArraySize; }
+    uint16 GetMipCount() { return mRenderTargetDesc.MipLevels; }
 
 private:
 	D3D12_RESOURCE_DESC	 mRenderTargetDesc;
 	DescriptorHeapHandle mRenderTargetViewHandle;
 	DescriptorHeapHandle mShaderResourceViewHandle;
-	UAVHandle mUnorderedAccessViewHandle;
+	UAVHandle mUnorderedAccessView;
 	DynamicArray<DescriptorHeapHandle> mRenderTargetViewArray;
 };
 

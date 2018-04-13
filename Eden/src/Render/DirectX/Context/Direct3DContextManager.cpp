@@ -303,6 +303,8 @@ StructuredBuffer *Direct3DContextManager::CreateStructuredBuffer(uint32 elementS
 
 RenderTarget *Direct3DContextManager::CreateRenderTarget(uint32 width, uint32 height, DXGI_FORMAT format, bool hasUAV, uint16 arraySize, uint32 sampleCount, uint32 quality, uint32 mipLevels)
 {
+    Application::Assert(mipLevels > 0); //miplevels == 0 is valid for the desc, but it should always be possible to be explicit
+
 	D3D12_RESOURCE_DESC targetDesc = {};
 	targetDesc.Width = width;
 	targetDesc.Height = height;
@@ -343,13 +345,43 @@ RenderTarget *Direct3DContextManager::CreateRenderTarget(uint32 width, uint32 he
 	mDevice->CreateShaderResourceView(renderTargetResource, NULL, srvHandle.GetCPUHandle());
 	mDevice->CreateRenderTargetView(renderTargetResource, NULL, rtvHandle.GetCPUHandle());
 
-	RenderTarget::UAVHandle uavHandle;
-	uavHandle.HasUAV = hasUAV;
+	RenderTarget::UAVHandle targetUAVHandle;
+    targetUAVHandle.HasUAV = hasUAV;
 
 	if (hasUAV)
 	{
-		uavHandle.Handle = mHeapManager->GetNewSRVDescriptorHeapHandle();
-		mDevice->CreateUnorderedAccessView(renderTargetResource, NULL, NULL, uavHandle.Handle.GetCPUHandle());
+        targetUAVHandle.BaseHandle = mHeapManager->GetNewSRVDescriptorHeapHandle();
+        mDevice->CreateUnorderedAccessView(renderTargetResource, NULL, NULL, targetUAVHandle.BaseHandle.GetCPUHandle());
+
+        D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+        uavDesc.Format = format;
+        uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+
+        if (arraySize > 1)
+        {
+            uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+        }
+
+        for (uint32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
+        {
+            for (uint32 mipIndex = 0; mipIndex < mipLevels; mipIndex++)
+            {
+                if (arraySize > 1)
+                {
+                    uavDesc.Texture2DArray.ArraySize = 1;
+                    uavDesc.Texture2DArray.FirstArraySlice = arrayIndex;
+                    uavDesc.Texture2DArray.MipSlice = mipIndex;
+                }
+                else
+                {
+                    uavDesc.Texture2D.MipSlice = mipIndex;
+                }
+                
+                DescriptorHeapHandle uavHandle = mHeapManager->GetNewSRVDescriptorHeapHandle();
+                mDevice->CreateUnorderedAccessView(renderTargetResource, NULL, &uavDesc, uavHandle.GetCPUHandle());
+                targetUAVHandle.Handles.Add(uavHandle);
+            }
+        }
 	}
 
 	DynamicArray<DescriptorHeapHandle> rtvArrayHeapHandles;
@@ -386,7 +418,7 @@ RenderTarget *Direct3DContextManager::CreateRenderTarget(uint32 width, uint32 he
 	}
 
 	RenderTarget *renderTarget = new RenderTarget(renderTargetResource, D3D12_RESOURCE_STATE_RENDER_TARGET, targetDesc, rtvHandle, rtvArrayHeapHandles,
-		srvHandle, uavHandle);
+		srvHandle, targetUAVHandle);
 
     mBufferTracking[ContextTrackingType_RenderTarget]++;
 
@@ -579,11 +611,18 @@ void Direct3DContextManager::FreeRenderTarget(RenderTarget *renderTarget)
 {
 	mHeapManager->FreeRTVDescriptorHeapHandle(renderTarget->GetRenderTargetViewHandle());
 	mHeapManager->FreeSRVDescriptorHeapHandle(renderTarget->GetShaderResourceViewHandle());
-	RenderTarget::UAVHandle uavHandle = renderTarget->GetUnorderedAccessViewHandle();
 
-	if (uavHandle.HasUAV)
+	if (renderTarget->GetHasUAV())
 	{
-		mHeapManager->FreeSRVDescriptorHeapHandle(uavHandle.Handle);
+		mHeapManager->FreeSRVDescriptorHeapHandle(renderTarget->GetUnorderedAccessViewHandle()); //base UAV
+
+        for (uint32 arrayIndex = 0; arrayIndex < renderTarget->GetArraySize(); arrayIndex++)
+        {
+            for (uint32 mipIndex = 0; mipIndex < renderTarget->GetMipCount(); mipIndex++)
+            {
+                mHeapManager->FreeSRVDescriptorHeapHandle(renderTarget->GetUnorderedAccessViewHandle(mipIndex, arrayIndex));
+            }
+        }
 	}
 
 	uint16 targetArraySize = renderTarget->GetArraySize() - 1;

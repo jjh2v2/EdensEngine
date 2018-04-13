@@ -40,25 +40,42 @@ BackBufferTarget::~BackBufferTarget()
 }
 
 RenderTarget::RenderTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_RESOURCE_DESC renderTargetDesc, DescriptorHeapHandle renderTargetViewHandle,
-	DynamicArray<DescriptorHeapHandle> &renderTargetViewArray, DescriptorHeapHandle shaderResourceViewHandle, UAVHandle unorderedAccessViewHandle)
+	DynamicArray<DescriptorHeapHandle> &renderTargetViewArray, DescriptorHeapHandle shaderResourceViewHandle, const UAVHandle &unorderedAccessView)
 	:GPUResource(resource, usageState)
 {
 	mRenderTargetDesc = renderTargetDesc;
 	mRenderTargetViewHandle = renderTargetViewHandle;
 	mShaderResourceViewHandle = shaderResourceViewHandle;
-	mUnorderedAccessViewHandle = unorderedAccessViewHandle;
-    mIsReady = true;
+    mUnorderedAccessView.HasUAV = unorderedAccessView.HasUAV;
+    mUnorderedAccessView.BaseHandle = unorderedAccessView.BaseHandle;
+
+    for (uint32 i = 0; i < unorderedAccessView.Handles.CurrentSize(); i++)
+    {
+        mUnorderedAccessView.Handles.Add(unorderedAccessView.Handles[i]);
+    }
 
 	for (uint32 i = 0; i < renderTargetViewArray.CurrentSize(); i++)
 	{
 		mRenderTargetViewArray.Add(renderTargetViewArray[i]);
 	}
+
+    mIsReady = true;
 }
 
 RenderTarget::~RenderTarget()
 {
 
 }
+
+DescriptorHeapHandle RenderTarget::GetUnorderedAccessViewHandle(uint32 mipIndex, uint32 arrayIndex)
+{
+    Application::Assert(mUnorderedAccessView.HasUAV);
+    Application::Assert(mRenderTargetDesc.MipLevels > mipIndex);
+    Application::Assert(mRenderTargetDesc.DepthOrArraySize > arrayIndex);
+
+    return mUnorderedAccessView.Handles[arrayIndex * mRenderTargetDesc.MipLevels + mipIndex];
+}
+
 
 DepthStencilTarget::DepthStencilTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_RESOURCE_DESC depthStencilDesc, DescriptorHeapHandle depthStencilViewHandle, DescriptorHeapHandle readOnlyDepthStencilViewHandle,
 	DynamicArray<DescriptorHeapHandle> &depthStencilViewArray, DynamicArray<DescriptorHeapHandle> &readOnlyDepthStencilViewArray, DescriptorHeapHandle shaderResourceViewHandle)

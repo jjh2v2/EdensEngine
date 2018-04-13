@@ -7,7 +7,8 @@
 enum SamplerType
 {
 	SAMPLER_DEFAULT_ANISO = 0,
-	SAMPLER_DEFAULT_POINT = 1
+	SAMPLER_DEFAULT_POINT = 1,
+    SAMPLER_DEFAULT_LINEAR_POINT = 2
 };
 
 class SamplerManager
