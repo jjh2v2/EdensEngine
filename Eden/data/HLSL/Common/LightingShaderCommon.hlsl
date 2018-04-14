@@ -26,22 +26,10 @@ int RoughnessToMipLevel(float roughness, int mipCount)
 	return mipCount - 6 - 1.15 * log2(roughness);
 }
 
-float3 CalculateSpecularIBL(int mipLevels, float3 specularColor, float roughness, float nDotV, float3 reflection)
+float3 CalculateSpecularIBL(int mipLevels, float3 specularColor, float roughness, float nDotV, float3 reflection, TextureCube envMap, Texture2D<float2> envLookup, SamplerState envSampler)
 {
-	float3 prefilteredColor = gEnvironmentMap.SampleLevel(gEnvironmentSampler, reflection, mipLevels - RoughnessToMipLevel(roughness, mipLevels)).rgb;
-	prefilteredColor = pow(prefilteredColor, 2.2);
-	float2 envBRDF = saturate(EnvBRDFLookupTexture.Sample(gEnvironmentSampler, saturate(float2(roughness, nDotV))));
+	float3 prefilteredColor = envMap.SampleLevel(envSampler, reflection, mipLevels - RoughnessToMipLevel(roughness, mipLevels)).rgb;
+	prefilteredColor = pow(abs(prefilteredColor), 2.2);
+	float2 envBRDF = saturate(envLookup.Sample(envSampler, saturate(float2(roughness, nDotV))));
 	return prefilteredColor * (specularColor * envBRDF.x + envBRDF.y);
-}
-
-float3 ApplyFog(float3 pixelColor, float distance, float3 viewDir, float3 lightDir)
-{
-	float fogAmount = 1.0 - exp(-distance * 3.0);
-    float sunAmount = max(dot(viewDir, lightDir), 0.0);
-    float3 fogColor = lerp(pow(float3(0.5,0.6,0.7), 2.2), // bluish
-                           pow(float3(1.0,0.9,0.7), 2.2), // yellowish
-                           saturate(pow(sunAmount,8.0)));
-	
-	fogColor = lerp(pixelColor, fogColor, pow(fogAmount, 6.0) ;
-	return fogColor;
 }

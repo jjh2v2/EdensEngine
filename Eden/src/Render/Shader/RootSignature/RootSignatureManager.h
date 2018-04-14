@@ -18,6 +18,7 @@ enum RootSignatureType
     RootSignatureType_ShadowMapToEVSM = 10,
     RootSignatureType_GenerateMip = 11,
     RootSignatureType_SkyBox = 12,
+    RootSignatureType_LightingMain = 13,
 	NumRootSignatures
 };
 

@@ -12,3 +12,4 @@ ShadowMap.esh
 ShadowMapToEVSM.esh
 Compute/GenerateMip.esh
 SkyBox.esh
+LightingMain.esh

@@ -23,7 +23,7 @@ VertexOutput SkyBoxVertexShader(VertexInput input)
 {
     VertexOutput output;
     input.position.w = 1.0f;
-    output.skyBoxPos = input.position;
+    output.skyBoxPosition = input.position.xyz;
     output.position = mul(input.position, pfWVPMatrix);
     
     return output;
@@ -32,8 +32,8 @@ VertexOutput SkyBoxVertexShader(VertexInput input)
 float4 SkyBoxPixelShader(VertexOutput input): SV_TARGET
 {
     float4 color;
-	color = pow(EnvironmentMap1.Sample(EnvironmentSampler, normalize(input.skyBoxPos.xyz)), 2.2);
-	color = lerp(color, pow(EnvironmentMap2.Sample(EnvironmentSampler, normalize(input.skyBoxPos.xyz)), 2.2), pfFade);
+	color = pow(abs(EnvironmentMap1.Sample(EnvironmentSampler, normalize(input.skyBoxPosition.xyz))), 2.2);
+	color = lerp(color, pow(abs(EnvironmentMap2.Sample(EnvironmentSampler, normalize(input.skyBoxPosition.xyz))), 2.2), pfFade);
 	color.a = 1.0;
     
     return color;

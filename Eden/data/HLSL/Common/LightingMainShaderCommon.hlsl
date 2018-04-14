@@ -1,4 +1,5 @@
-#include "../Common/ShaderCommon.hlsl"
+#include "../Common/LightingShaderCommon.hlsl"
+#include "../Common/ShadowShaderCommon.hlsl"
 
 struct LightingMainVertexOutput
 {
@@ -9,47 +10,43 @@ struct LightingMainVertexOutput
 struct LightingSurface
 {
     float4 albedo;
+    float4 material;
 	float3 normal;
-	float4 material;
     float3 lightTexCoord;        
     float3 lightTexCoordDX;
     float3 lightTexCoordDY;
+    float3 positionView;
 	float  zDepth;
 };
 
-cbuffer LightingPassPerFrameBuffer : register(b0)
+cbuffer LightingPassBuffer : register(b0)
 {
 	matrix pfViewMatrix;
     matrix pfProjectionMatrix;
 	matrix pfViewToLightProjMatrix;
 	matrix pfViewInvMatrix;
+    float4 pfSkyColor;
+    float4 pfGroundColor;
+	float4 pfLightDir;
+	float3 pfLightColor;
+    float2 pfBufferDimensions;
+	float  pfLightIntensity;
+	float  pfAmbientIntensity;
+	float  pfBRDFspecular;
+    uint   pfSpecularIBLMipLevels;
 };
 
-cbuffer LightBuffer
-{
-	float4 skyColor;
-    float4 groundColor;
-	float4 lightDir;
-	float4 lightColor;
-	float lightIntensity;
-	float ambientIntensity;
-	float brdfspecular;
-};
+Texture2D GBufferTextures[4] : register(t0);
+Texture2DArray ShadowTextures[4] : register(t4);
+TextureCube EnvironmentMap : register(t8);
+Texture2D<float2> EnvBRDFLookupTexture : register(t9);
+StructuredBuffer<ShadowPartition> ShadowPartitions : register(t10);
+SamplerState ShadowSampler : register(s0);
+SamplerState EnvironmentSampler : register(s1);
 
-Texture2D GBufferTextures[4];
-Texture2DArray ShadowTextures[4];
-TextureCube EnvironmentMap;
-Texture2D<float2> EnvBRDFLookupTexture;
-StructuredBuffer<ShadowPartition> ShadowPartitions;
-SamplerState ShadowSampler;
-SamplerState EnvironmentSampler;
-
-LightingSurface GetLightingSurfaceFromGBuffer(uint2 coords, float3 positionView)
+LightingSurface GetLightingSurfaceFromGBuffer(uint2 coords)
 {
-    float2 bufferDimensions;
-    GBufferTextures[0].GetDimensions(bufferDimensions.x, bufferDimensions.y);
-    
-    float2 screenPixelOffset = float2(2.0f, -2.0f) / bufferDimensions;
+    float2 screenPixelOffset = float2(2.0f, -2.0f) / pfBufferDimensions;
     float2 positionScreen = (float2(coords.xy) + 0.5f) * screenPixelOffset.xy + float2(-1.0f, 1.0f);
     
     LightingSurface surface;
@@ -58,14 +55,15 @@ LightingSurface GetLightingSurfaceFromGBuffer(uint2 coords, float3 positionView)
 	surface.material = GBufferTextures[2][coords];
 	surface.zDepth   = GBufferTextures[3][coords].r;
     surface.normal   = DecodeSphereMap(normal.xy);
+    surface.positionView = GetViewPosition(coords, pfBufferDimensions, surface.zDepth, pfProjectionMatrix);
     
 	float2 positionScreenX = positionScreen + float2(screenPixelOffset.x, 0.0f);
     float2 positionScreenY = positionScreen + float2(0.0f, screenPixelOffset.y);
-	float3 positionViewDX = GetViewPosition(positionScreenX, positionView.z + normal.z) - positionView;
-    float3 positionViewDY = GetViewPosition(positionScreenY, positionView.z + normal.w) - positionView;
-    surface.lightTexCoord = ViewPositionToLightTexCoord(positionView);
-    surface.lightTexCoordDX = 0.5 * (ViewPositionToLightTexCoord(positionView + 2.0 * positionViewDX) - surface.lightTexCoord);
-    surface.lightTexCoordDY = 0.5 * (ViewPositionToLightTexCoord(positionView + 2.0 * positionViewDY) - surface.lightTexCoord);
+	float3 positionViewDX = GetViewPosition(positionScreenX, surface.positionView.z + normal.z, pfProjectionMatrix) - surface.positionView;
+    float3 positionViewDY = GetViewPosition(positionScreenY, surface.positionView.z + normal.w, pfProjectionMatrix) - surface.positionView;
+    surface.lightTexCoord = ViewPositionToLightTexCoord(surface.positionView, pfViewToLightProjMatrix);
+    surface.lightTexCoordDX = 0.5 * (ViewPositionToLightTexCoord(surface.positionView + 2.0 * positionViewDX, pfViewToLightProjMatrix) - surface.lightTexCoord);
+    surface.lightTexCoordDY = 0.5 * (ViewPositionToLightTexCoord(surface.positionView + 2.0 * positionViewDY, pfViewToLightProjMatrix) - surface.lightTexCoord);
     
     return surface;
 }

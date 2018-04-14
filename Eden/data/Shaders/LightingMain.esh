@@ -1,0 +1,8 @@
+VertexShader
+[Lighting/LightingMain.hlsl]
+[LightingMainVertexShader]
+PixelShader
+[Lighting/LightingMain.hlsl]
+[LightingMainPixelShader]
+RootSignature
+[13]
