@@ -178,7 +178,7 @@ void Direct3DContext::CopyDescriptors(uint32 numDescriptors, D3D12_CPU_DESCRIPTO
 	mDevice->CopyDescriptorsSimple(1, destinationStart, sourceStart, heapType);
 }
 
-void Direct3DContext::TransitionResource(GPUResource *resource, D3D12_RESOURCE_STATES newState, bool flushTransitionsImmediate /* = false */, uint32 subresourceIndex /*= D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES*/)
+void Direct3DContext::TransitionResource(GPUResource *resource, D3D12_RESOURCE_STATES newState, bool flushTransitionsImmediate /* = false */)
 {
 	D3D12_RESOURCE_STATES oldState = resource->GetUsageState();
 
@@ -196,20 +196,10 @@ void Direct3DContext::TransitionResource(GPUResource *resource, D3D12_RESOURCE_S
 
 		barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 		barrierDesc.Transition.pResource = resource->GetResource();
-		barrierDesc.Transition.Subresource = subresourceIndex;
+		barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 		barrierDesc.Transition.StateBefore = oldState;
 		barrierDesc.Transition.StateAfter = newState;
-
-		// Check to see if we already started the transition
-		if (newState == resource->GetTransitionState())
-		{
-			barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_END_ONLY;
-			resource->SetTransitionState(D3D12_GPU_RESOURCE_STATE_UNKNOWN);
-		}
-		else
-		{
-			barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		}
+        barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 
 		resource->SetUsageState(newState);
 	}
@@ -222,6 +212,43 @@ void Direct3DContext::TransitionResource(GPUResource *resource, D3D12_RESOURCE_S
 	{
 		FlushResourceBarriers();
 	}
+}
+
+void Direct3DContext::TransitionResourceExplicit(GPUResource *resource, D3D12_RESOURCE_STATES oldState, D3D12_RESOURCE_STATES newState, uint32 subresourceIndex, bool setResourceUsageState, bool flushTransitionsImmediate)
+{
+    if (mContextType == D3D12_COMMAND_LIST_TYPE_COMPUTE)
+    {
+        Application::Assert((oldState & VALID_COMPUTE_QUEUE_RESOURCE_STATES) == oldState);
+        Application::Assert((newState & VALID_COMPUTE_QUEUE_RESOURCE_STATES) == newState);
+    }
+
+    if (oldState != newState)
+    {
+        Application::Assert(mNumBarriersToFlush < BARRIER_LIMIT);
+        D3D12_RESOURCE_BARRIER &barrierDesc = mResourceBarrierBuffer[mNumBarriersToFlush];
+        mNumBarriersToFlush++;
+
+        barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barrierDesc.Transition.pResource = resource->GetResource();
+        barrierDesc.Transition.Subresource = subresourceIndex;
+        barrierDesc.Transition.StateBefore = oldState;
+        barrierDesc.Transition.StateAfter = newState;
+        barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+
+        if (setResourceUsageState)
+        {
+            resource->SetUsageState(newState);
+        }
+    }
+    else if (newState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
+    {
+        InsertUAVBarrier(resource, flushTransitionsImmediate);
+    }
+
+    if (flushTransitionsImmediate || mNumBarriersToFlush == BARRIER_LIMIT)
+    {
+        FlushResourceBarriers();
+    }
 }
 
 void Direct3DContext::InsertUAVBarrier(GPUResource *resource, bool flushImmediate /* = false */)

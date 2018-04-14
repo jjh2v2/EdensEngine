@@ -1,0 +1,8 @@
+VertexShader
+[Environment/SkyBox.hlsl]
+[SkyBoxVertexShader]
+PixelShader
+[Environment/SkyBox.hlsl]
+[SkyBoxPixelShader]
+RootSignature
+[12]

@@ -6,8 +6,6 @@ GPUResource::GPUResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageSt
 	mUsageState = usageState;
 	//MSDN: GetGPUVirtualAddress is only used for buffer resources, it will return zero for all texture resources. (and also throw errors)
 	mGPUAddress = 0; //other buffer types set this themselves
-	
-	mTransitioningState = D3D12_GPU_RESOURCE_STATE_UNKNOWN;
     mIsReady = false;
 }
 

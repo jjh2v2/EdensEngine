@@ -11,3 +11,4 @@ Compute/FinalizePartitions.esh
 ShadowMap.esh
 ShadowMapToEVSM.esh
 Compute/GenerateMip.esh
+SkyBox.esh

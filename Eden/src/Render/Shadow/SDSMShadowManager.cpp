@@ -271,7 +271,8 @@ void SDSMShadowManager::RenderShadowMapPartitions(const D3DXMATRIX &lightViewPro
     //TDA: * mShadowPreferences.PartitionCount <--- is only for testing. Can just fill those cbv descs on the first partition and then reuse them
     uint32 numCBVSRVDescsShadowMap = shadowEntities.CurrentSize() * mShadowPreferences.PartitionCount + mShadowPreferences.PartitionCount + 1; //1 cbv per entity + X partition cbvs + 1 partition srv
     uint32 numCBVSRVDescsEVSM = 1;
-    RenderPassDescriptorHeap *shadowSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_ShadowRender, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numCBVSRVDescsShadowMap + numCBVSRVDescsEVSM);
+    uint32 numCBVSRVDescsMips = 1 + mShadowPreferences.ShadowTextureMipLevels;
+    RenderPassDescriptorHeap *shadowSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_ShadowRender, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numCBVSRVDescsShadowMap + numCBVSRVDescsEVSM + numCBVSRVDescsMips);
 
     graphicsContext->TransitionResource(mShadowPartitionBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
 
@@ -288,7 +289,6 @@ void SDSMShadowManager::RenderShadowMapPartitions(const D3DXMATRIX &lightViewPro
     DynamicArray<MaterialTextureType> noTexturesForThisPass;
     RenderPassContext shadowPassContext(graphicsContext, shadowSRVDescHeap, noTexturesForThisPass, direct3DManager->GetFrameIndex());
 
-	// Generate raw depth map
     for (uint32 i = 0; i < SDSM_SHADOW_PARTITION_COUNT; i++)
     {
         DescriptorHeapHandle perPassParitionBuffer = shadowSRVDescHeap->GetHeapHandleBlock(1);
@@ -311,7 +311,7 @@ void SDSMShadowManager::RenderShadowMapPartitions(const D3DXMATRIX &lightViewPro
 
         if (mShadowPreferences.UseSoftShadows)
         {
-            //insert blur support here
+            ApplyBlur();
         }
 
         GenerateMipsForShadowMap(i, &shadowPassContext);
@@ -338,10 +338,15 @@ void SDSMShadowManager::ConvertToEVSM(uint32 partitionIndex)
     GraphicsContext *graphicsContext = mGraphicsManager->GetDirect3DManager()->GetContextManager()->GetGraphicsContext();
 
     graphicsContext->TransitionResource(mShadowDepthTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
-    graphicsContext->TransitionResource(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, true, 0);
+    graphicsContext->TransitionResource(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, true);
     graphicsContext->SetRenderTarget(mShadowEVSMTextures[partitionIndex]->GetRenderTargetViewHandle().GetCPUHandle());
 
     graphicsContext->DrawFullScreenTriangle();
+}
+
+void SDSMShadowManager::ApplyBlur()
+{
+    //insert blur support here
 }
 
 void SDSMShadowManager::GenerateMipsForShadowMap(uint32 partitionIndex, RenderPassContext *renderPassContext)
@@ -353,7 +358,7 @@ void SDSMShadowManager::GenerateMipsForShadowMap(uint32 partitionIndex, RenderPa
     RenderPassDescriptorHeap *shadowSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_ShadowRender, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), 1, partitionIndex == 0);
     graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, shadowSamplerDescHeap->GetHeap());
 
-    graphicsContext->TransitionResource(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, true);
+    graphicsContext->TransitionResourceExplicit(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, 0, false, true);
 
     graphicsContext->SetPipelineState(mGenerateMipShader);
     graphicsContext->SetRootSignature(NULL, mGenerateMipShader->GetRootSignature());
@@ -372,7 +377,7 @@ void SDSMShadowManager::GenerateMipsForShadowMap(uint32 partitionIndex, RenderPa
 
     for (uint32 i = 1; i < mShadowPreferences.ShadowTextureMipLevels; i++)
     {
-        graphicsContext->TransitionResource(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true, i);
+        graphicsContext->TransitionResourceExplicit(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, i, false, true);
 
         DescriptorHeapHandle mipTargetHandle = renderPassContext->GetCBVSRVHeap()->GetHeapHandleBlock(1);
         direct3DManager->GetDevice()->CopyDescriptorsSimple(1, evsmTargetHandle.GetCPUHandle(), mShadowEVSMTextures[partitionIndex]->GetUnorderedAccessViewHandle(i).GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -385,60 +390,13 @@ void SDSMShadowManager::GenerateMipsForShadowMap(uint32 partitionIndex, RenderPa
         graphicsContext->SetComputeConstants(1, 3, &mipConstants);
         graphicsContext->Dispatch2D(mipTextureSize, mipTextureSize, 8, 8);
 
-        graphicsContext->TransitionResource(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true, i);    //UAV barrier
+        graphicsContext->InsertUAVBarrier(mShadowEVSMTextures[partitionIndex], false);
     }
 
     for (uint32 i = 1; i < mShadowPreferences.ShadowTextureMipLevels; i++)
     {
-        graphicsContext->TransitionResource(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false, i);
+        graphicsContext->TransitionResourceExplicit(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, i, false, false);
     }
 
-    graphicsContext->TransitionResource(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
+    graphicsContext->TransitionResourceExplicit(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, true, true);
 }
-
-/*
-void SDSMShadowManager::BoxBlurPass(Direct3DManager *direct3DManager, ID3D11ShaderResourceView* input, ID3D11RenderTargetView* output, unsigned int partitionIndex,
-	ID3D11ShaderResourceView* partitionSRV, const D3D11_VIEWPORT* viewport, unsigned int dimension, Scene &scene)
-{
-	direct3DManager->SetupForFullScreenTriangle();
-	direct3DManager->UseDefaultRasterState();
-	direct3DManager->DisableAlphaBlending();
-	direct3DManager->GetDeviceContext()->RSSetViewports(1, viewport);
-
-	direct3DManager->GetDeviceContext()->OMSetRenderTargets(1, &output, 0);
-
-	ShaderParams shaderParams;
-	shaderParams.BlurTexture = input;
-	shaderParams.PartitionResourceView = partitionSRV;
-	shaderParams.FilterSize = Vector2::FromD3DVector(mBlurSizeLightSpace);
-	shaderParams.BlurDirection = dimension == 0;
-	shaderParams.PartitionIndex = partitionIndex;
-
-	mShadowMapBlurMaterial->SetShaderParameters(direct3DManager->GetDeviceContext(), shaderParams);
-	mShadowMapBlurMaterial->Render(direct3DManager->GetDeviceContext());
-	direct3DManager->GetDeviceContext()->Draw(3, 0);
-
-	direct3DManager->ClearDeviceTargetsAndResources();
-}
-
-
-void SDSMShadowManager::BoxBlur(Direct3DManager *direct3DManager, unsigned int partitionIndex, ID3D11ShaderResourceView* partitionSRV, Scene &scene)
-{
-	D3D11_TEXTURE2D_DESC textureDesc;
-	mShadowEVSMTextures[partitionIndex]->GetRenderTargetTexture()->GetDesc(&textureDesc);
-
-	D3D11_VIEWPORT viewport;
-	viewport.Width = static_cast<float>(textureDesc.Width);
-	viewport.Height = static_cast<float>(textureDesc.Height);
-	viewport.TopLeftX = 0.0f;
-	viewport.TopLeftY = 0.0f;
-	viewport.MinDepth = 0.0f;
-	viewport.MaxDepth = 1.0f;
-
-	BoxBlurPass(direct3DManager, mShadowEVSMTextures[partitionIndex]->GetShaderResourceView(0), mShadowEVSMBlurTexture->GetRenderTargetView(0),
-		partitionIndex, partitionSRV, &viewport, 0, scene);
-
-	BoxBlurPass(direct3DManager, mShadowEVSMBlurTexture->GetShaderResourceView(0), mShadowEVSMTextures[partitionIndex]->GetRenderTargetView(0),
-		partitionIndex, partitionSRV, &viewport, 1, scene);
-}
-*/
