@@ -46,3 +46,13 @@ float3 ViewPositionToLightTexCoord(float3 positionView, matrix cameraViewToLight
     float4 positionLight = mul(float4(positionView, 1.0f), cameraViewToLightProj);
     return (positionLight.xyz / positionLight.w) * float3(0.5f, -0.5f, 1.0f) + float3(0.5f, 0.5f, 0.0f);
 }
+
+float MipLevelToRoughness(int mipLevel, int mipCount)
+{
+	return pow(2.0f, (mipCount - 6.0f - mipLevel) / 1.15f);
+}
+
+int RoughnessToMipLevel(float roughness, int mipCount)
+{
+	return mipCount - 6 - 1.15 * log2(roughness);
+}

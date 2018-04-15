@@ -24,11 +24,13 @@ public:
 	IndexBuffer *CreateIndexBuffer(void* indexData, uint32 bufferSize);
 	ConstantBuffer *CreateConstantBuffer(uint32 bufferSize);
     StructuredBuffer *CreateStructuredBuffer(uint32 elementSize, uint32 numElements, StructuredBufferAccess accessType, bool isRaw);
+    FilteredCubeMapRenderTexture *CreateFilteredCubeMapRenderTexture(uint32 dimensionSize, DXGI_FORMAT format, uint32 mipLevels);
 
 	void FreeRenderTarget(RenderTarget *renderTarget);
 	void FreeDepthStencilTarget(DepthStencilTarget *depthStencilTarget);
 	void FreeConstantBuffer(ConstantBuffer *constantBuffer);
     void FreeStructuredBuffer(StructuredBuffer *structuredBuffer);
+    void FreeFilteredCubeMap(FilteredCubeMapRenderTexture *cubeMapTexture);
 
 private:
     class VertexBufferBackgroundUpload : public UploadContext::BackgroundUpload
@@ -63,6 +65,7 @@ private:
         ContextTrackingType_DepthStencil,
         ContextTrackingType_ConstantBuffer,
         ContextTrackingType_StructuredBuffer,
+        ContextTrackingType_FilteredCube,
         ContextTrackingType_Max
     };
 

@@ -21,11 +21,6 @@ float CalculateGeometryTermSmithGGX(float roughness, float nDotL, float nDotV)
 	return rcp( viewGeoTerm * lightGeoTerm );
 }
 
-int RoughnessToMipLevel(float roughness, int mipCount)
-{
-	return mipCount - 6 - 1.15 * log2(roughness);
-}
-
 float3 CalculateSpecularIBL(int mipLevels, float3 specularColor, float roughness, float nDotV, float3 reflection, TextureCube envMap, Texture2D<float2> envLookup, SamplerState envSampler)
 {
 	float3 prefilteredColor = envMap.SampleLevel(envSampler, reflection, mipLevels - RoughnessToMipLevel(roughness, mipLevels)).rgb;

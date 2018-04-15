@@ -334,3 +334,72 @@ void TextureManager::ProcessTransition(TextureUpload *currentUpload, uint64 curr
         currentUpload->UploadState = TextureUploadState_Completed;
     }
 }
+
+FilteredCubeMapRenderTexture *TextureManager::FilterCubeMap(Texture *cubeMapToFilter)
+{
+    return NULL;
+}
+
+/*
+void FilteredCubeMapRenderTexture::FilterSourceTexture(ID3D11Device* d3dDevice, ID3D11DeviceContext *deviceContext, ID3D11ShaderResourceView *sourceTexture)
+{
+    deviceContext->CSSetShader(mEnviromentMapFilterShader->GetShader(), 0, 0);
+    ID3D11ShaderResourceView* views[1] = { sourceTexture };
+    deviceContext->CSSetShaderResources(0, 1, views);
+    ID3D11SamplerState* samplers[1] = { mEnvMapSampler };
+    deviceContext->CSSetSamplers(0, 1, samplers);
+
+    EnvironmentMapFilterBuffer filterBuffer;
+    filterBuffer.MipCount = (float)mMaxFilterMip;
+
+    D3DXVECTOR4 targets[6] =
+    {
+        D3DXVECTOR4(1.0f, 0.0f, 0.0f, 0.0f),  // +X
+        D3DXVECTOR4(-1.0f, 0.0f, 0.0f, 0.0f), // -X
+        D3DXVECTOR4(0.0f, 1.0f, 0.0f, 0.0f),  // +Y
+        D3DXVECTOR4(0.0f, -1.0f, 0.0f, 0.0f), // -Y
+        D3DXVECTOR4(0.0f, 0.0f, 1.0f, 0.0f),  // +Z
+        D3DXVECTOR4(0.0f, 0.0f, -1.0f, 0.0f)  // -Z
+    };
+
+    D3DXVECTOR4 ups[6] =
+    {
+        D3DXVECTOR4(0.0f, 1.0f, 0.0f, 0.0f),  // +X
+        D3DXVECTOR4(0.0f, 1.0f, 0.0f, 0.0f),  // -X
+        D3DXVECTOR4(0.0f, 0.0f, -1.0f, 0.0f), // +Y
+        D3DXVECTOR4(0.0f, 0.0f, 1.0f, 0.0f),  // -Y
+        D3DXVECTOR4(0.0f, 1.0f, 0.0f, 0.0f),  // +Z
+        D3DXVECTOR4(0.0f, 1.0f, 0.0f, 0.0f)	  // -Z
+    };
+
+    for (int i = 0; i < 6; i++)
+    {
+        D3DXVECTOR2 dim = D3DXVECTOR2(1024.0f, 1024.0f);
+
+        filterBuffer.Forward = targets[i];
+        filterBuffer.Up = ups[i];
+
+        for (int mip = 0; mip < mMaxFilterMip; mip++)
+        {
+            filterBuffer.SourceDimensions = dim;
+            filterBuffer.CurrentMip = (float)mMaxFilterMip - (float)mip;
+            deviceContext->UpdateSubresource(mFilterBuffer, 0, NULL, &filterBuffer, 0, 0);
+            deviceContext->CSSetConstantBuffers(0, 1, &mFilterBuffer);
+            deviceContext->CSSetUnorderedAccessViews(0, 1, &mFilteredTextureUAV[i * mMaxFilterMip + mip], 0);
+
+            deviceContext->Dispatch((UINT)filterBuffer.SourceDimensions.x / 16, (UINT)filterBuffer.SourceDimensions.y / 16, 1);
+
+            dim /= 2;
+        }
+    }
+
+    deviceContext->CSSetShader(NULL, 0, 0);
+    ID3D11ShaderResourceView* nullViews[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    deviceContext->CSSetShaderResources(0, 1, nullViews);
+    ID3D11SamplerState* nullStates[1] = { 0 };
+    deviceContext->CSSetSamplers(0, 1, nullStates);
+    ID3D11Buffer* nullBuffers[1] = { 0 };
+    deviceContext->CSSetConstantBuffers(0, 1, nullBuffers);
+    ID3D11UnorderedAccessView *nullUAVs[1] = { 0 };
+    deviceContext->CSSetUnorderedAccessViews(0, 1, nullUAVs, 0);
+}*/

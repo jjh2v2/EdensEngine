@@ -50,7 +50,8 @@ public:
 
     void ProcessCurrentUploads();
 	void LoadTextureManifest();
-	
+    FilteredCubeMapRenderTexture *FilterCubeMap(Texture *cubeMapToFilter);
+
 	Texture *GetTexture(const std::string &textureName, bool async = true);
     static Texture* GetDefaultTexture() { return mDefaultTexture; }
 

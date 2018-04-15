@@ -607,6 +607,72 @@ DepthStencilTarget *Direct3DContextManager::CreateDepthStencilTarget(uint32 widt
 	return newDepthStencilTarget;
 }
 
+FilteredCubeMapRenderTexture *Direct3DContextManager::CreateFilteredCubeMapRenderTexture(uint32 dimensionSize, DXGI_FORMAT format, uint32 mipLevels)
+{
+    Application::Assert(mipLevels > 0);
+
+    D3D12_RESOURCE_DESC targetDesc = {};
+    targetDesc.Width = dimensionSize;
+    targetDesc.Height = dimensionSize;
+    targetDesc.Format = format;
+    targetDesc.DepthOrArraySize = 6;
+    targetDesc.MipLevels = mipLevels;
+    targetDesc.Alignment = 0;
+    targetDesc.SampleDesc.Count = 1;
+    targetDesc.SampleDesc.Quality = 0;
+    targetDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    targetDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    targetDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+    D3D12_HEAP_PROPERTIES defaultHeapProperties;
+    defaultHeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+    defaultHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    defaultHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    defaultHeapProperties.CreationNodeMask = 0;
+    defaultHeapProperties.VisibleNodeMask = 0;
+
+    ID3D12Resource *renderTextureResource = NULL;
+    Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &targetDesc,
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS, NULL, IID_PPV_ARGS(&renderTextureResource)));
+
+    DescriptorHeapHandle srvHandle = mHeapManager->GetNewSRVDescriptorHeapHandle();
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format = format;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+    srvDesc.TextureCube.MipLevels = mipLevels;
+    srvDesc.TextureCube.MostDetailedMip = 0;
+    srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+
+    mDevice->CreateShaderResourceView(renderTextureResource, &srvDesc, srvHandle.GetCPUHandle());
+
+    DynamicArray<DescriptorHeapHandle> uavHandles;
+    
+    D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+    uavDesc.Format = format;
+    uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+    uavDesc.Texture2DArray.ArraySize = 1;
+
+    for (uint32 arrayIndex = 0; arrayIndex < 6; arrayIndex++)
+    {
+        for (uint32 mipIndex = 0; mipIndex < mipLevels; mipIndex++)
+        {
+            uavDesc.Texture2DArray.FirstArraySlice = arrayIndex;
+            uavDesc.Texture2DArray.MipSlice = mipIndex;
+
+            DescriptorHeapHandle uavHandle = mHeapManager->GetNewSRVDescriptorHeapHandle();
+            mDevice->CreateUnorderedAccessView(renderTextureResource, NULL, &uavDesc, uavHandle.GetCPUHandle());
+            uavHandles.Add(uavHandle);
+        }
+    }
+
+    FilteredCubeMapRenderTexture *cubeTexture = new FilteredCubeMapRenderTexture(renderTextureResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, mipLevels, uavHandles, srvHandle);
+
+    mBufferTracking[ContextTrackingType_FilteredCube]++;
+
+    return cubeTexture;
+}
+
 void Direct3DContextManager::FreeRenderTarget(RenderTarget *renderTarget)
 {
 	mHeapManager->FreeRTVDescriptorHeapHandle(renderTarget->GetRenderTargetViewHandle());
@@ -665,4 +731,19 @@ void Direct3DContextManager::FreeStructuredBuffer(StructuredBuffer *structuredBu
     mHeapManager->FreeSRVDescriptorHeapHandle(structuredBuffer->GetShaderResourceViewHandle());
     delete structuredBuffer;
     mBufferTracking[ContextTrackingType_StructuredBuffer]--;
+}
+
+void Direct3DContextManager::FreeFilteredCubeMap(FilteredCubeMapRenderTexture *cubeMapTexture)
+{
+    for (uint32 arrayIndex = 0; arrayIndex < 6; arrayIndex++)
+    {
+        for (uint32 mipIndex = 0; mipIndex < cubeMapTexture->GetMipCount(); mipIndex++)
+        {
+            mHeapManager->FreeSRVDescriptorHeapHandle(cubeMapTexture->GetUnorderedAccessViewHandle(mipIndex, arrayIndex));
+        }
+    }
+
+    mHeapManager->FreeSRVDescriptorHeapHandle(cubeMapTexture->GetShaderResourceViewHandle());
+    delete cubeMapTexture;
+    mBufferTracking[ContextTrackingType_FilteredCube]--;
 }

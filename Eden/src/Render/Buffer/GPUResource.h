@@ -182,3 +182,19 @@ private:
     DescriptorHeapHandle mUnorderedAccessViewHandle;
     DescriptorHeapHandle mShaderResourceViewHandle;
 };
+
+class FilteredCubeMapRenderTexture : public GPUResource
+{
+public:
+    FilteredCubeMapRenderTexture(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, uint32 numMipLevels, const DynamicArray<DescriptorHeapHandle> &uavHandles, DescriptorHeapHandle srvHandle);
+    virtual ~FilteredCubeMapRenderTexture();
+
+    DescriptorHeapHandle GetShaderResourceViewHandle() { return mSRVHandle; }
+    DescriptorHeapHandle GetUnorderedAccessViewHandle(uint32 mipIndex, uint32 arrayIndex = 0);
+    uint32 GetMipCount() { return mNumMips; }
+
+private:
+    uint32 mNumMips;
+    DynamicArray<DescriptorHeapHandle> mUAVHandles;
+    DescriptorHeapHandle mSRVHandle;
+};

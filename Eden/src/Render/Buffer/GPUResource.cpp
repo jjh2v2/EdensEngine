@@ -218,3 +218,25 @@ bool StructuredBuffer::CopyToBuffer(const void* bufferData, uint32 bufferSize)
 
     return needsGPUCopy;
 }
+
+FilteredCubeMapRenderTexture::FilteredCubeMapRenderTexture(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, uint32 numMipLevels, const DynamicArray<DescriptorHeapHandle> &uavHandles, DescriptorHeapHandle srvHandle)
+    :GPUResource(resource, usageState)
+{
+    mSRVHandle = srvHandle;
+    mNumMips = numMipLevels;
+
+    for (uint32 i = 0; i < uavHandles.CurrentSize(); i++)
+    {
+        mUAVHandles.Add(uavHandles[i]);
+    }
+}
+
+FilteredCubeMapRenderTexture::~FilteredCubeMapRenderTexture()
+{
+
+}
+
+DescriptorHeapHandle FilteredCubeMapRenderTexture::GetUnorderedAccessViewHandle(uint32 mipIndex, uint32 arrayIndex /* = 0 */)
+{
+    return mUAVHandles[arrayIndex * mNumMips + mipIndex];
+}
