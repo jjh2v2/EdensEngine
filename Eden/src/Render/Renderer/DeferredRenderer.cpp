@@ -261,7 +261,7 @@ void DeferredRenderer::RenderGBuffer()
 	textureTypes.Add(MaterialTextureType_Normal);
 	textureTypes.Add(MaterialTextureType_Roughmetal);
 
-	RenderPassContext renderPassContext(graphicsContext, gbufferSRVDescHeap, textureTypes, direct3DManager->GetFrameIndex());
+	RenderPassContext renderPassContext(graphicsContext, gbufferSRVDescHeap, NULL, textureTypes, direct3DManager->GetFrameIndex());
 	mSceneEntity->Render(&renderPassContext);
 	mSceneEntity2->Render(&renderPassContext);
 	mSceneEntity3->Render(&renderPassContext);

@@ -57,6 +57,7 @@ void GraphicsManager::Update(float deltaTime)
     }
 
     mTextureManager->ProcessCurrentUploads();
+    mTextureManager->ProcessCurrentComputeWork();
     mDirect3DManager->GetContextManager()->GetGraphicsContext()->FlushDeferredTransitions();
 }
 

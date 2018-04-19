@@ -255,9 +255,10 @@ private:
 class RenderPassContext
 {
 public:
-	RenderPassContext(GraphicsContext *context, RenderPassDescriptorHeap *cbvSrvHeap, DynamicArray<MaterialTextureType> &renderPassTextures, uint32 frameIndex)
+	RenderPassContext(GraphicsContext *context, RenderPassDescriptorHeap *cbvSrvHeap, RenderPassDescriptorHeap *samplerHeap, DynamicArray<MaterialTextureType> &renderPassTextures, uint32 frameIndex)
 		:mGraphicsContext(context)
 		,mCBVSRVHeap(cbvSrvHeap)
+        ,mSamplerHeap(samplerHeap)
         ,mFrameIndex(frameIndex)
 	{
 		for (uint32 i = 0; i < renderPassTextures.CurrentSize(); i++)
@@ -268,6 +269,7 @@ public:
 
 	GraphicsContext *GetGraphicsContext() { return mGraphicsContext; }
 	RenderPassDescriptorHeap *GetCBVSRVHeap() { return mCBVSRVHeap; }
+    RenderPassDescriptorHeap *GetSamplerHeap() { return mSamplerHeap; }
 
 	MaterialTextureType GetRenderPassTextureType(uint32 index) { return mRenderPassTextures[index]; }
 	uint32 GetRenderPassTextureCount() { return mRenderPassTextures.CurrentSize(); }
@@ -276,6 +278,7 @@ public:
 private:
 	GraphicsContext *mGraphicsContext;
 	RenderPassDescriptorHeap *mCBVSRVHeap;
+    RenderPassDescriptorHeap *mSamplerHeap;
 	DynamicArray<MaterialTextureType> mRenderPassTextures;
     uint32 mFrameIndex;
 };

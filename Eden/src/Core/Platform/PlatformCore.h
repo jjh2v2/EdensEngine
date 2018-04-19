@@ -17,15 +17,16 @@
 #define RENDER_PASS_DESCRIPTOR_HEAP_MULTIPLE    256
 #define MAX_TEXTURE_SUBRESOURCE_COUNT		    512
 
-#define UPLOAD_BUFFER_SIZE					    2048 * 2048 * 32
-#define MAX_GPU_UPLOADS						    16
-#define MAX_UPLOADS_PROCESSED_PER_BATCH         5 //TDA: might need more upload allocators to accomodate this
-#define D3D12_GPU_VIRTUAL_ADDRESS_NULL          ((D3D12_GPU_VIRTUAL_ADDRESS)0)
-#define D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN       ((D3D12_GPU_VIRTUAL_ADDRESS)-1)
-#define D3D12_GPU_RESOURCE_STATE_UNKNOWN        ((D3D12_RESOURCE_STATES)-1)
-#define BARRIER_LIMIT						    16
-#define UPLOAD_BUFFER_ALIGNMENT				    512									//upload buffers need to be 512 aligned
-#define NUM_STARTING_COMMAND_ALLOCATORS         10 //TDA: obviously this needs to be intelligently driven rather than hardcoded
+#define UPLOAD_BUFFER_SIZE					                2048 * 2048 * 32
+#define MAX_GPU_UPLOADS						                16
+#define MAX_UPLOADS_PROCESSED_PER_BATCH                     5    //TDA: might need more upload allocators to accomodate this
+#define D3D12_GPU_VIRTUAL_ADDRESS_NULL                      ((D3D12_GPU_VIRTUAL_ADDRESS)0)
+#define D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN                   ((D3D12_GPU_VIRTUAL_ADDRESS)-1)
+#define D3D12_GPU_RESOURCE_STATE_UNKNOWN                    ((D3D12_RESOURCE_STATES)-1)
+#define BARRIER_LIMIT						                16
+#define UPLOAD_BUFFER_ALIGNMENT				                512	 //upload buffers need to be 512 aligned
+#define NUM_STARTING_COMMAND_ALLOCATORS                     10   //TDA: obviously this needs to be intelligently driven rather than hardcoded
+#define MAX_ASYNC_COMPUTE_TEXTURES_TO_PROCESS_PER_FRAME     1
 
 #define VALID_COMPUTE_QUEUE_RESOURCE_STATES \
 	( D3D12_RESOURCE_STATE_UNORDERED_ACCESS \

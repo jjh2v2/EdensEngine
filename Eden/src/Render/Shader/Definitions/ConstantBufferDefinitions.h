@@ -25,10 +25,18 @@ struct SDSMBuffer //per frame
     uint32 reduceTileDim;
 };
 
-
 struct ShadowRenderPartitionBuffer
 {
     uint32 partitionIndex;
+};
+
+struct EnvironmentMapFilterTextureBuffer
+{
+    Vector4 UpDir;
+    Vector4 ForwardDir;
+    Vector2 SourceDimensions;
+    float   MipLevel;
+    float   MipCount;
 };
 
 struct MaterialConstants

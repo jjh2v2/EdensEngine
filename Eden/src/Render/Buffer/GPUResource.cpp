@@ -224,6 +224,7 @@ FilteredCubeMapRenderTexture::FilteredCubeMapRenderTexture(ID3D12Resource* resou
 {
     mSRVHandle = srvHandle;
     mNumMips = numMipLevels;
+    mComputeFence = 0;
 
     for (uint32 i = 0; i < uavHandles.CurrentSize(); i++)
     {

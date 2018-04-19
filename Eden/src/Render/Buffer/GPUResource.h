@@ -193,7 +193,11 @@ public:
     DescriptorHeapHandle GetUnorderedAccessViewHandle(uint32 mipIndex, uint32 arrayIndex = 0);
     uint32 GetMipCount() { return mNumMips; }
 
+    void SetComputeFence(uint64 computeFence) { mComputeFence = computeFence; }
+    uint64 GetComputeFence() { return mComputeFence; }
+
 private:
+    uint64 mComputeFence;
     uint32 mNumMips;
     DynamicArray<DescriptorHeapHandle> mUAVHandles;
     DescriptorHeapHandle mSRVHandle;

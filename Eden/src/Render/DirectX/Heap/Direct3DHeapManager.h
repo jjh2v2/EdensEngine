@@ -7,7 +7,8 @@ enum RenderPassDescriptorHeapType
     RenderPassDescriptorHeapType_GBuffer,
     RenderPassDescriptorHeapType_ShadowCompute,
     RenderPassDescriptorHeapType_ShadowRender,
-    RenderPassDescriptorHeapType_PostProcess
+    RenderPassDescriptorHeapType_PostProcess,
+    RenderPassDescriptorHeapType_TextureProcessing
 };
 
 class Direct3DHeapManager

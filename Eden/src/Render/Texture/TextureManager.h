@@ -6,6 +6,8 @@
 #include "Core/Threading/Job.h"
 #include <map>
 
+class Sampler;
+
 struct TextureLookup
 {
 	std::string TextureFilePath;
@@ -38,8 +40,9 @@ struct TextureUpload
 
     Direct3DUploadInfo UploadInfo;
     uint64 UploadFence;
-
     Job *ReadJob;
+
+    D3D12_RESOURCE_STATES FinalDesiredResourceStates;
 };
 
 class TextureManager
@@ -49,8 +52,9 @@ public:
 	~TextureManager();
 
     void ProcessCurrentUploads();
+    void ProcessCurrentComputeWork();
 	void LoadTextureManifest();
-    FilteredCubeMapRenderTexture *FilterCubeMap(Texture *cubeMapToFilter);
+    FilteredCubeMapRenderTexture *FilterCubeMap(Texture *cubeMapToFilter, Sampler *envSampler, ShaderPSO *envFilterShader, uint32 dimensionSize = 1024, uint32 numMips = 11);
 
 	Texture *GetTexture(const std::string &textureName, bool async = true);
     static Texture* GetDefaultTexture() { return mDefaultTexture; }
@@ -83,10 +87,20 @@ private:
         TextureUpload *mTextureUpload;
     };
 
+    struct CubeMapFilterInfo
+    {
+        FilteredCubeMapRenderTexture *FilterTarget;
+        Texture *CubeMapToFilter;
+        Sampler *EnvironmentSampler;
+        ShaderPSO *EnvironmentFilterShader;
+        uint32 DimensionSize;
+        uint32 NumMips;
+    };
 
     void ProcessFileRead(TextureUpload *currentUpload);
     void ProcessCopy(TextureUpload *currentUpload);
     void ProcessTransition(TextureUpload *currentUpload, uint64 currentFence);
+    void ProcessCubeMapFiltering(CubeMapFilterInfo &cubeMapFilterInfo);
 
 	Direct3DManager *mDirect3DManager;
 
@@ -95,6 +109,7 @@ private:
 	ManifestLoader mManifestLoader;
 
     DynamicArray<TextureUpload*> mTextureUploads;
+    DynamicArray<CubeMapFilterInfo> mCubeMapFilters;
 
     std::mutex mTextureLookupMutex;
     std::mutex mTextureUploadMutex;

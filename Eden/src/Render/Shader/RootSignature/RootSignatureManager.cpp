@@ -295,13 +295,13 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
         ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);      //source env map, t0
         ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);  //env map sampler, s0
         ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);      //rw filter target, u0
-        ranges[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);      //filter info, b0
+       //ranges[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);      //filter info, b0
 
         CD3DX12_ROOT_PARAMETER rootParameters[4];
         rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
         rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);
         rootParameters[2].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_ALL);
-        rootParameters[3].InitAsDescriptorTable(1, &ranges[3], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[3].InitAsConstants(12, 0, 0, D3D12_SHADER_VISIBILITY_ALL);
 
         RootSignatureInfo filterCubeMapSignature;
         filterCubeMapSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);

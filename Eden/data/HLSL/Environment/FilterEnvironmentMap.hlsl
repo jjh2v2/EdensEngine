@@ -11,8 +11,8 @@ cbuffer FilterBuffer : register(b0)
     float4 pfUpDir;
 	float4 pfForwardDir;
 	float2 pfSourceDimensions;
-	float pfMipLevel;
-	float pfMipCount;
+	float  pfMipLevel;
+	float  pfMipCount;
 };
 
 float RadicalInverse_VdC(uint bits) 
@@ -83,7 +83,7 @@ void FilterEnvironmentMap(uint3 dispatchThreadID : SV_DispatchThreadID)
 
 	float3 color = PrefilterEnvMap(EnvironmentMap, EnvironmentMapSampler, MipLevelToRoughness(pfMipLevel, pfMipCount), normal);
 
-	if (dispatchThreadID.x < uint(pfSourceDimensions.x) && dispatchThreadID.y < uint(pfSourceDimensions.y))
+	if (dispatchThreadID.x < uint(pfSourceDimensions.x) && dispatchThreadID.y < uint(pfSourceDimensions.y)) //possibly early out instead?
     {
 		FilteredCubemap[uint3(dispatchThreadID.xy, 0)] = float4(color, 1.0f);
     }
