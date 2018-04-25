@@ -70,7 +70,7 @@ float4 LightingMainPixelShader(LightingMainVertexOutput input) : SV_Target
     float nDotSky = (dot(surface.normal, float3(0.0f, 1.0f, 0.0f)) * 0.5f ) + 0.5f;
     float3 ambientLight = pfAmbientIntensity * lerp(pow(abs(pfGroundColor.rgb),2.2), pow(abs(pfSkyColor.rgb),2.2), nDotSky);
 	
-	float roughness = surface.material.r * surface.material.r;
+	float roughness = surface.material.r;// * surface.material.r; //TDA: need to square this?
 	float metallic = surface.material.g;
 	float3 lightingOutput = float3(0.0f, 0.0f, 0.0f);
     lightingOutput += ambientLight.rgb * lerp(surface.albedo.rgb, float3(0.05, 0.05, 0.05), metallic);

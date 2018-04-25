@@ -20,6 +20,7 @@ enum RootSignatureType
     RootSignatureType_SkyBox = 12,
     RootSignatureType_LightingMain = 13,
     RootSignatureType_FilterCubemap = 14,
+    RootSignatureType_GenerateEnvMap = 15,
 	NumRootSignatures
 };
 

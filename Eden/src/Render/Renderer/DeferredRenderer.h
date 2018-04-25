@@ -41,6 +41,9 @@ private:
 	SceneEntity *mSceneEntity2;
 	SceneEntity *mSceneEntity3;
 
+    Texture *mSkyTexture;
+    FilteredCubeMapRenderTexture *mFilteredCubeMap;
+
     uint64 mPreviousFrameFence;
     uint64 mGBufferPassFence;
 };

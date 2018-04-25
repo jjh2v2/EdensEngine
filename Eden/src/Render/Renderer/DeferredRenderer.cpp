@@ -98,6 +98,12 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 		mSceneEntity3->SetRotation(Vector3(0, MathHelper::Radian() * 180.0f, 0));
 	}
 
+    mSkyTexture = mGraphicsManager->GetTextureManager()->GetTexture("SnowyMountains");
+
+    ShaderPipelinePermutation emptyComputePermutation;
+    ShaderPSO *envFilterShader = mGraphicsManager->GetShaderManager()->GetShader("FilterEnvironmentMap", emptyComputePermutation);
+    mFilteredCubeMap = mGraphicsManager->GetTextureManager()->FilterCubeMap(mSkyTexture, mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_POINT_WRAP), envFilterShader);
+
     mShadowManager = new SDSMShadowManager(mGraphicsManager);
 }
 
@@ -300,7 +306,7 @@ void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
 	DescriptorHeapHandle copySamplerHandle = postProcessSamplerDescHeap->GetHeapHandleBlock(1);
 
 	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, copyTextureHandle.GetCPUHandle(), renderTargetToCopy->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, copySamplerHandle.GetCPUHandle(), mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_POINT)->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, copySamplerHandle.GetCPUHandle(), mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_POINT_CLAMP)->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 
 	graphicsContext->TransitionResource(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, false);
 	graphicsContext->TransitionResource(renderTargetToCopy, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);

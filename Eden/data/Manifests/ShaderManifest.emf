@@ -14,3 +14,4 @@ Compute/GenerateMip.esh
 SkyBox.esh
 LightingMain.esh
 Compute/FilterEnvironmentMap.esh
+Compute/GenerateEnvironmentMapLookup.esh

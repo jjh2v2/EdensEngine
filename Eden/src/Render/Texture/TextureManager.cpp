@@ -206,18 +206,31 @@ void TextureManager::ProcessCurrentComputeWork()
     uint64 mostRecentComputeFence = computeQueue->PollCurrentFenceValue();
     uint32 numProcessed = 0;
 
+    uint32 numSRVDescs = 0;
+    uint32 numSamplerDescs = 0;
+
+    for (uint32 i = 0; i < mCubeMapFilters.CurrentSize(); i++)
+    {
+        numSRVDescs += 1 + 6 * mCubeMapFilters[i].NumMips;
+        numSamplerDescs += 1;
+    }
+
+    Direct3DHeapManager *heapManager = mDirect3DManager->GetContextManager()->GetHeapManager();
+    RenderPassDescriptorHeap *filterSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_TextureProcessing, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mDirect3DManager->GetFrameIndex(), numSRVDescs);
+    RenderPassDescriptorHeap *filterSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_TextureProcessing, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, mDirect3DManager->GetFrameIndex(), numSamplerDescs);
+
     for (int32 i = 0; i < mCubeMapFilters.CurrentSizeSigned(); i++)
     {
         if (mCubeMapFilters[i].CubeMapToFilter->GetIsReady()) //make sure environment texture is fully loaded first
         {
             if (mCubeMapFilters[i].FilterTarget->GetComputeFence() == 0 && numProcessed < MAX_ASYNC_COMPUTE_TEXTURES_TO_PROCESS_PER_FRAME)
             {
-                ProcessCubeMapFiltering(mCubeMapFilters[i]);
+                ProcessCubeMapFiltering(mCubeMapFilters[i], filterSRVDescHeap, filterSamplerDescHeap);
                 numProcessed++;
             }
             else if(mCubeMapFilters[i].FilterTarget->GetComputeFence() != 0)
             {
-                if (mCubeMapFilters[i].FilterTarget->GetComputeFence() < mostRecentComputeFence)
+                if (mCubeMapFilters[i].FilterTarget->GetComputeFence() <= mostRecentComputeFence)
                 {
                     mDirect3DManager->GetContextManager()->GetGraphicsContext()->TransitionResource(mCubeMapFilters[i].FilterTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
                     mCubeMapFilters[i].FilterTarget->SetComputeFence(0);
@@ -379,7 +392,7 @@ void TextureManager::ProcessTransition(TextureUpload *currentUpload, uint64 curr
     }
 }
 
-void TextureManager::ProcessCubeMapFiltering(CubeMapFilterInfo &cubeMapFilterInfo)
+void TextureManager::ProcessCubeMapFiltering(CubeMapFilterInfo &cubeMapFilterInfo, RenderPassDescriptorHeap *srvHeap, RenderPassDescriptorHeap *samplerHeap)
 {
     Application::Assert(cubeMapFilterInfo.CubeMapToFilter->GetIsReady());
 
@@ -402,22 +415,16 @@ void TextureManager::ProcessCubeMapFiltering(CubeMapFilterInfo &cubeMapFilterInf
         Vector4(0.0f, 1.0f,  0.0f, 0.0f),  // +Z
         Vector4(0.0f, 1.0f,  0.0f, 0.0f)   // -Z
     };
-
-    uint32 numFilterSRVDescs = 1 + 6 * cubeMapFilterInfo.NumMips;
-    uint32 numSamplerDescs = 1;
-    Direct3DHeapManager *heapManager = mDirect3DManager->GetContextManager()->GetHeapManager();
-    RenderPassDescriptorHeap *filterSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_TextureProcessing, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mDirect3DManager->GetFrameIndex(), numFilterSRVDescs);
-    RenderPassDescriptorHeap *filterSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_TextureProcessing, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, mDirect3DManager->GetFrameIndex(), numSamplerDescs);
-
+    
     ComputeContext *computeContext = mDirect3DManager->GetContextManager()->GetComputeContext();
-    computeContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, filterSRVDescHeap->GetHeap());
-    computeContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, filterSamplerDescHeap->GetHeap());
+    computeContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, srvHeap->GetHeap());
+    computeContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, samplerHeap->GetHeap());
 
     computeContext->SetPipelineState(cubeMapFilterInfo.EnvironmentFilterShader);
     computeContext->SetRootSignature(cubeMapFilterInfo.EnvironmentFilterShader->GetRootSignature());
 
-    DescriptorHeapHandle envMapHandle = filterSRVDescHeap->GetHeapHandleBlock(1);
-    DescriptorHeapHandle envMapSamplerHandle = filterSamplerDescHeap->GetHeapHandleBlock(1);
+    DescriptorHeapHandle envMapHandle = srvHeap->GetHeapHandleBlock(1);
+    DescriptorHeapHandle envMapSamplerHandle = samplerHeap->GetHeapHandleBlock(1);
     mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, envMapHandle.GetCPUHandle(), cubeMapFilterInfo.CubeMapToFilter->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, envMapSamplerHandle.GetCPUHandle(), cubeMapFilterInfo.EnvironmentSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 
@@ -436,7 +443,7 @@ void TextureManager::ProcessCubeMapFiltering(CubeMapFilterInfo &cubeMapFilterInf
         for (uint32 mipIndex = 0; mipIndex < cubeMapFilterInfo.NumMips; mipIndex++)
         {
             filterInfo.MipLevel = (float)(cubeMapFilterInfo.NumMips - mipIndex);
-            DescriptorHeapHandle filterTargetHandle = filterSRVDescHeap->GetHeapHandleBlock(1);
+            DescriptorHeapHandle filterTargetHandle = srvHeap->GetHeapHandleBlock(1);
             mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, filterTargetHandle.GetCPUHandle(), cubeMapFilterInfo.FilterTarget->GetUnorderedAccessViewHandle(mipIndex, cubeSideIndex).GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
             computeContext->SetDescriptorTable(2, filterTargetHandle.GetGPUHandle());

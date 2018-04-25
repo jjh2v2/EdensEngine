@@ -291,11 +291,10 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 
     {
         //RootSignatureType_FilterCubemap
-        CD3DX12_DESCRIPTOR_RANGE ranges[4];
+        CD3DX12_DESCRIPTOR_RANGE ranges[3];
         ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);      //source env map, t0
         ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);  //env map sampler, s0
         ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);      //rw filter target, u0
-       //ranges[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);      //filter info, b0
 
         CD3DX12_ROOT_PARAMETER rootParameters[4];
         rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
@@ -310,6 +309,23 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
         Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, filterCubeMapSignature.RootSignatureBlob->GetBufferPointer(), filterCubeMapSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&filterCubeMapSignature.RootSignature)));
 
         mRootSignatures.Add(filterCubeMapSignature);
+    }
+
+    {
+        //RootSignatureType_GenerateEnvMap
+        CD3DX12_DESCRIPTOR_RANGE range;
+        range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);      //rw env target, u0
+
+        CD3DX12_ROOT_PARAMETER rootParameters[1];
+        rootParameters[0].InitAsDescriptorTable(1, &range, D3D12_SHADER_VISIBILITY_ALL);
+
+        RootSignatureInfo generateEnvMapSignature;
+        generateEnvMapSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&generateEnvMapSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &generateEnvMapSignature.RootSignatureBlob, &generateEnvMapSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, generateEnvMapSignature.RootSignatureBlob->GetBufferPointer(), generateEnvMapSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&generateEnvMapSignature.RootSignature)));
+
+        mRootSignatures.Add(generateEnvMapSignature);
     }
 }
 

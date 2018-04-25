@@ -368,7 +368,7 @@ void SDSMShadowManager::GenerateMipsForShadowMap(uint32 partitionIndex, RenderPa
     DescriptorHeapHandle evsmTargetHandle = renderPassContext->GetCBVSRVHeap()->GetHeapHandleBlock(1);
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, evsmTargetHandle.GetCPUHandle(), mShadowEVSMTextures[partitionIndex]->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    Sampler *mipSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_POINT);
+    Sampler *mipSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_POINT_CLAMP);
     DescriptorHeapHandle samplerHandle = renderPassContext->GetSamplerHeap()->GetHeapHandleBlock(1);
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, samplerHandle.GetCPUHandle(), mipSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 

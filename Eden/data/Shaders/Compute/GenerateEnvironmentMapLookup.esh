@@ -1,0 +1,5 @@
+ComputeShader
+[Environment/GenerateEnvironmentMapLookup.hlsl]
+[GenerateEnvironmentMapLookup]
+RootSignature
+[15]

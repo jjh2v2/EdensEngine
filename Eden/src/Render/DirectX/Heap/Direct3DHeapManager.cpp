@@ -55,6 +55,7 @@ RenderPassDescriptorHeap *Direct3DHeapManager::GetRenderPassDescriptorHeapFor(Re
         {
             if (heapGroup.SRVHeap[frameIndex])
             {
+                Application::Assert(reset == true); //can't nuke a descriptor heap unless we're resetting, because otherwise we're already using it
                 delete heapGroup.SRVHeap[frameIndex];
             }
 
@@ -68,6 +69,7 @@ RenderPassDescriptorHeap *Direct3DHeapManager::GetRenderPassDescriptorHeapFor(Re
         {
             if (heapGroup.SamplerHeap[frameIndex])
             {
+                Application::Assert(reset == true); //can't nuke a descriptor heap unless we're resetting, because otherwise we're already using it
                 delete heapGroup.SamplerHeap[frameIndex];
             }
 

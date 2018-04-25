@@ -100,7 +100,7 @@ private:
     void ProcessFileRead(TextureUpload *currentUpload);
     void ProcessCopy(TextureUpload *currentUpload);
     void ProcessTransition(TextureUpload *currentUpload, uint64 currentFence);
-    void ProcessCubeMapFiltering(CubeMapFilterInfo &cubeMapFilterInfo);
+    void ProcessCubeMapFiltering(CubeMapFilterInfo &cubeMapFilterInfo, RenderPassDescriptorHeap *srvHeap, RenderPassDescriptorHeap *samplerHeap);
 
 	Direct3DManager *mDirect3DManager;
 
