@@ -55,6 +55,7 @@ public:
     void ProcessCurrentComputeWork();
 	void LoadTextureManifest();
     FilteredCubeMapRenderTexture *FilterCubeMap(Texture *cubeMapToFilter, Sampler *envSampler, ShaderPSO *envFilterShader, uint32 dimensionSize = 1024, uint32 numMips = 11);
+    RenderTarget *GenerateTexture(ShaderPSO *generationShader, uint32 width, uint32 height);
 
 	Texture *GetTexture(const std::string &textureName, bool async = true);
     static Texture* GetDefaultTexture() { return mDefaultTexture; }
@@ -97,10 +98,18 @@ private:
         uint32 NumMips;
     };
 
+    struct GenerateTextureInfo
+    {
+        RenderTarget *GenerateTarget;
+        ShaderPSO *GenerationShader;
+        uint64 GenerationFence;
+    };
+
     void ProcessFileRead(TextureUpload *currentUpload);
     void ProcessCopy(TextureUpload *currentUpload);
     void ProcessTransition(TextureUpload *currentUpload, uint64 currentFence);
     void ProcessCubeMapFiltering(CubeMapFilterInfo &cubeMapFilterInfo, RenderPassDescriptorHeap *srvHeap, RenderPassDescriptorHeap *samplerHeap);
+    void ProcessGeneration(GenerateTextureInfo &generationInfo, RenderPassDescriptorHeap *srvHeap);
 
 	Direct3DManager *mDirect3DManager;
 
@@ -110,6 +119,7 @@ private:
 
     DynamicArray<TextureUpload*> mTextureUploads;
     DynamicArray<CubeMapFilterInfo> mCubeMapFilters;
+    DynamicArray<GenerateTextureInfo> mGeneratedTextures;
 
     std::mutex mTextureLookupMutex;
     std::mutex mTextureUploadMutex;

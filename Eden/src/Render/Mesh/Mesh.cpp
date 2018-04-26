@@ -1,7 +1,7 @@
 #include "Render/Mesh/Mesh.h"
 #include "Render/DirectX/Direct3DManager.h"
 
-Mesh::Mesh(Direct3DManager *direct3DManager, uint32 vertexCount, uint32 indexCount, MeshVertexData *meshData, DynamicArray<uint32> &splits, uint64 *indices)
+Mesh::Mesh(Direct3DManager *direct3DManager, uint32 vertexCount, uint32 indexCount, MeshVertexData *meshData, DynamicArray<uint32> &splits, uint32 *indices)
 {
 	Application::Assert(vertexCount > 0 && indexCount > 0);
 

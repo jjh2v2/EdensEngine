@@ -79,7 +79,7 @@ Mesh *MeshManager::LoadFBXMesh(Direct3DManager *direct3DManager, char *fileName,
 
 	uint32 fbxDataCount = fbxData.CurrentSize();
 
-	uint64 *meshIndices = new uint64[fbxDataCount];
+	uint32 *meshIndices = new uint32[fbxDataCount];
 	for (uint32 i = 0; i < fbxDataCount; i++)
 	{
 		meshIndices[i] = i;
@@ -100,7 +100,7 @@ void MeshManager::SerializeMeshToFile(Mesh *mesh, char *fileName)
 
 	outputFile.write((char*)&indexCount, sizeof(indexCount));
 	outputFile.write((char*)meshData, sizeof(MeshVertexData) * mesh->GetIndexCount());
-	outputFile.write((char*)mesh->GetIndices(), sizeof(uint64) * mesh->GetIndexCount());
+	outputFile.write((char*)mesh->GetIndices(), sizeof(uint32) * mesh->GetIndexCount());
 	uint32 splitCount = mesh->GetMeshSplitCount();
 
 	outputFile.write((char*)&splitCount, sizeof(splitCount));
@@ -121,10 +121,10 @@ Mesh *MeshManager::DeserializeMeshFromFile(Direct3DManager *direct3DManager, cha
 	inputFile.read((char *)&indexCount, sizeof(indexCount));
 
 	MeshVertexData *meshData = new MeshVertexData[indexCount];
-	uint64 *meshIndices = new uint64[indexCount];
+	uint32 *meshIndices = new uint32[indexCount];
 
 	inputFile.read((char *)meshData, sizeof(MeshVertexData) * indexCount);
-	inputFile.read((char *)meshIndices, sizeof(uint64) * indexCount);
+	inputFile.read((char *)meshIndices, sizeof(uint32) * indexCount);
 
 	uint32 indexSplitCount = 0;
 	inputFile.read((char *)&indexSplitCount, sizeof(indexSplitCount));
@@ -172,7 +172,7 @@ Mesh *MeshManager::LoadFromAssimp(Direct3DManager *direct3DManager, char *fileNa
 	}
 
 	MeshVertexData *meshData = new MeshVertexData[vertCount];
-	uint64 *indices = new uint64[indexCount];
+	uint32 *indices = new uint32[indexCount];
 
 	uint32 meshDataIndex = 0;
 	uint32 indexIndex = 0;

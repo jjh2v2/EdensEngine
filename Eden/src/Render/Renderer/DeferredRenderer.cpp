@@ -104,6 +104,9 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
     ShaderPSO *envFilterShader = mGraphicsManager->GetShaderManager()->GetShader("FilterEnvironmentMap", emptyComputePermutation);
     mFilteredCubeMap = mGraphicsManager->GetTextureManager()->FilterCubeMap(mSkyTexture, mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_POINT_WRAP), envFilterShader);
 
+    ShaderPSO *generateEnvLookupShader = mGraphicsManager->GetShaderManager()->GetShader("GenerateEnvironmentMapLookup", emptyComputePermutation);
+    mEnvironmentMapLookup = mGraphicsManager->GetTextureManager()->GenerateTexture(generateEnvLookupShader, 256, 256);
+
     mShadowManager = new SDSMShadowManager(mGraphicsManager);
 }
 
@@ -114,6 +117,9 @@ DeferredRenderer::~DeferredRenderer()
 	FreeTargets();
 
 	Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
+
+    contextManager->FreeRenderTarget(mEnvironmentMapLookup);
+    contextManager->FreeFilteredCubeMap(mFilteredCubeMap);
 
     for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
     {

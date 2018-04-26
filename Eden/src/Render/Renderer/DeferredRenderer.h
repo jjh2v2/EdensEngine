@@ -43,6 +43,7 @@ private:
 
     Texture *mSkyTexture;
     FilteredCubeMapRenderTexture *mFilteredCubeMap;
+    RenderTarget *mEnvironmentMapLookup;
 
     uint64 mPreviousFrameFence;
     uint64 mGBufferPassFence;

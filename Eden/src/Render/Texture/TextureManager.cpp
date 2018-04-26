@@ -197,7 +197,7 @@ void TextureManager::ProcessCurrentUploads()
 
 void TextureManager::ProcessCurrentComputeWork()
 {
-    if (mCubeMapFilters.CurrentSize() == 0)
+    if (mCubeMapFilters.CurrentSize() == 0 && mGeneratedTextures.CurrentSize() == 0)
     {
         return;
     }
@@ -209,15 +209,36 @@ void TextureManager::ProcessCurrentComputeWork()
     uint32 numSRVDescs = 0;
     uint32 numSamplerDescs = 0;
 
+    numSRVDescs += mGeneratedTextures.CurrentSize();
+    numSamplerDescs += mCubeMapFilters.CurrentSize();
+
     for (uint32 i = 0; i < mCubeMapFilters.CurrentSize(); i++)
     {
         numSRVDescs += 1 + 6 * mCubeMapFilters[i].NumMips;
-        numSamplerDescs += 1;
     }
 
     Direct3DHeapManager *heapManager = mDirect3DManager->GetContextManager()->GetHeapManager();
     RenderPassDescriptorHeap *filterSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_TextureProcessing, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mDirect3DManager->GetFrameIndex(), numSRVDescs);
     RenderPassDescriptorHeap *filterSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_TextureProcessing, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, mDirect3DManager->GetFrameIndex(), numSamplerDescs);
+
+    for (int32 i = 0; i < mGeneratedTextures.CurrentSizeSigned(); i++)
+    {
+        if (mGeneratedTextures[i].GenerationFence == 0 && numProcessed < MAX_ASYNC_COMPUTE_TEXTURES_TO_PROCESS_PER_FRAME)
+        {
+            ProcessGeneration(mGeneratedTextures[i], filterSRVDescHeap);
+            numProcessed++;
+        }
+        else if (mGeneratedTextures[i].GenerationFence != 0)
+        {
+            if (mGeneratedTextures[i].GenerationFence <= mostRecentComputeFence)
+            {
+                mDirect3DManager->GetContextManager()->GetGraphicsContext()->TransitionResource(mGeneratedTextures[i].GenerateTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
+                mGeneratedTextures[i].GenerateTarget->SetIsReady(true);
+                mGeneratedTextures.Remove(i);
+                i--;
+            }
+        }
+    }
 
     for (int32 i = 0; i < mCubeMapFilters.CurrentSizeSigned(); i++)
     {
@@ -457,6 +478,23 @@ void TextureManager::ProcessCubeMapFiltering(CubeMapFilterInfo &cubeMapFilterInf
     cubeMapFilterInfo.FilterTarget->SetComputeFence(computeContext->Flush(mDirect3DManager->GetContextManager()->GetQueueManager()));
 }
 
+void TextureManager::ProcessGeneration(GenerateTextureInfo &generationInfo, RenderPassDescriptorHeap *srvHeap)
+{
+    ComputeContext *computeContext = mDirect3DManager->GetContextManager()->GetComputeContext();
+    computeContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, srvHeap->GetHeap());
+
+    computeContext->SetPipelineState(generationInfo.GenerationShader);
+    computeContext->SetRootSignature(generationInfo.GenerationShader->GetRootSignature());
+
+    DescriptorHeapHandle generateTargetHandle = srvHeap->GetHeapHandleBlock(1);
+    mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, generateTargetHandle.GetCPUHandle(), generationInfo.GenerateTarget->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    computeContext->SetDescriptorTable(0, generateTargetHandle.GetGPUHandle());
+    computeContext->Dispatch(generationInfo.GenerateTarget->GetWidth() / 8, generationInfo.GenerateTarget->GetHeight() / 8, 1);
+
+    generationInfo.GenerationFence = computeContext->Flush(mDirect3DManager->GetContextManager()->GetQueueManager());
+}
+
 FilteredCubeMapRenderTexture *TextureManager::FilterCubeMap(Texture *cubeMapToFilter, Sampler *envSampler, ShaderPSO *envFilterShader, uint32 dimensionSize, uint32 numMips)
 {
     FilteredCubeMapRenderTexture *filterTarget = mDirect3DManager->GetContextManager()->CreateFilteredCubeMapRenderTexture(dimensionSize, DXGI_FORMAT_R8G8B8A8_UNORM, numMips);
@@ -471,4 +509,19 @@ FilteredCubeMapRenderTexture *TextureManager::FilterCubeMap(Texture *cubeMapToFi
     mCubeMapFilters.Add(filterInfo);
 
     return filterTarget;
+}
+
+RenderTarget *TextureManager::GenerateTexture(ShaderPSO *generationShader, uint32 width, uint32 height)
+{
+    RenderTarget *generationTarget = mDirect3DManager->GetContextManager()->CreateRenderTarget(width, height, DXGI_FORMAT_R16G16_FLOAT, true, 1, 1, 0);
+    generationTarget->SetIsReady(false); //render targets are defaulted to ready, but it isn't really ready for usage until it's filled, so set not ready for now
+    mDirect3DManager->GetContextManager()->GetGraphicsContext()->TransitionResource(generationTarget, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
+
+    GenerateTextureInfo generateInfo;
+    generateInfo.GenerationFence = 0;
+    generateInfo.GenerateTarget = generationTarget;
+    generateInfo.GenerationShader = generationShader;
+    mGeneratedTextures.Add(generateInfo);
+
+    return generationTarget;
 }

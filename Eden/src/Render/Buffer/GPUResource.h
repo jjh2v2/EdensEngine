@@ -80,6 +80,8 @@ public:
     bool GetHasUAV() { return mUnorderedAccessView.HasUAV; }
 	uint16 GetArraySize() { return mRenderTargetDesc.DepthOrArraySize; }
     uint16 GetMipCount() { return mRenderTargetDesc.MipLevels; }
+    uint32 GetWidth() { return (uint32)mRenderTargetDesc.Width; }
+    uint32 GetHeight() { return (uint32)mRenderTargetDesc.Height; }
 
 private:
 	D3D12_RESOURCE_DESC	 mRenderTargetDesc;
