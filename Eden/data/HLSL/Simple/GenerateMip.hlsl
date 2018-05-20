@@ -5,12 +5,12 @@ SamplerState MipSampler       : register(s0);
 cbuffer MipConstants : register(b0)
 {
     float2 targetMipTexelSize;
-    uint   sourceMipIndex;
+    float  sourceMipIndex;
 };
 
 [numthreads(8, 8, 1)]
 void GenerateMip(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
     float2 mipTexCoord = (dispatchThreadID.xy + 0.5) * targetMipTexelSize;
-    TargetMip[dispatchThreadID.xy] = SourceMip.SampleLevel(MipSampler, mipTexCoord, sourceMipIndex);
+    TargetMip[dispatchThreadID.xy] = SourceMip.SampleLevel(MipSampler, mipTexCoord, (uint)sourceMipIndex);
 }

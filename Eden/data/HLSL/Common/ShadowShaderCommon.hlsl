@@ -3,31 +3,33 @@
 struct ShadowPartition
 {
     float3 scale; // Texture coordinate 0 - 1 space
-    float3 bias;
     float  intervalBegin;
+    float3 bias;
     float  intervalEnd;
 };
 
 struct ShadowPartitionUint
 {
     uint3 scale;
-    uint3 bias;
     uint  intervalBegin;
+    uint3 bias;
     uint  intervalEnd;
 };
 
 struct ShadowPartitionBoundUint
 {
     uint3 minCoord;
+    uint  padding;
     uint3 maxCoord;
-    uint2 padding;
+    uint  padding2;
 };
 
 struct ShadowPartitionBoundFloat
 {
     float3 minCoord;
+    float  padding;
     float3 maxCoord;
-    float2 padding;
+    float  padding2;
 };
 
 float GetLogPartitionFromDepthRange(uint partitionIndex, uint numPartitions, float minDepth, float maxDepth)

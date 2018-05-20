@@ -32,11 +32,28 @@ struct ShadowRenderPartitionBuffer
 
 struct EnvironmentMapFilterTextureBuffer
 {
-    Vector4 UpDir;
-    Vector4 ForwardDir;
-    Vector2 SourceDimensions;
-    float   MipLevel;
-    float   MipCount;
+    Vector4 upDir;
+    Vector4 forwardDir;
+    Vector2 sourceDimensions;
+    float   mipLevel;
+    float   mipCount;
+};
+
+struct LightingMainBuffer
+{
+    D3DXMATRIX viewMatrix;
+    D3DXMATRIX projectionMatrix;
+    D3DXMATRIX viewToLightProjMatrix;
+    D3DXMATRIX viewInvMatrix;
+    Vector4 skyColor;
+    Vector4 groundColor;
+    Vector4 lightDir;
+    Vector4 lightColor;
+    Vector2 bufferDimensions;
+    float   lightIntensity;
+    float   ambientIntensity;
+    float   brdfSpecular;
+    uint32  specularIBLMipLevels;
 };
 
 struct MaterialConstants

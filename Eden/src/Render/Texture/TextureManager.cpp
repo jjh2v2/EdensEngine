@@ -453,25 +453,25 @@ void TextureManager::ProcessCubeMapFiltering(CubeMapFilterInfo &cubeMapFilterInf
     computeContext->SetDescriptorTable(1, envMapSamplerHandle.GetGPUHandle());
 
     EnvironmentMapFilterTextureBuffer filterInfo;
-    filterInfo.MipCount = (float)cubeMapFilterInfo.NumMips;
+    filterInfo.mipCount = (float)cubeMapFilterInfo.NumMips;
 
     for (uint32 cubeSideIndex = 0; cubeSideIndex < 6; cubeSideIndex++)
     {
-        filterInfo.ForwardDir = targets[cubeSideIndex];
-        filterInfo.UpDir = ups[cubeSideIndex];
-        filterInfo.SourceDimensions = Vector2((float)cubeMapFilterInfo.DimensionSize, (float)cubeMapFilterInfo.DimensionSize);
+        filterInfo.forwardDir = targets[cubeSideIndex];
+        filterInfo.upDir = ups[cubeSideIndex];
+        filterInfo.sourceDimensions = Vector2((float)cubeMapFilterInfo.DimensionSize, (float)cubeMapFilterInfo.DimensionSize);
 
         for (uint32 mipIndex = 0; mipIndex < cubeMapFilterInfo.NumMips; mipIndex++)
         {
-            filterInfo.MipLevel = (float)(cubeMapFilterInfo.NumMips - mipIndex);
+            filterInfo.mipLevel = (float)(cubeMapFilterInfo.NumMips - mipIndex);
             DescriptorHeapHandle filterTargetHandle = srvHeap->GetHeapHandleBlock(1);
             mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, filterTargetHandle.GetCPUHandle(), cubeMapFilterInfo.FilterTarget->GetUnorderedAccessViewHandle(mipIndex, cubeSideIndex).GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
             computeContext->SetDescriptorTable(2, filterTargetHandle.GetGPUHandle());
             computeContext->SetConstants(3, 12, &filterInfo);
-            computeContext->Dispatch((uint32)filterInfo.SourceDimensions.X / 8, (uint32)filterInfo.SourceDimensions.Y / 8, 1);
+            computeContext->Dispatch((uint32)filterInfo.sourceDimensions.X / 8, (uint32)filterInfo.sourceDimensions.Y / 8, 1);
 
-            filterInfo.SourceDimensions = Vector2(filterInfo.SourceDimensions.X / 2, filterInfo.SourceDimensions.Y / 2);
+            filterInfo.sourceDimensions = Vector2(filterInfo.sourceDimensions.X / 2, filterInfo.sourceDimensions.Y / 2);
         }
     }
 

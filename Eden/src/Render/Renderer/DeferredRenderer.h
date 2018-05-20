@@ -24,6 +24,7 @@ private:
 	void ClearGBuffer();
 	void RenderGBuffer();
     void RenderShadows(D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjMatrix);
+    void RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3DXMATRIX &projectionMatrix, const D3DXMATRIX &viewToLightProjMatrix, const D3DXMATRIX &viewInvMatrix);
 	void CopyToBackBuffer(RenderTarget *renderTargetToCopy);
 
 	GraphicsManager *mGraphicsManager;
@@ -34,12 +35,15 @@ private:
 
 	DynamicArray<RenderTarget*> mGBufferTargets;
 	DepthStencilTarget *mGBufferDepth;
+    RenderTarget *mHDRTarget;
 
 	ConstantBuffer *mCameraConstantBuffer[FRAME_BUFFER_COUNT];
+    ConstantBuffer *mLightBuffer[FRAME_BUFFER_COUNT];
 
 	SceneEntity *mSceneEntity;
 	SceneEntity *mSceneEntity2;
 	SceneEntity *mSceneEntity3;
+    SceneEntity *mSceneEntity4;
 
     Texture *mSkyTexture;
     FilteredCubeMapRenderTexture *mFilteredCubeMap;

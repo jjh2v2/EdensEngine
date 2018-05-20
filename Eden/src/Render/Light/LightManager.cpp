@@ -2,7 +2,7 @@
 
 LightManager::LightManager()
 {
-    mSunLight = new DirectionalLight(260.0f);
+    mSunLight = new DirectionalLight(220.0f);
 }
 
 LightManager::~LightManager()

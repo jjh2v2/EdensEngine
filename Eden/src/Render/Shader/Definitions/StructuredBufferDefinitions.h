@@ -7,14 +7,15 @@
 struct SDSMPartition
 {
     Vector3 scale;
-    Vector3 bias;
     float intervalBegin;
+    Vector3 bias;
     float intervalEnd;
 };
 
 struct SDSMBounds
 {
     Vector3 minCoord;
+    float padding;
     Vector3 maxCoord;
-    Vector2 padding;
+    float padding2;
 };

@@ -39,8 +39,7 @@ D3DXMATRIX SceneEntity::GetWorldMatrix(const Vector3 &position, const Vector3 &r
     D3DXMatrixMultiply(&modelMatrix, &modelMatrix, &scalarMatrix);
     D3DXMatrixMultiply(&modelMatrix, &modelMatrix, &rotationMatrix);
     D3DXMatrixMultiply(&modelMatrix, &modelMatrix, &positionMatrix);
-    D3DXMatrixTranspose(&modelMatrix, &modelMatrix);
-
+    
     mCachedWorldMatrix = modelMatrix;
 
     return modelMatrix;
@@ -56,6 +55,8 @@ void SceneEntity::Render(RenderPassContext *renderPassContext)
 	GraphicsContext *graphicsContext = renderPassContext->GetGraphicsContext();
 
     D3DXMATRIX modelMatrix = GetWorldMatrix(mPosition, mRotation, mScale);
+    D3DXMatrixTranspose(&modelMatrix, &modelMatrix);
+
 	mMaterial->GetMaterialBuffer()->SetWorldMatrix(modelMatrix);
 	mMaterial->ApplyMaterial(renderPassContext);
 
@@ -75,6 +76,7 @@ void SceneEntity::RenderShadows(RenderPassContext *renderPassContext, const D3DX
     GraphicsContext *graphicsContext = renderPassContext->GetGraphicsContext();
 
     D3DXMATRIX lightWorldViewProjMatrix = mCachedWorldMatrix * lightViewProjMatrix;             //use cached matrix because it should not change between passes
+    D3DXMatrixTranspose(&lightWorldViewProjMatrix, &lightWorldViewProjMatrix);
     mShadowMaterial->GetMaterialBuffer()->SetLightWorldViewProjMatrix(lightWorldViewProjMatrix);
     mShadowMaterial->ApplyMaterial(renderPassContext);
 

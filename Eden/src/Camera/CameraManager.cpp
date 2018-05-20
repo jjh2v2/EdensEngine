@@ -31,38 +31,7 @@ void CameraManager::Update(float delta)
 {
     float xChange = 0.0f;
     float yChange = 0.0f;
-    static float changeAmount = 0.0f;
 
-#if 0
-    float speed = 0.1f;
-
-    if (changeAmount < 10.0f)
-    {
-        xChange = speed;
-        yChange = 0.000f;
-    }
-    else if (changeAmount < 20.0f)
-    {
-        xChange = 0.000f;
-        yChange = speed;
-    }
-    else if (changeAmount < 30.0f)
-    {
-        xChange = -speed;
-        yChange = 0.000f;
-    }
-    else if (changeAmount < 40.0f)
-    {
-        xChange = 0.000f;
-        yChange = -speed;
-    }
-    else
-    {
-        changeAmount = -speed;
-    }
-
-    changeAmount += speed;
-#endif
     mMainCamera->SetPosition(mMainCamera->GetPosition() + Vector3(xChange, yChange, 0));
 	mMainCamera->RebuildViewMatrix();
 }

@@ -139,9 +139,12 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     mCurrentSDSMBuffer.lightSpaceBorder = Vector4(partitionBorderLightSpace.X, partitionBorderLightSpace.Y, partitionBorderLightSpace.Z, 0.0f);
     mCurrentSDSMBuffer.maxScale = Vector4(maxPartitionScale.X, maxPartitionScale.Y, maxPartitionScale.Z, 0.0f);
     mCurrentSDSMBuffer.bufferDimensions = direct3DManager->GetScreenSize();
-    mCurrentSDSMBuffer.cameraNearFar = Vector2(cameraSettings.Far, cameraSettings.Near); //purposefully flipped
+    mCurrentSDSMBuffer.cameraNearFar = Vector2(cameraSettings.Near, cameraSettings.Far);
     mCurrentSDSMBuffer.dilationFactor = 0.01f;
     mCurrentSDSMBuffer.reduceTileDim = 128;
+
+    D3DXMatrixTranspose(&mCurrentSDSMBuffer.cameraProjMatrix, &mCurrentSDSMBuffer.cameraProjMatrix);
+    D3DXMatrixTranspose(&mCurrentSDSMBuffer.cameraViewToLightProjMatrix, &mCurrentSDSMBuffer.cameraViewToLightProjMatrix);
 
     mSDSMBuffers[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&mCurrentSDSMBuffer, sizeof(SDSMBuffer));
 
@@ -248,7 +251,7 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowPartitionUAVHandle.GetCPUHandle(), mShadowPartitionBuffer->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     shadowPartitionSRVHandle = shadowSRVDescHeap->GetHeapHandleBlock(1);
-    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, currentTextureHandle, mShadowPartitionBoundsBuffer->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowPartitionSRVHandle.GetCPUHandle(), mShadowPartitionBoundsBuffer->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     shadowPartitionCBVHandle = shadowSRVDescHeap->GetHeapHandleBlock(1);
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowPartitionCBVHandle.GetCPUHandle(), mSDSMBuffers[direct3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -320,6 +323,7 @@ void SDSMShadowManager::RenderShadowMapPartitions(const D3DXMATRIX &lightViewPro
         }
 
         GenerateMipsForShadowMap(i, &shadowPassContext);
+        graphicsContext->TransitionResource(mShadowEVSMTextures[i], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
     }
 }
 
@@ -382,22 +386,24 @@ void SDSMShadowManager::GenerateMipsForShadowMap(uint32 partitionIndex, RenderPa
         graphicsContext->TransitionResourceExplicit(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, i, false, true);
 
         DescriptorHeapHandle mipTargetHandle = renderPassContext->GetCBVSRVHeap()->GetHeapHandleBlock(1);
-        direct3DManager->GetDevice()->CopyDescriptorsSimple(1, evsmTargetHandle.GetCPUHandle(), mShadowEVSMTextures[partitionIndex]->GetUnorderedAccessViewHandle(i).GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        direct3DManager->GetDevice()->CopyDescriptorsSimple(1, mipTargetHandle.GetCPUHandle(), mShadowEVSMTextures[partitionIndex]->GetUnorderedAccessViewHandle(i).GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     
         mipTextureSize = mipTextureSize >> 1;
         float mipTexelSize = 1.0f / (float)mipTextureSize;
         Vector3 mipConstants = Vector3(mipTexelSize, mipTexelSize, (float)(i - 1));
 
-        graphicsContext->SetComputeDescriptorTable(0, evsmTargetHandle.GetGPUHandle());
+        graphicsContext->SetComputeDescriptorTable(0, mipTargetHandle.GetGPUHandle());
         graphicsContext->SetComputeConstants(1, 3, &mipConstants);
         graphicsContext->Dispatch2D(mipTextureSize, mipTextureSize, 8, 8);
 
         graphicsContext->InsertUAVBarrier(mShadowEVSMTextures[partitionIndex], false);
+
+        graphicsContext->TransitionResourceExplicit(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, i, false, true);
     }
 
     for (uint32 i = 1; i < mShadowPreferences.ShadowTextureMipLevels; i++)
     {
-        graphicsContext->TransitionResourceExplicit(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, i, false, false);
+        graphicsContext->TransitionResourceExplicit(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, i, false, false);
     }
 
     graphicsContext->TransitionResourceExplicit(mShadowEVSMTextures[partitionIndex], D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, true, true);

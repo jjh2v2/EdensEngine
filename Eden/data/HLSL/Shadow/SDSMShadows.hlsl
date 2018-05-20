@@ -37,10 +37,10 @@ cbuffer SDSMBuffer: register(b0)
 };
 
 [numthreads(NUM_SHADOW_PARTITIONS, 1, 1)]
-void ClearShadowPartitions(uint3 dispatchThreadID : SV_DispatchThreadID)
+void ClearShadowPartitions(uint groupIndex : SV_GroupIndex)
 {
-    ShadowPartitionsRWUint[dispatchThreadID.x].intervalBegin = 0x7F7FFFFF; //float max
-    ShadowPartitionsRWUint[dispatchThreadID.x].intervalEnd = 0;
+    ShadowPartitionsRWUint[groupIndex].intervalBegin = 0x7F7FFFFF; //float max
+    ShadowPartitionsRWUint[groupIndex].intervalEnd = 0;
 }
 
 [numthreads(NUM_SHADOW_PARTITIONS, 1, 1)]
@@ -49,7 +49,8 @@ void ClearShadowPartitionBounds(uint groupIndex : SV_GroupIndex)
     ShadowPartitionBoundUint bound;
     bound.minCoord = uint3(0x7F7FFFFF, 0x7F7FFFFF, 0x7F7FFFFF); //float max
     bound.maxCoord = uint3(0,0,0);
-    bound.padding = uint2(0,0);
+    bound.padding = 0;
+    bound.padding2 = 0;
     
     ShadowPartitionBoundsRWUint[groupIndex] = bound;
 }
@@ -67,7 +68,8 @@ void CalculateDepthBufferBounds(uint3 groupId : SV_GroupID, uint3 groupThreadId 
         {
             uint2 texCoords = tileStart + uint2(tileX, tileY);
             float zDepth = DepthBufferTexture[texCoords].r;
-            float viewPositionZ = GetViewPosition(texCoords, pfBufferDimensions, zDepth, pfCameraProj).z;
+            float viewPositionZ = GetViewPositionZ(texCoords, pfBufferDimensions, zDepth, pfCameraProj);
+            
             if (viewPositionZ >= pfCameraNearFar.x && viewPositionZ < pfCameraNearFar.y) 
             {
                 minDepth = min(minDepth, viewPositionZ);
@@ -107,7 +109,6 @@ void CalculateLogPartitionsFromDepthBounds(uint groupIndex : SV_GroupIndex)
     ShadowPartitionsRW[groupIndex].intervalEnd = groupIndex == (NUM_SHADOW_PARTITIONS - 1) ? pfCameraNearFar.y : GetLogPartitionFromDepthRange(groupIndex + 1, NUM_SHADOW_PARTITIONS, minZ, maxZ);
 }
 
-
 [numthreads(PARTITION_BOUNDS_THREADS_X, PARTITION_BOUNDS_THREADS_Y, 1)]
 void CalculatePartitionBounds(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID, uint groupIndex : SV_GroupIndex)
 {
@@ -117,7 +118,8 @@ void CalculatePartitionBounds(uint3 groupId : SV_GroupID, uint3 groupThreadId : 
     ShadowPartitionBoundFloat emptyBounds;
     emptyBounds.minCoord = asfloat(minBound);
     emptyBounds.maxCoord = float3(0,0,0);
-    emptyBounds.padding = float2(0,0);
+    emptyBounds.padding = 0;
+    emptyBounds.padding2 = 0;
     
     [unroll] 
     for (uint partitionIndex = 0; partitionIndex < NUM_SHADOW_PARTITIONS; partitionIndex++) 

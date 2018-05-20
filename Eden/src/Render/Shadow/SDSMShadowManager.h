@@ -38,6 +38,9 @@ public:
     void ComputeShadowPartitions(Camera *camera, D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjectionMatrix, DepthStencilTarget *depthStencil, uint64 gbufferPassFence);
     void RenderShadowMapPartitions(const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities);
 
+    RenderTarget *GetShadowEVSMTexture(uint32 index) { return mShadowEVSMTextures[index]; }
+    StructuredBuffer *GetShadowPartitionBuffer() { return mShadowPartitionBuffer; }
+
 private:
     void RenderShadowDepth(uint32 partitionIndex, RenderPassContext *renderPassContext, const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities);
     void ConvertToEVSM(uint32 partitionIndex);

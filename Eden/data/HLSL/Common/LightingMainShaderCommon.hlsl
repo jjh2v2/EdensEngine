@@ -28,7 +28,7 @@ cbuffer LightingPassBuffer : register(b0)
     float4 pfSkyColor;
     float4 pfGroundColor;
 	float4 pfLightDir;
-	float3 pfLightColor;
+	float4 pfLightColor;
     float2 pfBufferDimensions;
 	float  pfLightIntensity;
 	float  pfAmbientIntensity;

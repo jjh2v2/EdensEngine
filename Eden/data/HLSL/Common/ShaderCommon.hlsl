@@ -41,6 +41,15 @@ float3 GetViewPosition(uint2 coords, float2 bufferDimensions, float zDepth, matr
 	return GetViewPosition(positionScreen , viewSpaceDepth, cameraProj);
 }
 
+float GetViewPositionZ(uint2 coords, float2 bufferDimensions, float zDepth, matrix cameraProj)
+{
+    float2 pixelOffset = float2(2.0f, -2.0f) / bufferDimensions;
+    float2 positionScreen = (coords.xy + 0.5f) * pixelOffset.xy + float2(-1.0f, 1.0f);
+	float viewSpaceDepth = cameraProj._43 / (zDepth - cameraProj._33);
+	
+	return viewSpaceDepth;
+}
+
 float3 ViewPositionToLightTexCoord(float3 positionView, matrix cameraViewToLightProj)
 {
     float4 positionLight = mul(float4(positionView, 1.0f), cameraViewToLightProj);
