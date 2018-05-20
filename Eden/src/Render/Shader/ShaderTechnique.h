@@ -9,8 +9,8 @@ public:
 	ShaderTechnique(ID3D12Device *device, ShaderPipelineDefinition &pipelineDefinition);
 	~ShaderTechnique();
 
-	bool HasShader(ShaderPipelinePermutation permutation);
-	ShaderPSO *GetShader(ShaderPipelinePermutation permutation);
+	bool HasShader(const ShaderPipelinePermutation &permutation);
+	ShaderPSO *GetShader(const ShaderPipelinePermutation &permutation);
 	void AddAndCompilePermutation(ID3D12Device *device, const ShaderPipelinePermutation &permutation, ID3D12RootSignature *rootSignature);
 
 private:

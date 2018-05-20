@@ -1,0 +1,5 @@
+ComputeShader
+[Shadow/ShadowMapToEVSMCompute.hlsl]
+[ShadowMapToEVSMCompute]
+RootSignature
+[16]

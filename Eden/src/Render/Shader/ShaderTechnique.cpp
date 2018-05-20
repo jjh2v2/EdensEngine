@@ -42,12 +42,12 @@ void ShaderTechnique::AddAndCompilePermutation(ID3D12Device *device, const Shade
 	mShaderPipelineMap.insert(std::pair<ShaderPipelinePermutation, ShaderPSO*>(permutation, newShaderPSO));
 }
 
-ShaderPSO *ShaderTechnique::GetShader(ShaderPipelinePermutation permutation)
+ShaderPSO *ShaderTechnique::GetShader(const ShaderPipelinePermutation &permutation)
 {
 	return mShaderPipelineMap[permutation];
 }
 
-bool ShaderTechnique::HasShader(ShaderPipelinePermutation permutation)
+bool ShaderTechnique::HasShader(const ShaderPipelinePermutation &permutation)
 {
 	return mShaderPipelineMap.find(permutation) != mShaderPipelineMap.end();
 }

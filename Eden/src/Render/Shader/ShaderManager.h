@@ -11,7 +11,7 @@ public:
 	ShaderManager(ID3D12Device *device);
 	~ShaderManager();
 	
-	ShaderPSO *GetShader(std::string shaderName, ShaderPipelinePermutation permutation);
+	ShaderPSO *GetShader(std::string shaderName, const ShaderPipelinePermutation &permutation);
 
 private:
 	struct ShaderTechniqueInfo

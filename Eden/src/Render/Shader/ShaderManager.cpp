@@ -25,8 +25,14 @@ ShaderManager::~ShaderManager()
     ShaderPipelineStateCreator::DestroyPipelineStates();
 }
 
-ShaderPSO *ShaderManager::GetShader(std::string shaderName, ShaderPipelinePermutation permutation)
+ShaderPSO *ShaderManager::GetShader(std::string shaderName, const ShaderPipelinePermutation &permutation)
 { 
+    if (mShaderTechniqueLookup.find(shaderName) == mShaderTechniqueLookup.end())
+    {
+        Application::Assert(false);
+        return NULL;
+    }
+
 	ShaderTechniqueInfo techniqueInfo = mShaderTechniqueLookup[shaderName];
 
 	if (techniqueInfo.Technique->HasShader(permutation))

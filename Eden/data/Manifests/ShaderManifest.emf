@@ -15,3 +15,4 @@ SkyBox.esh
 LightingMain.esh
 Compute/FilterEnvironmentMap.esh
 Compute/GenerateEnvironmentMapLookup.esh
+Compute/ShadowMapToEVSMCompute.esh
