@@ -23,6 +23,7 @@ private:
 
 	void ClearGBuffer();
 	void RenderGBuffer();
+    void RenderSky();
     void RenderShadows(D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjMatrix);
     void RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3DXMATRIX &projectionMatrix, const D3DXMATRIX &viewToLightProjMatrix, const D3DXMATRIX &viewInvMatrix);
 	void CopyToBackBuffer(RenderTarget *renderTargetToCopy);
@@ -38,6 +39,7 @@ private:
     RenderTarget *mHDRTarget;
 
 	ConstantBuffer *mCameraConstantBuffer[FRAME_BUFFER_COUNT];
+    ConstantBuffer *mSkyBuffer[FRAME_BUFFER_COUNT];
     ConstantBuffer *mLightBuffer[FRAME_BUFFER_COUNT];
 
 	SceneEntity *mSceneEntity;
@@ -46,6 +48,8 @@ private:
     SceneEntity *mSceneEntity4;
 
     Texture *mSkyTexture;
+    Mesh *mSkyMesh;
+
     FilteredCubeMapRenderTexture *mFilteredCubeMap;
     RenderTarget *mEnvironmentMapLookup;
 

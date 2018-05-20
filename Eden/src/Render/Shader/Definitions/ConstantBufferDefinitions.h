@@ -56,6 +56,12 @@ struct LightingMainBuffer
     uint32  specularIBLMipLevels;
 };
 
+struct SkyBuffer
+{
+    D3DXMATRIX wvpMatrix;
+    float fade;
+};
+
 struct MaterialConstants
 {
 	MaterialConstants()

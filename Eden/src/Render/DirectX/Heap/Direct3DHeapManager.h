@@ -4,7 +4,8 @@
 
 enum RenderPassDescriptorHeapType
 {
-    RenderPassDescriptorHeapType_GBuffer,
+    RenderPassDescriptorHeapType_GBuffer,           //TDA: will be faster when we get rid of most of these, but for simplicity while developing, it works
+    RenderPassDescriptorHeapType_Sky,
     RenderPassDescriptorHeapType_ShadowCompute,
     RenderPassDescriptorHeapType_ShadowRender,
     RenderPassDescriptorHeapType_Lighting,

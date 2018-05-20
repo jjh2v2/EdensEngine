@@ -12,6 +12,12 @@ LightingMainVertexOutput LightingMainVertexShader(uint vertexID : SV_VertexID)
 float4 LightingMainPixelShader(LightingMainVertexOutput input) : SV_Target
 {
 	LightingSurface surface = GetLightingSurfaceFromGBuffer(uint2(input.position.xy));
+    
+    if(surface.zDepth < 0.00001)
+    {
+        discard;
+    }
+    
 	float3 shadowTexCoord = float3(0,0,0);
 	float3 shadowTexCoordDX = float3(0,0,0);
 	float3 shadowTexCoordDY = float3(0,0,0);

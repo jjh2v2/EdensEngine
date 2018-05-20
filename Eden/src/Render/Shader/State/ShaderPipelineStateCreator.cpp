@@ -159,6 +159,9 @@ void ShaderPipelineStateCreator::BuildPipelineStates()
     mPipelineRenderStateMap.insert(std::pair<ShaderRenderStateType, ShaderPipelineRenderState>(Render_ShadowMap,
         ShaderPipelineRenderState(mDepthStencilDescs[DepthStencil_WriteLessEqual], mRasterDescs[Raster_BackFaceCullNoClip], mBlendDescs[Blend_Disabled], D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE)));
 
+    mPipelineRenderStateMap.insert(std::pair<ShaderRenderStateType, ShaderPipelineRenderState>(Render_Sky,
+        ShaderPipelineRenderState(mDepthStencilDescs[DepthStencil_Disabled], mRasterDescs[Raster_FrontFaceCull], mBlendDescs[Blend_Disabled], D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE)));
+
 	ShaderPipelineTargetState gbufferTarget;
 	gbufferTarget.NumRenderTargets = 3;
 	gbufferTarget.RenderTargetFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;	//albedo

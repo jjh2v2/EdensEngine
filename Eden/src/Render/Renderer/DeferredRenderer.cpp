@@ -20,6 +20,7 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
     {
         mCameraConstantBuffer[i] = contextManager->CreateConstantBuffer(sizeof(CameraBuffer));
         mLightBuffer[i] = contextManager->CreateConstantBuffer(sizeof(LightingMainBuffer));
+        mSkyBuffer[i] = contextManager->CreateConstantBuffer(sizeof(SkyBuffer));
     }
 
 	{
@@ -126,6 +127,7 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
     }
 
     mSkyTexture = mGraphicsManager->GetTextureManager()->GetTexture("SnowyMountains");
+    mSkyMesh = mGraphicsManager->GetMeshManager()->GetMesh("Sphere");
 
     ShaderPipelinePermutation emptyComputePermutation;
     ShaderPSO *envFilterShader = mGraphicsManager->GetShaderManager()->GetShader("FilterEnvironmentMap", emptyComputePermutation);
@@ -155,6 +157,9 @@ DeferredRenderer::~DeferredRenderer()
 
         contextManager->FreeConstantBuffer(mLightBuffer[i]);
         mLightBuffer[i] = NULL;
+
+        contextManager->FreeConstantBuffer(mSkyBuffer[i]);
+        mSkyBuffer[i] = NULL;
     }
 	
 	{
@@ -330,6 +335,72 @@ void DeferredRenderer::RenderGBuffer()
     graphicsContext->TransitionResource(mGBufferDepth, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, true);
 }
 
+void DeferredRenderer::RenderSky()
+{
+    if (!mSkyTexture || !mSkyTexture->GetIsReady() || !mSkyMesh || !mSkyMesh->IsReady())
+    {
+        return;
+    }
+
+    Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
+    GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
+    Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
+    Vector2 screenSize = direct3DManager->GetScreenSize();
+
+    const uint32 numSRVsNeeded = 3;
+    const uint32 numSamplersNeeded = 1;
+    RenderPassDescriptorHeap *skyBoxSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_Sky, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numSRVsNeeded);
+    RenderPassDescriptorHeap *skyBoxSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_Sky, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), numSamplersNeeded);
+
+    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, skyBoxSRVDescHeap->GetHeap());
+    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, skyBoxSamplerDescHeap->GetHeap());
+
+    graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
+    graphicsContext->SetScissorRect(0, 0, (uint32)screenSize.X, (uint32)screenSize.Y);
+
+    DescriptorHeapHandle skyTexturesHandle = skyBoxSRVDescHeap->GetHeapHandleBlock(2);
+    D3D12_CPU_DESCRIPTOR_HANDLE skyTexturesHandleOffset = skyTexturesHandle.GetCPUHandle();
+
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, skyTexturesHandleOffset, mSkyTexture->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    skyTexturesHandleOffset.ptr += skyBoxSRVDescHeap->GetDescriptorSize();
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, skyTexturesHandleOffset, mSkyTexture->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    Sampler *skySampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_POINT_CLAMP);
+    DescriptorHeapHandle skySamplerHandle = skyBoxSamplerDescHeap->GetHeapHandleBlock(1);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, skySamplerHandle.GetCPUHandle(), skySampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
+    Camera *mainCamera = mActiveScene->GetMainCamera();
+    D3DXMATRIX positionMatrix;
+    Vector3 cameraPosition = mainCamera->GetPosition();
+    D3DXMatrixTranslation(&positionMatrix, cameraPosition.X, cameraPosition.Y, cameraPosition.Z);
+    D3DXMATRIX worldViewProjMatrix = positionMatrix * mainCamera->GetViewMatrix() * mainCamera->GetReverseProjectionMatrix();
+    D3DXMatrixTranspose(&worldViewProjMatrix, &worldViewProjMatrix);
+
+    SkyBuffer skyBufferData;
+    skyBufferData.wvpMatrix = worldViewProjMatrix;
+    skyBufferData.fade = 0;
+    mSkyBuffer[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&skyBufferData, sizeof(SkyBuffer));
+
+    DescriptorHeapHandle skyBufferHandle = skyBoxSRVDescHeap->GetHeapHandleBlock(1);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, skyBufferHandle.GetCPUHandle(), mSkyBuffer[direct3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    graphicsContext->SetRenderTarget(mHDRTarget->GetRenderTargetViewHandle().GetCPUHandle());
+
+    ShaderPipelinePermutation skyShaderPermutation(Render_Sky, Target_Single_16_NoDepth, InputLayout_Standard);
+    ShaderPSO *skyBoxShader = mGraphicsManager->GetShaderManager()->GetShader("SkyBox", skyShaderPermutation);
+    graphicsContext->SetPipelineState(skyBoxShader);
+    graphicsContext->SetRootSignature(skyBoxShader->GetRootSignature(), NULL);
+
+    graphicsContext->SetGraphicsDescriptorTable(0, skyTexturesHandle.GetGPUHandle());
+    graphicsContext->SetGraphicsDescriptorTable(1, skySamplerHandle.GetGPUHandle());
+    graphicsContext->SetGraphicsDescriptorTable(2, skyBufferHandle.GetGPUHandle());
+
+    graphicsContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    graphicsContext->SetVertexBuffer(0, mSkyMesh->GetVertexBuffer());
+    graphicsContext->SetIndexBuffer(mSkyMesh->GetIndexBuffer());
+    graphicsContext->Draw(mSkyMesh->GetVertexCount());
+}
+
 void DeferredRenderer::RenderShadows(D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjMatrix)
 {
     mShadowManager->ComputeShadowPartitions(mActiveScene->GetMainCamera(), lightViewMatrix, lightProjMatrix, mGBufferDepth, mGBufferPassFence);
@@ -346,105 +417,108 @@ void DeferredRenderer::RenderShadows(D3DXMATRIX &lightViewMatrix, D3DXMATRIX &li
 
 void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3DXMATRIX &projectionMatrix, const D3DXMATRIX &viewToLightProjMatrix, const D3DXMATRIX &viewInvMatrix)
 {
-    if (mFilteredCubeMap && mFilteredCubeMap->GetIsReady() && mEnvironmentMapLookup && mEnvironmentMapLookup->GetIsReady())
+    if (!mFilteredCubeMap || !mFilteredCubeMap->GetIsReady() || !mEnvironmentMapLookup || !mEnvironmentMapLookup->GetIsReady())
     {
-        Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
-        GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
-        Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
-        Vector2 screenSize = direct3DManager->GetScreenSize();
-
-        const uint32 numSRVsNeeded = 11;
-        const uint32 numSamplersNeeded = 2; 
-        RenderPassDescriptorHeap *lightingSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_Lighting, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numSRVsNeeded);
-        RenderPassDescriptorHeap *lightingSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_Lighting, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), numSamplersNeeded);
-
-        graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, lightingSRVDescHeap->GetHeap());
-        graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, lightingSamplerDescHeap->GetHeap());
-
-        graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
-        graphicsContext->SetScissorRect(0, 0, (uint32)screenSize.X, (uint32)screenSize.Y);
-
-        DescriptorHeapHandle lightingSRVsHandle = lightingSRVDescHeap->GetHeapHandleBlock(11 + 1);
-        D3D12_CPU_DESCRIPTOR_HANDLE lightingSRVHandleOffset = lightingSRVsHandle.GetCPUHandle();
-        uint32 lightingSRVHandleOffsetIncrement = lightingSRVDescHeap->GetDescriptorSize();
-
-        DescriptorHeapHandle lightingSamplersHandle = lightingSamplerDescHeap->GetHeapHandleBlock(2);
-        D3D12_CPU_DESCRIPTOR_HANDLE lightingSamplersHandleOffset = lightingSamplersHandle.GetCPUHandle();
-        uint32 lightingSamplersHandleOffsetIncrement = lightingSamplerDescHeap->GetDescriptorSize();
-
-        for (uint32 i = 0; i < mGBufferTargets.CurrentSize(); i++)
-        {
-            direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mGBufferTargets[i]->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-            lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
-        }
-        
-        direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mGBufferDepth->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-        lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
-
-        for (uint32 i = 0; i < SDSM_SHADOW_PARTITION_COUNT; i++)
-        {
-            direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mShadowManager->GetShadowEVSMTexture(i)->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-            lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
-        }
-
-        direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mFilteredCubeMap->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-        lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
-
-        direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mEnvironmentMapLookup->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-        lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
-
-        direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mShadowManager->GetShadowPartitionBuffer()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-        
-        Sampler *lightingSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_ANISO_16_CLAMP);
-
-        direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSamplersHandleOffset, lightingSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-        lightingSamplersHandleOffset.ptr += lightingSamplersHandleOffsetIncrement;
-        
-        direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSamplersHandleOffset, lightingSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-        
-        Camera *mainCamera = mActiveScene->GetMainCamera();
-        Vector3 lightDir = mActiveScene->GetSunLight()->GetDirection();
-
-        D3DXVECTOR3 lightDirectionView;
-        D3DXMATRIX viewTransposed;
-        D3DXMatrixTranspose(&viewTransposed, &viewMatrix);
-
-        D3DXVec3TransformNormal(&lightDirectionView, &mActiveScene->GetSunLight()->GetDirection().AsD3DVector3(), &viewTransposed);
-        Vector4 lightDirView = Vector4(lightDirectionView.x, lightDirectionView.y, lightDirectionView.z, 1.0f);
-
-        LightingMainBuffer lightBuffer;
-        lightBuffer.viewMatrix = viewMatrix;            //all pre-transposed
-        lightBuffer.projectionMatrix = projectionMatrix;
-        lightBuffer.viewToLightProjMatrix = viewToLightProjMatrix;
-        lightBuffer.viewInvMatrix = viewInvMatrix;
-        lightBuffer.groundColor = Vector4(0.705f, 0.809f, 0.839f, 1.0f);
-        lightBuffer.skyColor = Vector4(0.0f, 0.588f, 1.0f, 1.0f);
-        lightBuffer.lightDir = lightDirView;
-        lightBuffer.lightColor = Vector4(1.0f, 0.889f, 0.717f, 1.0f);
-        lightBuffer.bufferDimensions = screenSize;
-        lightBuffer.lightIntensity = 1.0f;
-        lightBuffer.ambientIntensity = 0.2f;
-        lightBuffer.brdfSpecular = 1.0f;
-        lightBuffer.specularIBLMipLevels = 11;
-
-        mLightBuffer[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&lightBuffer, sizeof(LightingMainBuffer));
-
-        DescriptorHeapHandle perFrameLightHandle = lightingSRVDescHeap->GetHeapHandleBlock(1);
-        direct3DManager->GetDevice()->CopyDescriptorsSimple(1, perFrameLightHandle.GetCPUHandle(), mLightBuffer[direct3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-        graphicsContext->SetRenderTarget(mHDRTarget->GetRenderTargetViewHandle().GetCPUHandle());
-
-        ShaderPipelinePermutation lightMainPermutation(Render_Standard_NoDepth, Target_Single_16_NoDepth, InputLayout_Standard);
-        ShaderPSO *lightMainShader = mGraphicsManager->GetShaderManager()->GetShader("LightingMain", lightMainPermutation);
-        graphicsContext->SetPipelineState(lightMainShader);
-        graphicsContext->SetRootSignature(lightMainShader->GetRootSignature(), NULL);
-
-        graphicsContext->SetGraphicsDescriptorTable(0, lightingSRVsHandle.GetGPUHandle());
-        graphicsContext->SetGraphicsDescriptorTable(1, lightingSamplersHandle.GetGPUHandle());
-        graphicsContext->SetGraphicsDescriptorTable(2, perFrameLightHandle.GetGPUHandle());
-
-        graphicsContext->DrawFullScreenTriangle();
+        //early out if our environment lighting isn't ready
+        return;
     }
+
+    Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
+    GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
+    Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
+    Vector2 screenSize = direct3DManager->GetScreenSize();
+
+    const uint32 numSRVsNeeded = 11;
+    const uint32 numSamplersNeeded = 2; 
+    RenderPassDescriptorHeap *lightingSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_Lighting, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numSRVsNeeded);
+    RenderPassDescriptorHeap *lightingSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_Lighting, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), numSamplersNeeded);
+
+    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, lightingSRVDescHeap->GetHeap());
+    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, lightingSamplerDescHeap->GetHeap());
+
+    graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
+    graphicsContext->SetScissorRect(0, 0, (uint32)screenSize.X, (uint32)screenSize.Y);
+
+    DescriptorHeapHandle lightingSRVsHandle = lightingSRVDescHeap->GetHeapHandleBlock(11 + 1);
+    D3D12_CPU_DESCRIPTOR_HANDLE lightingSRVHandleOffset = lightingSRVsHandle.GetCPUHandle();
+    uint32 lightingSRVHandleOffsetIncrement = lightingSRVDescHeap->GetDescriptorSize();
+
+    DescriptorHeapHandle lightingSamplersHandle = lightingSamplerDescHeap->GetHeapHandleBlock(2);
+    D3D12_CPU_DESCRIPTOR_HANDLE lightingSamplersHandleOffset = lightingSamplersHandle.GetCPUHandle();
+    uint32 lightingSamplersHandleOffsetIncrement = lightingSamplerDescHeap->GetDescriptorSize();
+
+    for (uint32 i = 0; i < mGBufferTargets.CurrentSize(); i++)
+    {
+        direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mGBufferTargets[i]->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
+    }
+        
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mGBufferDepth->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
+
+    for (uint32 i = 0; i < SDSM_SHADOW_PARTITION_COUNT; i++)
+    {
+        direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mShadowManager->GetShadowEVSMTexture(i)->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
+    }
+
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mFilteredCubeMap->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
+
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mEnvironmentMapLookup->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
+
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mShadowManager->GetShadowPartitionBuffer()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        
+    Sampler *lightingSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_ANISO_16_CLAMP);
+
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSamplersHandleOffset, lightingSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+    lightingSamplersHandleOffset.ptr += lightingSamplersHandleOffsetIncrement;
+        
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSamplersHandleOffset, lightingSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+        
+    Camera *mainCamera = mActiveScene->GetMainCamera();
+    Vector3 lightDir = mActiveScene->GetSunLight()->GetDirection();
+
+    D3DXVECTOR3 lightDirectionView;
+    D3DXMATRIX viewTransposed;
+    D3DXMatrixTranspose(&viewTransposed, &viewMatrix);
+
+    D3DXVec3TransformNormal(&lightDirectionView, &mActiveScene->GetSunLight()->GetDirection().AsD3DVector3(), &viewTransposed);
+    Vector4 lightDirView = Vector4(lightDirectionView.x, lightDirectionView.y, lightDirectionView.z, 1.0f);
+
+    LightingMainBuffer lightBuffer;
+    lightBuffer.viewMatrix = viewMatrix;            //all pre-transposed
+    lightBuffer.projectionMatrix = projectionMatrix;
+    lightBuffer.viewToLightProjMatrix = viewToLightProjMatrix;
+    lightBuffer.viewInvMatrix = viewInvMatrix;
+    lightBuffer.groundColor = Vector4(0.705f, 0.809f, 0.839f, 1.0f);
+    lightBuffer.skyColor = Vector4(0.0f, 0.588f, 1.0f, 1.0f);
+    lightBuffer.lightDir = lightDirView;
+    lightBuffer.lightColor = Vector4(1.0f, 0.889f, 0.717f, 1.0f);
+    lightBuffer.bufferDimensions = screenSize;
+    lightBuffer.lightIntensity = 2.0f;
+    lightBuffer.ambientIntensity = 0.2f;
+    lightBuffer.brdfSpecular = 1.0f;
+    lightBuffer.specularIBLMipLevels = 11;
+
+    mLightBuffer[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&lightBuffer, sizeof(LightingMainBuffer));
+
+    DescriptorHeapHandle perFrameLightHandle = lightingSRVDescHeap->GetHeapHandleBlock(1);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, perFrameLightHandle.GetCPUHandle(), mLightBuffer[direct3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    graphicsContext->SetRenderTarget(mHDRTarget->GetRenderTargetViewHandle().GetCPUHandle());
+
+    ShaderPipelinePermutation lightMainPermutation(Render_Standard_NoDepth, Target_Single_16_NoDepth, InputLayout_Standard);
+    ShaderPSO *lightMainShader = mGraphicsManager->GetShaderManager()->GetShader("LightingMain", lightMainPermutation);
+    graphicsContext->SetPipelineState(lightMainShader);
+    graphicsContext->SetRootSignature(lightMainShader->GetRootSignature(), NULL);
+
+    graphicsContext->SetGraphicsDescriptorTable(0, lightingSRVsHandle.GetGPUHandle());
+    graphicsContext->SetGraphicsDescriptorTable(1, lightingSamplersHandle.GetGPUHandle());
+    graphicsContext->SetGraphicsDescriptorTable(2, perFrameLightHandle.GetGPUHandle());
+
+    graphicsContext->DrawFullScreenTriangle();
 }
 
 void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
@@ -538,6 +612,7 @@ void DeferredRenderer::Render()
     
 	ClearGBuffer();
 	RenderGBuffer();
+    RenderSky();
     RenderShadows(lightView, lightProj);
     RenderLightingMain(cameraBuffer.viewMatrix, cameraBuffer.projectionMatrix, cameraBuffer.viewToLightProjMatrix, cameraBuffer.viewInvMatrix);
     CopyToBackBuffer(mHDRTarget);

@@ -51,7 +51,8 @@ enum ShaderRenderStateType
     Render_None = 0,
 	Render_Standard = 1,
 	Render_Standard_NoDepth = 2,
-    Render_ShadowMap = 3
+    Render_ShadowMap = 3,
+    Render_Sky = 4
 };
 
 enum ShaderInputLayoutType
