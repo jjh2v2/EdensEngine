@@ -1,0 +1,8 @@
+VertexShader
+[Lighting/BloomDownsample.hlsl]
+[BloomDownsampleVertexShader]
+PixelShader
+[Lighting/BloomDownsample.hlsl]
+[BloomDownsamplePixelShader]
+RootSignature
+[17]

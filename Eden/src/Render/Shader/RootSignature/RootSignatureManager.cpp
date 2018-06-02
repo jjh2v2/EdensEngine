@@ -350,6 +350,67 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 
         mRootSignatures.Add(shadowMapEVSMSignature);
     }
+
+    {
+        //RootSignatureType_BloomDownsample
+        CD3DX12_DESCRIPTOR_RANGE ranges[2];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);      //1 srv, downsample source, at t0
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);  //1 sampler for bloom, s0
+
+        CD3DX12_ROOT_PARAMETER rootParameters[2];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
+        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_PIXEL);
+
+        RootSignatureInfo bloomDownsampleSignature;
+        bloomDownsampleSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&bloomDownsampleSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &bloomDownsampleSignature.RootSignatureBlob, &bloomDownsampleSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, bloomDownsampleSignature.RootSignatureBlob->GetBufferPointer(), bloomDownsampleSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&bloomDownsampleSignature.RootSignature)));
+
+        mRootSignatures.Add(bloomDownsampleSignature);
+    }
+
+    {
+        //RootSignatureType_BloomBlur
+        CD3DX12_DESCRIPTOR_RANGE ranges[3];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);      //1 cbv, bloom blur buffer, at b0
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);      //1 srv, bloom blur source, at t0
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);  //1 sampler for bloom, s0
+
+        CD3DX12_ROOT_PARAMETER rootParameters[3];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
+        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_PIXEL);
+        rootParameters[2].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_PIXEL);
+
+        RootSignatureInfo bloomBlurSignature;
+        bloomBlurSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&bloomBlurSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &bloomBlurSignature.RootSignatureBlob, &bloomBlurSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, bloomBlurSignature.RootSignatureBlob->GetBufferPointer(), bloomBlurSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&bloomBlurSignature.RootSignature)));
+
+        mRootSignatures.Add(bloomBlurSignature);
+    }
+
+    {
+        //RootSignatureType_ToneMap
+        CD3DX12_DESCRIPTOR_RANGE ranges[3];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);      //1 cbv, tonemap buffer, at b0
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);      //2 srv, hdr and bloom, at t0-t1
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 2, 0);  //2 samplers for hdr and bloom, s0-s1
+
+        CD3DX12_ROOT_PARAMETER rootParameters[3];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
+        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_PIXEL);
+        rootParameters[2].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_PIXEL);
+
+        RootSignatureInfo toneMapSignature;
+        toneMapSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&toneMapSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &toneMapSignature.RootSignatureBlob, &toneMapSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, toneMapSignature.RootSignatureBlob->GetBufferPointer(), toneMapSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&toneMapSignature.RootSignature)));
+
+        mRootSignatures.Add(toneMapSignature);
+    }
 }
 
 RootSignatureManager::~RootSignatureManager()

@@ -189,6 +189,7 @@
     <ClInclude Include="src\Render\Mesh\FBX\FBXLoader.h" />
     <ClInclude Include="src\Render\Mesh\Mesh.h" />
     <ClInclude Include="src\Render\Mesh\MeshManager.h" />
+    <ClInclude Include="src\Render\PostProcess\PostProcessManager.h" />
     <ClInclude Include="src\Render\Renderer\DeferredRenderer.h" />
     <ClInclude Include="src\Render\Shader\Definitions\ConstantBufferDefinitions.h" />
     <ClInclude Include="src\Render\Shader\Definitions\MaterialDefinitions.h" />
@@ -263,6 +264,7 @@
     <ClCompile Include="src\Render\Mesh\FBX\FBXLoader.cpp" />
     <ClCompile Include="src\Render\Mesh\Mesh.cpp" />
     <ClCompile Include="src\Render\Mesh\MeshManager.cpp" />
+    <ClCompile Include="src\Render\PostProcess\PostProcessManager.cpp" />
     <ClCompile Include="src\Render\Renderer\DeferredRenderer.cpp" />
     <ClCompile Include="src\Render\Shader\Definitions\ConstantBufferDefinitions.cpp" />
     <ClCompile Include="src\Render\Shader\RootSignature\RootSignatureManager.cpp" />

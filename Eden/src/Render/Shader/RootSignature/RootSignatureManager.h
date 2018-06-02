@@ -22,6 +22,9 @@ enum RootSignatureType
     RootSignatureType_FilterCubemap = 14,
     RootSignatureType_GenerateEnvMap = 15,
     RootSignatureType_ShadowMapToEVSM_Compute = 16,
+    RootSignatureType_BloomDownsample = 17,
+    RootSignatureType_BloomBlur = 18,
+    RootSignatureType_ToneMap = 19,
 	NumRootSignatures
 };
 

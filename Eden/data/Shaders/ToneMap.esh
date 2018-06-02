@@ -1,0 +1,8 @@
+VertexShader
+[Lighting/ToneMap.hlsl]
+[ToneMapVertexShader]
+PixelShader
+[Lighting/ToneMap.hlsl]
+[ToneMapPixelShader]
+RootSignature
+[19]

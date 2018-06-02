@@ -145,6 +145,9 @@
     <Filter Include="Source Files\Render\Light">
       <UniqueIdentifier>{5fc0c578-bda8-40d6-a632-51a6a5aacadc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render\PostProcess">
+      <UniqueIdentifier>{1fb0394b-1b7e-4a2a-845a-c18b95390fcf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -378,6 +381,9 @@
     <ClInclude Include="src\Util\Math\MatrixHelper.h">
       <Filter>Source Files\Util\Math</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\PostProcess\PostProcessManager.h">
+      <Filter>Source Files\Render\PostProcess</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -571,6 +577,9 @@
     </ClCompile>
     <ClCompile Include="src\Render\Light\LightManager.cpp">
       <Filter>Source Files\Render\Light</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\PostProcess\PostProcessManager.cpp">
+      <Filter>Source Files\Render\PostProcess</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
