@@ -141,7 +141,7 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     mCurrentSDSMBuffer.bufferDimensions = direct3DManager->GetScreenSize();
     mCurrentSDSMBuffer.cameraNearFar = Vector2(cameraSettings.Near, cameraSettings.Far);
     mCurrentSDSMBuffer.dilationFactor = 0.01f;
-    mCurrentSDSMBuffer.reduceTileDim = 128;
+    mCurrentSDSMBuffer.reduceTileDim = 64;
 
     D3DXMatrixTranspose(&mCurrentSDSMBuffer.cameraProjMatrix, &mCurrentSDSMBuffer.cameraProjMatrix);
     D3DXMatrixTranspose(&mCurrentSDSMBuffer.cameraViewToLightProjMatrix, &mCurrentSDSMBuffer.cameraViewToLightProjMatrix);
@@ -198,10 +198,7 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     graphicsContext->SetComputeDescriptorTable(1, shadowPartitionSRVHandle.GetGPUHandle());
     graphicsContext->SetComputeDescriptorTable(2, shadowPartitionCBVHandle.GetGPUHandle());
 
-    uint32 dispatchWidth  = ((uint32)direct3DManager->GetScreenSize().X + mCurrentSDSMBuffer.reduceTileDim - 1) / mCurrentSDSMBuffer.reduceTileDim;
-    uint32 dispatchHeight = ((uint32)direct3DManager->GetScreenSize().Y + mCurrentSDSMBuffer.reduceTileDim - 1) / mCurrentSDSMBuffer.reduceTileDim;
-
-    graphicsContext->Dispatch(dispatchWidth, dispatchHeight, 1);
+    graphicsContext->Dispatch2D((uint32)direct3DManager->GetScreenSize().X, (uint32)direct3DManager->GetScreenSize().Y, mCurrentSDSMBuffer.reduceTileDim, mCurrentSDSMBuffer.reduceTileDim);
 
     ////// Get Partitions From Depth Bounds
     graphicsContext->TransitionResource(mShadowPartitionBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
@@ -241,7 +238,7 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     graphicsContext->SetComputeDescriptorTable(1, shadowPartitionSRVHandle.GetGPUHandle());
     graphicsContext->SetComputeDescriptorTable(2, shadowPartitionCBVHandle.GetGPUHandle());
 
-    graphicsContext->Dispatch(dispatchWidth, dispatchHeight, 1);
+    graphicsContext->Dispatch2D((uint32)direct3DManager->GetScreenSize().X, (uint32)direct3DManager->GetScreenSize().Y, mCurrentSDSMBuffer.reduceTileDim, mCurrentSDSMBuffer.reduceTileDim);
 
     ////// Finalize Partition Bounds
     graphicsContext->TransitionResource(mShadowPartitionBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false);

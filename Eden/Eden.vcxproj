@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{797D5C2D-F7E0-44A5-8547-92A1A205AFD4}</ProjectGuid>
     <RootNamespace>Eden</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.10240.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -77,8 +77,8 @@
     <LibraryPath>C:\Program Files (x86)\Windows Kits\10\Lib\10.0.10240.0\ucrt\x64;data\Dependencies\HBAO\lib\lib64;data\Dependencies\FBXSDK\2015\lib\x64\release;data\Dependencies\Assimp\lib;$(LibraryPath);data\Dependencies\DirectX\Lib\x64</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt;data\Dependencies\FBXSDK\2015\include;data\Dependencies\Assimp\include;(IncludePath);$(WindowsSDK_IncludePath);data\Dependencies\DirectX\Include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files (x86)\Windows Kits\10\Lib\10.0.10240.0\ucrt\x64;data\Dependencies\HBAO\lib\lib64;data\Dependencies\FBXSDK\2015\lib\x64\release;data\Dependencies\Assimp\lib;$(LibraryPath);data\Dependencies\DirectX\Lib\x64</LibraryPath>
+    <IncludePath>C:\Program Files (x86)\Windows Kits\10\Include\10.0.17134.0\ucrt;data\Dependencies\FBXSDK\2015\include;data\Dependencies\Assimp\include;(IncludePath);$(WindowsSDK_IncludePath);data\Dependencies\DirectX\Include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files (x86)\Windows Kits\10\Lib\10.0.17134.0\ucrt\x64;data\Dependencies\HBAO\lib\lib64;data\Dependencies\FBXSDK\2015\lib\x64\release;data\Dependencies\Assimp\lib;$(LibraryPath);data\Dependencies\DirectX\Lib\x64</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

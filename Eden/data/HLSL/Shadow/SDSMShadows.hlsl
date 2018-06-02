@@ -11,12 +11,11 @@ RWStructuredBuffer<ShadowPartitionBoundUint> ShadowPartitionBoundsRWUint : regis
 StructuredBuffer<ShadowPartitionBoundFloat> ShadowPartitionBoundsR : register(t2);
 
 #define NUM_SHADOW_PARTITIONS 4
-#define DEPTH_BOUNDS_THREADS_PER_DIMENSION 16
+#define DEPTH_BOUNDS_THREADS_PER_DIMENSION 8
 #define DEPTH_BOUNDS_BLOCK_SIZE (DEPTH_BOUNDS_THREADS_PER_DIMENSION*DEPTH_BOUNDS_THREADS_PER_DIMENSION)
 
-#define PARTITION_BOUNDS_THREADS_X 16
-#define PARTITION_BOUNDS_THREADS_Y 8
-#define PARTITION_BOUNDS_BLOCK_SIZE (PARTITION_BOUNDS_THREADS_X*PARTITION_BOUNDS_THREADS_Y)
+#define PARTITION_BOUNDS_THREADS_PER_DIMENSION 8
+#define PARTITION_BOUNDS_BLOCK_SIZE (PARTITION_BOUNDS_THREADS_PER_DIMENSION*PARTITION_BOUNDS_THREADS_PER_DIMENSION)
 #define PARTITION_BOUNDS_SHARED_MEMORY_SIZE (NUM_SHADOW_PARTITIONS * PARTITION_BOUNDS_BLOCK_SIZE)
 
 groupshared float SharedMinDepth[DEPTH_BOUNDS_BLOCK_SIZE];
@@ -109,7 +108,7 @@ void CalculateLogPartitionsFromDepthBounds(uint groupIndex : SV_GroupIndex)
     ShadowPartitionsRW[groupIndex].intervalEnd = groupIndex == (NUM_SHADOW_PARTITIONS - 1) ? pfCameraNearFar.y : GetLogPartitionFromDepthRange(groupIndex + 1, NUM_SHADOW_PARTITIONS, minZ, maxZ);
 }
 
-[numthreads(PARTITION_BOUNDS_THREADS_X, PARTITION_BOUNDS_THREADS_Y, 1)]
+[numthreads(PARTITION_BOUNDS_THREADS_PER_DIMENSION, PARTITION_BOUNDS_THREADS_PER_DIMENSION, 1)]
 void CalculatePartitionBounds(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID, uint groupIndex : SV_GroupIndex)
 {
     ShadowPartitionBoundFloat partitionBounds[NUM_SHADOW_PARTITIONS];
@@ -131,9 +130,9 @@ void CalculatePartitionBounds(uint3 groupId : SV_GroupID, uint3 groupThreadId : 
     float farZ = ShadowPartitionsR[NUM_SHADOW_PARTITIONS - 1].intervalEnd;
     uint2 tileStart = groupId.xy * pfReduceTileDim.xx + groupThreadId.xy;
     
-    for (uint tileY = 0; tileY < pfReduceTileDim; tileY += PARTITION_BOUNDS_THREADS_Y) 
+    for (uint tileY = 0; tileY < pfReduceTileDim; tileY += PARTITION_BOUNDS_THREADS_PER_DIMENSION) 
     {
-        for (uint tileX = 0; tileX < pfReduceTileDim; tileX += PARTITION_BOUNDS_THREADS_X) 
+        for (uint tileX = 0; tileX < pfReduceTileDim; tileX += PARTITION_BOUNDS_THREADS_PER_DIMENSION) 
         {
             uint2 texCoords = tileStart + uint2(tileX, tileY);
             float zDepth = DepthBufferTexture[texCoords].r;

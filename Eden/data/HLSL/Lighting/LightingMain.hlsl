@@ -4,7 +4,7 @@ LightingMainVertexOutput LightingMainVertexShader(uint vertexID : SV_VertexID)
 {
     LightingMainVertexOutput output;
     output.texCoord0 = float2((vertexID << 1) & 2, vertexID & 2);
-    output.position  = float4(output.texCoord0 * float2(2.0f, -2.0f) + float2(-1.0f, 1.0f), 1.0f, 1.0f);
+    output.position  = float4(output.texCoord0 * float2(2.0f, -2.0f) + float2(-1.0f, 1.0f), 0.0f, 1.0f);
 
     return output;
 }
