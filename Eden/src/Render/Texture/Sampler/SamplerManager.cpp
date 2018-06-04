@@ -57,7 +57,7 @@ SamplerManager::SamplerManager(Direct3DManager *direct3DManager)
 
     {
         D3D12_SAMPLER_DESC desc;
-        desc.Filter = D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+        desc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
         desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
         desc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
         desc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
@@ -76,7 +76,7 @@ SamplerManager::SamplerManager(Direct3DManager *direct3DManager)
 
         Sampler *newSampler = new Sampler(samplerHandle);
 
-        mSamplerLookup.insert(std::pair<SamplerType, Sampler*>(SAMPLER_DEFAULT_LINEAR_POINT_CLAMP, newSampler));
+        mSamplerLookup.insert(std::pair<SamplerType, Sampler*>(SAMPLER_DEFAULT_LINEAR_CLAMP, newSampler));
         mSamplers.Add(newSampler);
     }
 

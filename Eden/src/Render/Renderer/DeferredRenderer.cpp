@@ -1,6 +1,7 @@
 #include "Render/Renderer/DeferredRenderer.h"
 #include "Render/Shader/Definitions/ConstantBufferDefinitions.h"
 #include "Render/Shadow/SDSMShadowManager.h"
+#include "Render/PostProcess/PostProcessManager.h"
 #include "Util/Math/MatrixHelper.h"
 #include "Render/Material/Material.h"
 
@@ -137,10 +138,12 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
     mEnvironmentMapLookup = mGraphicsManager->GetTextureManager()->GenerateTexture(generateEnvLookupShader, 256, 256);
 
     mShadowManager = new SDSMShadowManager(mGraphicsManager);
+    mPostProcessManager = new PostProcessManager(mGraphicsManager);
 }
 
 DeferredRenderer::~DeferredRenderer()
 {
+    delete mPostProcessManager;
     delete mShadowManager;
 
 	FreeTargets();
@@ -365,7 +368,7 @@ void DeferredRenderer::RenderSky()
     skyTexturesHandleOffset.ptr += skyBoxSRVDescHeap->GetDescriptorSize();
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, skyTexturesHandleOffset, mSkyTexture->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    Sampler *skySampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_POINT_CLAMP);
+    Sampler *skySampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_CLAMP);
     DescriptorHeapHandle skySamplerHandle = skyBoxSamplerDescHeap->GetHeapHandleBlock(1);
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, skySamplerHandle.GetCPUHandle(), skySampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 
@@ -521,45 +524,6 @@ void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3
     graphicsContext->DrawFullScreenTriangle();
 }
 
-void DeferredRenderer::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
-{
-	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
-	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
-    Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
-
-	BackBufferTarget *backBuffer = direct3DManager->GetBackBufferTarget();
-
-    RenderPassDescriptorHeap *postProcessSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), 1);
-    RenderPassDescriptorHeap *postProcessSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), 1);
-    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, postProcessSRVDescHeap->GetHeap());
-    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, postProcessSamplerDescHeap->GetHeap());
-
-	DescriptorHeapHandle copyTextureHandle = postProcessSRVDescHeap->GetHeapHandleBlock(1);
-	DescriptorHeapHandle copySamplerHandle = postProcessSamplerDescHeap->GetHeapHandleBlock(1);
-
-	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, copyTextureHandle.GetCPUHandle(), renderTargetToCopy->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	direct3DManager->GetDevice()->CopyDescriptorsSimple(1, copySamplerHandle.GetCPUHandle(), mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_POINT_CLAMP)->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-
-	graphicsContext->TransitionResource(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, false);
-	graphicsContext->TransitionResource(renderTargetToCopy, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
-
-	graphicsContext->SetRenderTarget(backBuffer->GetRenderTargetViewHandle().GetCPUHandle());
-    Vector2 screenSize = direct3DManager->GetScreenSize();
-    graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
-    graphicsContext->SetScissorRect(0, 0, (uint32)screenSize.X, (uint32)screenSize.Y);
-
-	ShaderPipelinePermutation copyPermutation(Render_Standard_NoDepth, Target_Standard_BackBuffer_NoDepth, InputLayout_Standard);
-	ShaderPSO *copyShader = mGraphicsManager->GetShaderManager()->GetShader("SimpleCopy", copyPermutation);
-	graphicsContext->SetPipelineState(copyShader);
-	graphicsContext->SetRootSignature(copyShader->GetRootSignature(), NULL);
-
-	graphicsContext->SetGraphicsDescriptorTable(0, copyTextureHandle.GetGPUHandle());
-	graphicsContext->SetGraphicsDescriptorTable(1, copySamplerHandle.GetGPUHandle());
-
-	graphicsContext->DrawFullScreenTriangle();
-
-	graphicsContext->TransitionResource(backBuffer, D3D12_RESOURCE_STATE_PRESENT, true);
-}
 
 void DeferredRenderer::Render()
 {
@@ -615,7 +579,7 @@ void DeferredRenderer::Render()
     RenderSky();
     RenderShadows(lightView, lightProj);
     RenderLightingMain(cameraBuffer.viewMatrix, cameraBuffer.projectionMatrix, cameraBuffer.viewToLightProjMatrix, cameraBuffer.viewInvMatrix);
-    CopyToBackBuffer(mHDRTarget);
+    mPostProcessManager->RenderPostProcessing(mHDRTarget);
 
     direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->WaitForFenceCPUBlocking(mPreviousFrameFence);
 

@@ -6,6 +6,7 @@
 #define GBufferTextureInputCount 3
 
 class SDSMShadowManager;
+class PostProcessManager;
 
 class DeferredRenderer
 {
@@ -26,11 +27,11 @@ private:
     void RenderSky();
     void RenderShadows(D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjMatrix);
     void RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3DXMATRIX &projectionMatrix, const D3DXMATRIX &viewToLightProjMatrix, const D3DXMATRIX &viewInvMatrix);
-	void CopyToBackBuffer(RenderTarget *renderTargetToCopy);
 
 	GraphicsManager *mGraphicsManager;
 
     SDSMShadowManager *mShadowManager;
+    PostProcessManager *mPostProcessManager;
 
 	Scene *mActiveScene;
 

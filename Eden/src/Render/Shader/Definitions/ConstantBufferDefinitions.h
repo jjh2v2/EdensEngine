@@ -62,6 +62,19 @@ struct SkyBuffer
     float fade;
 };
 
+struct BloomBlurBuffer
+{
+    Vector2 blurInputDimensions;
+    float   blurSigma;
+};
+
+struct ToneMapBuffer
+{
+    float bloomMagnitude;
+    float bloomExposure;
+    float manualExposure;
+};
+
 struct MaterialConstants
 {
 	MaterialConstants()
