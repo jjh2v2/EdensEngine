@@ -1,0 +1,8 @@
+VertexShader
+[Lighting/BloomThreshold.hlsl]
+[BloomThresholdVertexShader]
+PixelShader
+[Lighting/BloomThreshold.hlsl]
+[BloomThresholdPixelShader]
+RootSignature
+[19]

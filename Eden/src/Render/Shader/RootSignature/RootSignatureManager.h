@@ -7,7 +7,7 @@ enum RootSignatureType
 {
 	RootSignatureType_GBuffer = 0,
 	RootSignatureType_Simple_Color = 1,
-	RootSignatureType_Simple_Copy = 2,
+    RootSignatureType_Simple_Copy_Scaling = 2,
     RootSignatureType_Clear_Shadow_Partitions = 3,
     RootSignatureType_Calculate_Depth_Buffer_Bounds = 4,
     RootSignatureType_Calculate_Log_Partitions_From_Depth = 5,
@@ -22,9 +22,11 @@ enum RootSignatureType
     RootSignatureType_FilterCubemap = 14,
     RootSignatureType_GenerateEnvMap = 15,
     RootSignatureType_ShadowMapToEVSM_Compute = 16,
-    RootSignatureType_BloomDownsample = 17,
-    RootSignatureType_BloomBlur = 18,
-    RootSignatureType_ToneMap = 19,
+    RootSignatureType_Initial_Luminance = 17,
+    RootSignatureType_Luminance_Downsample = 18,
+    RootSignatureType_Bloom_Threshold = 19,
+    RootSignatureType_Simple_Blur = 20,
+    RootSignatureType_ToneMap_Composite = 21,
 	NumRootSignatures
 };
 

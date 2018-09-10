@@ -116,11 +116,9 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
         Material *newMaterial = new Material(materialConstantBuffers);
         ShadowMaterial *shadowMaterial = new ShadowMaterial(shadowConstantBuffers);
 
-        newMaterial->SetTexture(MaterialTextureType_Diffuse, mGraphicsManager->GetTextureManager()->GetTexture("MageDiffuseFire"));
-        newMaterial->SetTexture(MaterialTextureType_Normal, mGraphicsManager->GetTextureManager()->GetTexture("MageNormal"));
-        newMaterial->SetTexture(MaterialTextureType_Roughmetal, mGraphicsManager->GetTextureManager()->GetTexture("MageRoughMetal"));
-        newMaterial->GetMaterialBuffer()->SetUsesNormalMap(true);
-        newMaterial->GetMaterialBuffer()->SetUsesRoughmetalMap(true);
+        newMaterial->SetTexture(MaterialTextureType_Diffuse, mGraphicsManager->GetTextureManager()->GetTexture("DefaultPurple"));
+        newMaterial->GetMaterialBuffer()->SetUsesNormalMap(false);
+        newMaterial->GetMaterialBuffer()->SetUsesRoughmetalMap(false);
         mSceneEntity4 = new SceneEntity(mGraphicsManager->GetMeshManager()->GetMesh("Cube"), newMaterial, shadowMaterial);
         mSceneEntity4->SetPosition(Vector3(0.0f, -5.0f, 20.0f));
         mSceneEntity4->SetRotation(Vector3(0.0f, 0.0f, 0.0f));
@@ -257,10 +255,12 @@ void DeferredRenderer::OnScreenChanged(Vector2 screenSize)
 	CreateTargets(screenSize);
 }
 
-void DeferredRenderer::ClearGBuffer()
+void DeferredRenderer::ClearFrameBuffers()
 {
 	GraphicsContext *graphicsContext = mGraphicsManager->GetDirect3DManager()->GetContextManager()->GetGraphicsContext();
 	float blackColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+    graphicsContext->InsertPixBeginEvent(0xFFFFFFFF, "Clear Buffers");
 
 	graphicsContext->TransitionResource(mGBufferTargets[0], D3D12_RESOURCE_STATE_RENDER_TARGET, false);
 	graphicsContext->TransitionResource(mGBufferTargets[1], D3D12_RESOURCE_STATE_RENDER_TARGET, false);
@@ -273,6 +273,8 @@ void DeferredRenderer::ClearGBuffer()
 	graphicsContext->ClearRenderTarget(mGBufferTargets[2]->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
     graphicsContext->ClearRenderTarget(mHDRTarget->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
 	graphicsContext->ClearDepthStencilTarget(mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle(), 0.0f, 0);
+
+    graphicsContext->InsertPixEndEvent();
 }
 
 void DeferredRenderer::RenderGBuffer()
@@ -281,6 +283,8 @@ void DeferredRenderer::RenderGBuffer()
 	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
     Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
 	Vector2 screenSize = direct3DManager->GetScreenSize();
+
+    graphicsContext->InsertPixBeginEvent(0xFFFF0000, "GBuffer Pass");
 
     const uint32 testNumSRVsNeeded = 20; //TDA this needs to be changed to scene entity 
     const uint32 testNumSamplersNeeded = 3; //TDA this needs to be changed to some definition
@@ -336,6 +340,7 @@ void DeferredRenderer::RenderGBuffer()
     mSceneEntity4->Render(&renderPassContext);
 
     graphicsContext->TransitionResource(mGBufferDepth, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, true);
+    graphicsContext->InsertPixEndEvent();
 }
 
 void DeferredRenderer::RenderSky()
@@ -349,6 +354,8 @@ void DeferredRenderer::RenderSky()
     GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
     Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
     Vector2 screenSize = direct3DManager->GetScreenSize();
+
+    graphicsContext->InsertPixBeginEvent(0xFF0000FF, "Sky Pass");
 
     const uint32 numSRVsNeeded = 3;
     const uint32 numSamplersNeeded = 1;
@@ -402,6 +409,8 @@ void DeferredRenderer::RenderSky()
     graphicsContext->SetVertexBuffer(0, mSkyMesh->GetVertexBuffer());
     graphicsContext->SetIndexBuffer(mSkyMesh->GetIndexBuffer());
     graphicsContext->Draw(mSkyMesh->GetVertexCount());
+
+    graphicsContext->InsertPixEndEvent();
 }
 
 void DeferredRenderer::RenderShadows(D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjMatrix)
@@ -430,6 +439,8 @@ void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3
     GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
     Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
     Vector2 screenSize = direct3DManager->GetScreenSize();
+
+    graphicsContext->InsertPixBeginEvent(0xFFFFFF00, "Lighting Pass");
 
     const uint32 numSRVsNeeded = 11;
     const uint32 numSamplersNeeded = 2; 
@@ -522,6 +533,8 @@ void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3
     graphicsContext->SetGraphicsDescriptorTable(2, perFrameLightHandle.GetGPUHandle());
 
     graphicsContext->DrawFullScreenTriangle();
+
+    graphicsContext->InsertPixEndEvent();
 }
 
 
@@ -574,7 +587,7 @@ void DeferredRenderer::Render()
 
     mCameraConstantBuffer[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&cameraBuffer, sizeof(CameraBuffer));
     
-	ClearGBuffer();
+	ClearFrameBuffers();
 	RenderGBuffer();
     RenderSky();
     RenderShadows(lightView, lightProj);

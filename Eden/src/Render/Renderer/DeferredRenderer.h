@@ -22,7 +22,7 @@ private:
 	void FreeTargets();
 	void CreateTargets(Vector2 screenSize);
 
-	void ClearGBuffer();
+	void ClearFrameBuffers();
 	void RenderGBuffer();
     void RenderSky();
     void RenderShadows(D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjMatrix);

@@ -37,6 +37,9 @@ public:
 	void InsertUAVBarrier(GPUResource *resource, bool flushImmediate = false);
 	void InsertAliasBarrier(GPUResource *before, GPUResource *after, bool flushImmediate = false);
 
+    void InsertPixBeginEvent(uint64 color, const char* markerString);
+    void InsertPixEndEvent();
+
 protected:
     struct DeferredTransition
     {

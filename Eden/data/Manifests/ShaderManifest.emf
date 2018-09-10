@@ -16,7 +16,10 @@ LightingMain.esh
 Compute/FilterEnvironmentMap.esh
 Compute/GenerateEnvironmentMapLookup.esh
 Compute/ShadowMapToEVSMCompute.esh
-BloomDownsample.esh
-BloomHorizontalBlur.esh
-BloomVerticalBlur.esh
-ToneMap.esh
+Compute/InitialLuminance.esh
+Compute/LuminanceDownsample.esh
+BloomThreshold.esh
+SimpleScaling.esh
+SimpleBlurH.esh
+SimpleBlurV.esh
+ToneMapComposite.esh

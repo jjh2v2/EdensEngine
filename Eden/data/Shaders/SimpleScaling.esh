@@ -1,0 +1,8 @@
+VertexShader
+[Simple/SimpleScaling.hlsl]
+[SimpleScalingVertexShader]
+PixelShader
+[Simple/SimpleScaling.hlsl]
+[SimpleScalingPixelShader]
+RootSignature
+[2]

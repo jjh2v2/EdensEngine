@@ -49,7 +49,7 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 	}
     
 	{
-		//RootSignatureType_Simple_Copy
+		//RootSignatureType_Simple_Copy_Scaling
 		CD3DX12_DESCRIPTOR_RANGE ranges[2];
 		ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); //1 texture, t0
 		ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0); //1 sampler
@@ -352,51 +352,91 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
     }
 
     {
-        //RootSignatureType_BloomDownsample
+        //RootSignatureType_Initial_Luminance
         CD3DX12_DESCRIPTOR_RANGE ranges[2];
-        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);      //1 srv, downsample source, at t0
-        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);  //1 sampler for bloom, s0
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); //1 srv, hdrTexture, at t0
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1); //1 uav, lum output, at u1
 
         CD3DX12_ROOT_PARAMETER rootParameters[2];
-        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
-        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_PIXEL);
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);
 
-        RootSignatureInfo bloomDownsampleSignature;
-        bloomDownsampleSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+        RootSignatureInfo initialLuminanceSignature;
+        initialLuminanceSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
-        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&bloomDownsampleSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &bloomDownsampleSignature.RootSignatureBlob, &bloomDownsampleSignature.Error));
-        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, bloomDownsampleSignature.RootSignatureBlob->GetBufferPointer(), bloomDownsampleSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&bloomDownsampleSignature.RootSignature)));
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&initialLuminanceSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &initialLuminanceSignature.RootSignatureBlob, &initialLuminanceSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, initialLuminanceSignature.RootSignatureBlob->GetBufferPointer(), initialLuminanceSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&initialLuminanceSignature.RootSignature)));
 
-        mRootSignatures.Add(bloomDownsampleSignature);
+        mRootSignatures.Add(initialLuminanceSignature);
     }
 
     {
-        //RootSignatureType_BloomBlur
+        //RootSignatureType_Luminance_Downsample
+        CD3DX12_DESCRIPTOR_RANGE ranges[2];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 2, 0); //2 uav, lum in and out, at u0-1
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv at b0, lum buffer
+        
+        CD3DX12_ROOT_PARAMETER rootParameters[2];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);
+
+        RootSignatureInfo luminanceDownsampleSignature;
+        luminanceDownsampleSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&luminanceDownsampleSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &luminanceDownsampleSignature.RootSignatureBlob, &luminanceDownsampleSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, luminanceDownsampleSignature.RootSignatureBlob->GetBufferPointer(), luminanceDownsampleSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&luminanceDownsampleSignature.RootSignature)));
+
+        mRootSignatures.Add(luminanceDownsampleSignature);
+    }
+
+    {
+        //RootSignatureType_Bloom_Threshold
         CD3DX12_DESCRIPTOR_RANGE ranges[3];
-        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);      //1 cbv, bloom blur buffer, at b0
-        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);      //1 srv, bloom blur source, at t0
-        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);  //1 sampler for bloom, s0
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);      //HDR and Lum textures, t0
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);  //hdr sampler, s0
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);      //threshold buffer, b0
 
         CD3DX12_ROOT_PARAMETER rootParameters[3];
         rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
         rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_PIXEL);
         rootParameters[2].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_PIXEL);
 
-        RootSignatureInfo bloomBlurSignature;
-        bloomBlurSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+        RootSignatureInfo bloomThresholdSignature;
+        bloomThresholdSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
-        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&bloomBlurSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &bloomBlurSignature.RootSignatureBlob, &bloomBlurSignature.Error));
-        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, bloomBlurSignature.RootSignatureBlob->GetBufferPointer(), bloomBlurSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&bloomBlurSignature.RootSignature)));
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&bloomThresholdSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &bloomThresholdSignature.RootSignatureBlob, &bloomThresholdSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, bloomThresholdSignature.RootSignatureBlob->GetBufferPointer(), bloomThresholdSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&bloomThresholdSignature.RootSignature)));
 
-        mRootSignatures.Add(bloomBlurSignature);
+        mRootSignatures.Add(bloomThresholdSignature);
     }
 
     {
-        //RootSignatureType_ToneMap
+        //RootSignatureType_Simple_Blur
         CD3DX12_DESCRIPTOR_RANGE ranges[3];
-        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);      //1 cbv, tonemap buffer, at b0
-        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);      //2 srv, hdr and bloom, at t0-t1
-        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 2, 0);  //2 samplers for hdr and bloom, s0-s1
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); //1 texture, t0
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0); //1 sampler
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv at b0
+
+        CD3DX12_ROOT_PARAMETER rootParameters[3];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
+        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_PIXEL);
+        rootParameters[2].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_PIXEL);
+
+        RootSignatureInfo simpleBlurSignature;
+        simpleBlurSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&simpleBlurSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &simpleBlurSignature.RootSignatureBlob, &simpleBlurSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, simpleBlurSignature.RootSignatureBlob->GetBufferPointer(), simpleBlurSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&simpleBlurSignature.RootSignature)));
+
+        mRootSignatures.Add(simpleBlurSignature);
+    }
+
+    {
+        //RootSignatureType_ToneMap_Composite
+        CD3DX12_DESCRIPTOR_RANGE ranges[3];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0); //3 texture, t0-t3
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0); //1 sampler
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv at b0
 
         CD3DX12_ROOT_PARAMETER rootParameters[3];
         rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);

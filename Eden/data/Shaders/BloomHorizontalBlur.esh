@@ -1,8 +1,0 @@
-VertexShader
-[Lighting/BloomBlur.hlsl]
-[BloomBlurVertexShader]
-PixelShader
-[Lighting/BloomBlur.hlsl]
-[BloomBlurHorizontalPixelShader]
-RootSignature
-[18]

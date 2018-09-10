@@ -1,0 +1,8 @@
+VertexShader
+[Simple/SimpleBlur.hlsl]
+[SimpleBlurVertexShader]
+PixelShader
+[Simple/SimpleBlur.hlsl]
+[SimpleBlurVPixelShader]
+RootSignature
+[20]

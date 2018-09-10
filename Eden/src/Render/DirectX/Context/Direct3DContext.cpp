@@ -1,6 +1,12 @@
 #include "Render/DirectX/Context/Direct3DContext.h"
 #include "Render/DirectX/Allocator/Direct3DCommandAllocatorPool.h"
 
+#define ENABLE_PIX 1
+
+#if ENABLE_PIX
+#include "pix3.h"
+#endif 
+
 Direct3DContext::Direct3DContext(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE commandType)
 {
 	mDevice = device;
@@ -284,6 +290,19 @@ void Direct3DContext::InsertAliasBarrier(GPUResource *before, GPUResource *after
 	}
 }
 
+void Direct3DContext::InsertPixBeginEvent(uint64 color, const char* markerString)
+{
+#if ENABLE_PIX
+    PIXBeginEvent(mCommandList, color, markerString);
+#endif
+}
+
+void Direct3DContext::InsertPixEndEvent()
+{
+#if ENABLE_PIX
+    PIXEndEvent(mCommandList);
+#endif
+}
 
 GraphicsContext::GraphicsContext(ID3D12Device *device)
 	: Direct3DContext(device, D3D12_COMMAND_LIST_TYPE_DIRECT)

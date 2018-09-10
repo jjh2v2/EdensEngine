@@ -153,6 +153,9 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     RenderPassDescriptorHeap *shadowSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_ShadowCompute, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), shadowNumSRVDescs);
 
     GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
+
+    graphicsContext->InsertPixBeginEvent(0xFF00FF00, "Shadow Compute");
+
     graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, shadowSRVDescHeap->GetHeap());
 
     ////// Clear partitions
@@ -260,6 +263,8 @@ void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &ligh
     graphicsContext->SetComputeDescriptorTable(2, shadowPartitionCBVHandle.GetGPUHandle());
 
     graphicsContext->Dispatch(1, 1, 1);
+
+    graphicsContext->InsertPixEndEvent();
 }
 
 
@@ -278,6 +283,8 @@ void SDSMShadowManager::RenderShadowMapPartitions(const D3DXMATRIX &lightViewPro
     RenderPassDescriptorHeap *shadowSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_ShadowRender, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numCBVSRVDescsShadowMap + numCBVSRVDescsEVSM + numCBVSRVDescsMips);
     RenderPassDescriptorHeap *shadowSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_ShadowRender, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), 1);
     
+    graphicsContext->InsertPixBeginEvent(0xFF00FF00, "Shadow Render");
+
     graphicsContext->TransitionResource(mShadowPartitionBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
 
     graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, shadowSRVDescHeap->GetHeap());
@@ -322,6 +329,8 @@ void SDSMShadowManager::RenderShadowMapPartitions(const D3DXMATRIX &lightViewPro
         GenerateMipsForShadowMap(i, &shadowPassContext);
         graphicsContext->TransitionResource(mShadowEVSMTextures[i], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
     }
+
+    graphicsContext->InsertPixEndEvent();
 }
 
 void SDSMShadowManager::RenderShadowDepth(uint32 partitionIndex, RenderPassContext *renderPassContext, const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities)

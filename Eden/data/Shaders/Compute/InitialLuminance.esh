@@ -1,0 +1,5 @@
+ComputeShader
+[Lighting/Luminance.hlsl]
+[InitialLuminance]
+RootSignature
+[17]
