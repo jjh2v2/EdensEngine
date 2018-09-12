@@ -36,7 +36,12 @@ private:
 
     uint32 mLuminanceDimensionSize;
     LuminanceBuffer mCurrentLuminanceBuffer;
+    ThresholdBuffer mCurrentThresholdBuffer;
+    BlurBuffer mCurrentBlurBuffer;
+
     ConstantBuffer *mLuminanceBuffers[FRAME_BUFFER_COUNT];
+    ConstantBuffer *mThresholdBuffers[FRAME_BUFFER_COUNT];
+    ConstantBuffer *mBloomBlurBuffers[FRAME_BUFFER_COUNT];
 
     //ConstantBuffer *mBloomBlurBuffer; //not double buffered because it doesn't change frame to frame
     //ConstantBuffer *mToneMapBuffer; //not double buffered because it doesn't change frame to frame

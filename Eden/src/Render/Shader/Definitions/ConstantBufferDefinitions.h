@@ -68,6 +68,17 @@ struct LuminanceBuffer
     float timeDelta;
 };
 
+struct ThresholdBuffer
+{
+    float  bloomThreshold;
+    uint32 toneMapMode;
+};
+
+struct BlurBuffer
+{
+    float blurSigma;
+};
+
 struct MaterialConstants
 {
 	MaterialConstants()

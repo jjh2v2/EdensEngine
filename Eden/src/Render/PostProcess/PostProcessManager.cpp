@@ -44,8 +44,23 @@ PostProcessManager::PostProcessManager(GraphicsManager *graphicsManager)
         mLuminanceBuffers[i] = contextManager->CreateConstantBuffer(sizeof(LuminanceBuffer));
     }
 
+    for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+    {
+        mThresholdBuffers[i] = contextManager->CreateConstantBuffer(sizeof(ThresholdBuffer));
+    }
+
+    for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+    {
+        mBloomBlurBuffers[i] = contextManager->CreateConstantBuffer(sizeof(BlurBuffer));
+    }
+
     mCurrentLuminanceBuffer.tau = 1.25f;
     mCurrentLuminanceBuffer.timeDelta = 0.0167f;
+
+    mCurrentThresholdBuffer.bloomThreshold = 1.0f;
+    mCurrentThresholdBuffer.toneMapMode = 0;
+
+    mCurrentBlurBuffer.blurSigma = 0.8f;
 
 //     BloomBlurBuffer blurBuffer;
 //     blurBuffer.blurInputDimensions = screenSize * 0.5f;
@@ -105,7 +120,7 @@ void PostProcessManager::CalculateLuminance(RenderTarget *hdrTarget, float delta
     graphicsContext->TransitionResource(hdrTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
     graphicsContext->TransitionResource(mLuminanceDownSampleTargets[0], D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
 
-    uint32 numSRVsNeeded = 20;
+    uint32 numSRVsNeeded = 20; //TDA: make this accurate
     RenderPassDescriptorHeap *luminanceSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numSRVsNeeded);
 
     graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, luminanceSRVDescHeap->GetHeap());
@@ -154,123 +169,200 @@ void PostProcessManager::ApplyToneMappingAndBloom(RenderTarget *hdrTarget)
     Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
     Vector2 screenSize = mGraphicsManager->GetDirect3DManager()->GetScreenSize();
 
-//     graphicsContext->InsertPixBeginEvent(0xFF00FFFF, "Bloom Downsample");
-// 
-//     graphicsContext->TransitionResource(hdrTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
-//     graphicsContext->TransitionResource(mBloomDownsampleTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
-// 
-//     const uint32 numSRVsNeeded = 10;
-//     const uint32 numSamplersNeeded = 3;
-//     RenderPassDescriptorHeap *toneMapSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numSRVsNeeded);
-//     RenderPassDescriptorHeap *toneMapSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), numSamplersNeeded);
-// 
-//     graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, toneMapSRVDescHeap->GetHeap());
-//     graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, toneMapSamplerDescHeap->GetHeap());
-// 
-//     D3D12_VIEWPORT halfViewPort = { 0.0f, 0.0f, screenSize.X / 2.0f, screenSize.Y / 2.0f, 0.0f, 1.0f };
-//     graphicsContext->SetViewport(halfViewPort);
-//     graphicsContext->SetScissorRect(0, 0, (uint32)(screenSize.X / 2.0f), (uint32)(screenSize.Y / 2.0f));
-// 
-//     //bloom downsample
-//     DescriptorHeapHandle bloomDownsampleSourceHandle = toneMapSRVDescHeap->GetHeapHandleBlock(1);
-//     DescriptorHeapHandle bloomDownsampleSamplerHandle = toneMapSamplerDescHeap->GetHeapHandleBlock(1);
-// 
-//     Sampler *linearSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_CLAMP);
-//     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, bloomDownsampleSamplerHandle.GetCPUHandle(), linearSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-//     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, bloomDownsampleSourceHandle.GetCPUHandle(), hdrTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-// 
-//     graphicsContext->SetRenderTarget(mBloomDownsampleTarget->GetRenderTargetViewHandle().GetCPUHandle());
-// 
-//     graphicsContext->SetPipelineState(mBloomDownsampleShader);
-//     graphicsContext->SetRootSignature(mBloomDownsampleShader->GetRootSignature(), NULL);
-// 
-//     graphicsContext->SetGraphicsDescriptorTable(0, bloomDownsampleSourceHandle.GetGPUHandle());
-//     graphicsContext->SetGraphicsDescriptorTable(1, bloomDownsampleSamplerHandle.GetGPUHandle());
-// 
-//     graphicsContext->DrawFullScreenTriangle();
-// 
-//     graphicsContext->InsertPixEndEvent();
-//     graphicsContext->InsertPixBeginEvent(0xFF00FFFF, "Bloom Blur");
-//     //bloom blur
-//     DescriptorHeapHandle bloomBlurSourceHandle = toneMapSRVDescHeap->GetHeapHandleBlock(1);
-//     DescriptorHeapHandle bloomBlurTargetHandle = toneMapSRVDescHeap->GetHeapHandleBlock(1);
-//     DescriptorHeapHandle bloomBlurSamplerHandle = toneMapSamplerDescHeap->GetHeapHandleBlock(1);
-//     DescriptorHeapHandle bloomBlurCBVHandle = toneMapSRVDescHeap->GetHeapHandleBlock(1);
-//     Sampler *pointSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_POINT_CLAMP);
-//     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, bloomBlurSourceHandle.GetCPUHandle(), mBloomDownsampleTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-//     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, bloomBlurTargetHandle.GetCPUHandle(), mBloomBlurTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-//     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, bloomBlurSamplerHandle.GetCPUHandle(), linearSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-//     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, bloomBlurCBVHandle.GetCPUHandle(), mBloomBlurBuffer->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-// 
-//     for (uint32 i = 0; i < BLOOM_BLUR_PASS_COUNT; i++)
-//     {
-//         //horizontal
-//         graphicsContext->TransitionResource(mBloomDownsampleTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
-//         graphicsContext->TransitionResource(mBloomBlurTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
-//         graphicsContext->SetRenderTarget(mBloomBlurTarget->GetRenderTargetViewHandle().GetCPUHandle());
-// 
-//         graphicsContext->SetPipelineState(mBloomBlurHorizontalShader);
-//         graphicsContext->SetRootSignature(mBloomBlurHorizontalShader->GetRootSignature(), NULL);
-// 
-//         graphicsContext->SetGraphicsDescriptorTable(0, bloomBlurCBVHandle.GetGPUHandle());
-//         graphicsContext->SetGraphicsDescriptorTable(1, bloomBlurSourceHandle.GetGPUHandle());
-//         graphicsContext->SetGraphicsDescriptorTable(2, bloomBlurSamplerHandle.GetGPUHandle());
-// 
-//         graphicsContext->DrawFullScreenTriangle();
-// 
-//         //vertical
-//         graphicsContext->TransitionResource(mBloomBlurTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
-//         graphicsContext->TransitionResource(mBloomDownsampleTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
-//         graphicsContext->SetRenderTarget(mBloomDownsampleTarget->GetRenderTargetViewHandle().GetCPUHandle());
-// 
-//         graphicsContext->SetPipelineState(mBloomBlurVerticalShader);
-//         graphicsContext->SetRootSignature(mBloomBlurVerticalShader->GetRootSignature(), NULL);
-// 
-//         graphicsContext->SetGraphicsDescriptorTable(0, bloomBlurCBVHandle.GetGPUHandle());
-//         graphicsContext->SetGraphicsDescriptorTable(1, bloomBlurTargetHandle.GetGPUHandle());
-//         graphicsContext->SetGraphicsDescriptorTable(2, bloomBlurSamplerHandle.GetGPUHandle());
-// 
-//         graphicsContext->DrawFullScreenTriangle();
-//     }
-// 
-//     graphicsContext->InsertPixEndEvent();
-//     graphicsContext->InsertPixBeginEvent(0xFF00FFFF, "Tonemap");
-// 
-//     //tonemap
-//     graphicsContext->TransitionResource(mBloomDownsampleTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
-//     graphicsContext->TransitionResource(mTonemapTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
-// 
-//     DescriptorHeapHandle toneMapTexturesHandle = toneMapSRVDescHeap->GetHeapHandleBlock(2);
-//     DescriptorHeapHandle toneMapSamplersHandle = toneMapSamplerDescHeap->GetHeapHandleBlock(2);
-//     DescriptorHeapHandle toneMapCBVHandle = toneMapSRVDescHeap->GetHeapHandleBlock(1);
-//     D3D12_CPU_DESCRIPTOR_HANDLE toneMapTexturesHandleOffset = toneMapTexturesHandle.GetCPUHandle();
-//     D3D12_CPU_DESCRIPTOR_HANDLE toneMapSamplersHandleOffset = toneMapSamplersHandle.GetCPUHandle();
-// 
-//     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, toneMapTexturesHandleOffset, hdrTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-//     toneMapTexturesHandleOffset.ptr += toneMapSRVDescHeap->GetDescriptorSize();
-//     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, toneMapTexturesHandleOffset, mBloomDownsampleTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-// 
-//     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, toneMapSamplersHandleOffset, pointSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-//     toneMapSamplersHandleOffset.ptr += toneMapSamplerDescHeap->GetDescriptorSize();
-//     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, toneMapSamplersHandleOffset, linearSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-// 
-//     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, toneMapCBVHandle.GetCPUHandle(), mToneMapBuffer->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-// 
-//     graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
-//     graphicsContext->SetScissorRect(0, 0, (uint32)screenSize.X, (uint32)screenSize.Y);
-// 
-//     graphicsContext->SetRenderTarget(mTonemapTarget->GetRenderTargetViewHandle().GetCPUHandle());
-// 
-//     graphicsContext->SetPipelineState(mTonemapShader);
-//     graphicsContext->SetRootSignature(mTonemapShader->GetRootSignature(), NULL);
-// 
-//     graphicsContext->SetGraphicsDescriptorTable(0, toneMapCBVHandle.GetGPUHandle());
-//     graphicsContext->SetGraphicsDescriptorTable(1, toneMapTexturesHandle.GetGPUHandle());
-//     graphicsContext->SetGraphicsDescriptorTable(2, toneMapSamplersHandle.GetGPUHandle());
-// 
-//     graphicsContext->DrawFullScreenTriangle();
-// 
-//     graphicsContext->InsertPixEndEvent();
+    D3D12_VIEWPORT fullViewPort    = { 0.0f, 0.0f, screenSize.X,        screenSize.Y,        0.0f, 1.0f };
+    D3D12_VIEWPORT halfViewPort    = { 0.0f, 0.0f, screenSize.X / 2.0f, screenSize.Y / 2.0f, 0.0f, 1.0f };
+    D3D12_VIEWPORT quarterViewPort = { 0.0f, 0.0f, screenSize.X / 4.0f, screenSize.Y / 4.0f, 0.0f, 1.0f };
+    D3D12_VIEWPORT eighthViewPort  = { 0.0f, 0.0f, screenSize.X / 8.0f, screenSize.Y / 8.0f, 0.0f, 1.0f };
+
+    mThresholdBuffers[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&mCurrentThresholdBuffer, sizeof(ThresholdBuffer));
+
+    graphicsContext->InsertPixBeginEvent(0xFF00FFFF, "Bloom Threshold");
+
+    graphicsContext->TransitionResource(mLuminanceDownSampleTargets[mLuminanceDownSampleTargets.CurrentSize() - 1], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
+    graphicsContext->TransitionResource(mBloomThresholdTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
+
+    uint32 numSRVsNeeded = 20; //TDA: make this accurate
+    uint32 numSamplersNeeded = 10;
+    RenderPassDescriptorHeap *bloomToneMapSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numSRVsNeeded);
+    RenderPassDescriptorHeap *bloomToneMapSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), numSamplersNeeded);
+
+    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, bloomToneMapSRVDescHeap->GetHeap());
+    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, bloomToneMapSamplerDescHeap->GetHeap());
+
+    DescriptorHeapHandle bloomThresholdSRVHandle = bloomToneMapSRVDescHeap->GetHeapHandleBlock(2);
+    DescriptorHeapHandle linearSamplerHandle = bloomToneMapSamplerDescHeap->GetHeapHandleBlock(1);
+    DescriptorHeapHandle bloomThresholdCBVHandle = bloomToneMapSRVDescHeap->GetHeapHandleBlock(1);
+
+    D3D12_CPU_DESCRIPTOR_HANDLE currentBloomThresholdHandle = bloomThresholdSRVHandle.GetCPUHandle();
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, currentBloomThresholdHandle, hdrTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    currentBloomThresholdHandle.ptr += bloomToneMapSRVDescHeap->GetDescriptorSize();
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, currentBloomThresholdHandle, mLuminanceDownSampleTargets[mLuminanceDownSampleTargets.CurrentSize() - 1]->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    Sampler *linearSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_CLAMP);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, linearSamplerHandle.GetCPUHandle(), linearSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, bloomThresholdCBVHandle.GetCPUHandle(), mThresholdBuffers[direct3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    
+    graphicsContext->SetViewport(fullViewPort);
+    graphicsContext->SetScissorRect(0, 0, (uint32)fullViewPort.Width, (uint32)fullViewPort.Height);
+    graphicsContext->SetPipelineState(mBloomThresholdShader);
+    graphicsContext->SetRootSignature(mBloomThresholdShader->GetRootSignature(), NULL);
+    graphicsContext->SetGraphicsDescriptorTable(0, bloomThresholdSRVHandle.GetGPUHandle());
+    graphicsContext->SetGraphicsDescriptorTable(1, linearSamplerHandle.GetGPUHandle());
+    graphicsContext->SetGraphicsDescriptorTable(2, bloomThresholdCBVHandle.GetGPUHandle());
+
+    graphicsContext->DrawFullScreenTriangle();
+    graphicsContext->InsertPixEndEvent();
+
+    graphicsContext->InsertPixBeginEvent(0xFF00FFFF, "Bloom Downsample");
+    //down to half 
+    graphicsContext->TransitionResource(mBloomThresholdTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
+    graphicsContext->TransitionResource(mHalfScaleTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
+    DescriptorHeapHandle bloomDownsampleSourceHandle = bloomToneMapSRVDescHeap->GetHeapHandleBlock(1);
+
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, bloomDownsampleSourceHandle.GetCPUHandle(), mBloomThresholdTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    graphicsContext->SetViewport(halfViewPort);
+    graphicsContext->SetScissorRect(0, 0, (uint32)halfViewPort.Width, (uint32)halfViewPort.Height);
+    graphicsContext->SetRenderTarget(mHalfScaleTarget->GetRenderTargetViewHandle().GetCPUHandle());
+
+    graphicsContext->SetPipelineState(mScalingShader);
+    graphicsContext->SetRootSignature(mScalingShader->GetRootSignature(), NULL);
+
+    graphicsContext->SetGraphicsDescriptorTable(0, bloomDownsampleSourceHandle.GetGPUHandle());
+    graphicsContext->SetGraphicsDescriptorTable(1, linearSamplerHandle.GetGPUHandle());
+
+    graphicsContext->DrawFullScreenTriangle();
+
+    //down to quarter
+    graphicsContext->TransitionResource(mHalfScaleTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
+    graphicsContext->TransitionResource(mQuarterScaleTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
+    bloomDownsampleSourceHandle = bloomToneMapSRVDescHeap->GetHeapHandleBlock(1);
+
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, bloomDownsampleSourceHandle.GetCPUHandle(), mHalfScaleTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    graphicsContext->SetViewport(quarterViewPort);
+    graphicsContext->SetScissorRect(0, 0, (uint32)quarterViewPort.Width, (uint32)quarterViewPort.Height);
+    graphicsContext->SetRenderTarget(mQuarterScaleTarget->GetRenderTargetViewHandle().GetCPUHandle());
+
+    graphicsContext->SetPipelineState(mScalingShader);
+    graphicsContext->SetRootSignature(mScalingShader->GetRootSignature(), NULL);
+
+    graphicsContext->SetGraphicsDescriptorTable(0, bloomDownsampleSourceHandle.GetGPUHandle());
+    graphicsContext->SetGraphicsDescriptorTable(1, linearSamplerHandle.GetGPUHandle());
+
+    graphicsContext->DrawFullScreenTriangle();
+
+    //down to eighth
+    graphicsContext->TransitionResource(mQuarterScaleTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
+    graphicsContext->TransitionResource(mEighthScaleTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
+    bloomDownsampleSourceHandle = bloomToneMapSRVDescHeap->GetHeapHandleBlock(1);
+
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, bloomDownsampleSourceHandle.GetCPUHandle(), mQuarterScaleTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    graphicsContext->SetViewport(eighthViewPort);
+    graphicsContext->SetScissorRect(0, 0, (uint32)eighthViewPort.Width, (uint32)eighthViewPort.Height);
+    graphicsContext->SetRenderTarget(mEighthScaleTarget->GetRenderTargetViewHandle().GetCPUHandle());
+
+    graphicsContext->SetPipelineState(mScalingShader);
+    graphicsContext->SetRootSignature(mScalingShader->GetRootSignature(), NULL);
+
+    graphicsContext->SetGraphicsDescriptorTable(0, bloomDownsampleSourceHandle.GetGPUHandle());
+    graphicsContext->SetGraphicsDescriptorTable(1, linearSamplerHandle.GetGPUHandle());
+
+    graphicsContext->DrawFullScreenTriangle();
+    graphicsContext->InsertPixEndEvent();
+
+    graphicsContext->InsertPixBeginEvent(0xFF00FFFF, "Bloom Blur");
+    mBloomBlurBuffers[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&mCurrentBlurBuffer, sizeof(BlurBuffer));
+
+    DescriptorHeapHandle bloomBlurSourceHandle = bloomToneMapSRVDescHeap->GetHeapHandleBlock(1);
+    DescriptorHeapHandle bloomBlurTargetHandle = bloomToneMapSRVDescHeap->GetHeapHandleBlock(1);
+    DescriptorHeapHandle bloomBlurSamplerHandle = bloomToneMapSamplerDescHeap->GetHeapHandleBlock(1);
+    DescriptorHeapHandle bloomBlurCBVHandle = bloomToneMapSRVDescHeap->GetHeapHandleBlock(1);
+    Sampler *pointSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_POINT_CLAMP);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, bloomBlurSourceHandle.GetCPUHandle(), mEighthScaleTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, bloomBlurTargetHandle.GetCPUHandle(), mBlurTempTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, bloomBlurSamplerHandle.GetCPUHandle(), pointSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, bloomBlurCBVHandle.GetCPUHandle(), mBloomBlurBuffers[direct3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    
+    for (uint32 i = 0; i < BLOOM_BLUR_PASS_COUNT; i++)
+    {
+        //horizontal
+        graphicsContext->TransitionResource(mEighthScaleTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
+        graphicsContext->TransitionResource(mBlurTempTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
+
+        graphicsContext->SetViewport(eighthViewPort);
+        graphicsContext->SetScissorRect(0, 0, (uint32)eighthViewPort.Width, (uint32)eighthViewPort.Height);
+        graphicsContext->SetRenderTarget(mBlurTempTarget->GetRenderTargetViewHandle().GetCPUHandle());
+
+        graphicsContext->SetPipelineState(mBlurHShader);
+        graphicsContext->SetRootSignature(mBlurHShader->GetRootSignature(), NULL);
+         
+        graphicsContext->SetGraphicsDescriptorTable(0, bloomBlurSourceHandle.GetGPUHandle());
+        graphicsContext->SetGraphicsDescriptorTable(1, bloomBlurSamplerHandle.GetGPUHandle());
+        graphicsContext->SetGraphicsDescriptorTable(2, bloomBlurCBVHandle.GetGPUHandle());
+         
+        graphicsContext->DrawFullScreenTriangle();
+
+        //vertical
+        graphicsContext->TransitionResource(mBlurTempTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
+        graphicsContext->TransitionResource(mEighthScaleTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
+
+        graphicsContext->SetViewport(eighthViewPort);
+        graphicsContext->SetScissorRect(0, 0, (uint32)eighthViewPort.Width, (uint32)eighthViewPort.Height);
+        graphicsContext->SetRenderTarget(mBlurTempTarget->GetRenderTargetViewHandle().GetCPUHandle());
+
+        graphicsContext->SetPipelineState(mBlurVShader);
+        graphicsContext->SetRootSignature(mBlurVShader->GetRootSignature(), NULL);
+
+        graphicsContext->SetGraphicsDescriptorTable(0, bloomBlurTargetHandle.GetGPUHandle());
+        graphicsContext->SetGraphicsDescriptorTable(1, bloomBlurSamplerHandle.GetGPUHandle());
+        graphicsContext->SetGraphicsDescriptorTable(2, bloomBlurCBVHandle.GetGPUHandle());
+
+        graphicsContext->DrawFullScreenTriangle();
+    }
+
+    graphicsContext->InsertPixEndEvent();
+
+    graphicsContext->InsertPixBeginEvent(0xFF00FFFF, "Bloom Upsample");
+
+    //up to quarter
+    graphicsContext->TransitionResource(mEighthScaleTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
+    graphicsContext->TransitionResource(mQuarterScaleTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
+    bloomDownsampleSourceHandle = bloomToneMapSRVDescHeap->GetHeapHandleBlock(1);
+
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, bloomDownsampleSourceHandle.GetCPUHandle(), mEighthScaleTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    graphicsContext->SetViewport(quarterViewPort);
+    graphicsContext->SetScissorRect(0, 0, (uint32)quarterViewPort.Width, (uint32)quarterViewPort.Height);
+    graphicsContext->SetRenderTarget(mQuarterScaleTarget->GetRenderTargetViewHandle().GetCPUHandle());
+
+    graphicsContext->SetPipelineState(mScalingShader);
+    graphicsContext->SetRootSignature(mScalingShader->GetRootSignature(), NULL);
+
+    graphicsContext->SetGraphicsDescriptorTable(0, bloomDownsampleSourceHandle.GetGPUHandle());
+    graphicsContext->SetGraphicsDescriptorTable(1, linearSamplerHandle.GetGPUHandle());
+
+    graphicsContext->DrawFullScreenTriangle();
+
+    //up to half
+    graphicsContext->TransitionResource(mQuarterScaleTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
+    graphicsContext->TransitionResource(mHalfScaleTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
+    bloomDownsampleSourceHandle = bloomToneMapSRVDescHeap->GetHeapHandleBlock(1);
+
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, bloomDownsampleSourceHandle.GetCPUHandle(), mQuarterScaleTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    graphicsContext->SetViewport(halfViewPort);
+    graphicsContext->SetScissorRect(0, 0, (uint32)halfViewPort.Width, (uint32)halfViewPort.Height);
+    graphicsContext->SetRenderTarget(mHalfScaleTarget->GetRenderTargetViewHandle().GetCPUHandle());
+
+    graphicsContext->SetPipelineState(mScalingShader);
+    graphicsContext->SetRootSignature(mScalingShader->GetRootSignature(), NULL);
+
+    graphicsContext->SetGraphicsDescriptorTable(0, bloomDownsampleSourceHandle.GetGPUHandle());
+    graphicsContext->SetGraphicsDescriptorTable(1, linearSamplerHandle.GetGPUHandle());
+
+    graphicsContext->DrawFullScreenTriangle();
 }
 
 void PostProcessManager::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
