@@ -79,6 +79,12 @@ struct BlurBuffer
     float blurSigma;
 };
 
+struct ToneMapBuffer
+{
+    float  bloomMagnitude;
+    uint32 toneMapMode;
+};
+
 struct MaterialConstants
 {
 	MaterialConstants()

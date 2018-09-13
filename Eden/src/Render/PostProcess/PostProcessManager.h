@@ -1,5 +1,6 @@
 #pragma once
 #include "Render/Graphics/GraphicsManager.h"
+#include "Render/Shader/Definitions/ConstantBufferDefinitions.h"
 
 #define BLOOM_BLUR_PASS_COUNT 2
 
@@ -38,10 +39,12 @@ private:
     LuminanceBuffer mCurrentLuminanceBuffer;
     ThresholdBuffer mCurrentThresholdBuffer;
     BlurBuffer mCurrentBlurBuffer;
+    ToneMapBuffer mCurrentToneMapBuffer;
 
     ConstantBuffer *mLuminanceBuffers[FRAME_BUFFER_COUNT];
     ConstantBuffer *mThresholdBuffers[FRAME_BUFFER_COUNT];
     ConstantBuffer *mBloomBlurBuffers[FRAME_BUFFER_COUNT];
+    ConstantBuffer *mToneMapBuffers[FRAME_BUFFER_COUNT];
 
     //ConstantBuffer *mBloomBlurBuffer; //not double buffered because it doesn't change frame to frame
     //ConstantBuffer *mToneMapBuffer; //not double buffered because it doesn't change frame to frame

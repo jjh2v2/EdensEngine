@@ -592,7 +592,7 @@ void DeferredRenderer::Render()
     RenderSky();
     RenderShadows(lightView, lightProj);
     RenderLightingMain(cameraBuffer.viewMatrix, cameraBuffer.projectionMatrix, cameraBuffer.viewToLightProjMatrix, cameraBuffer.viewInvMatrix);
-    mPostProcessManager->RenderPostProcessing(mHDRTarget);
+    mPostProcessManager->RenderPostProcessing(mHDRTarget, 0.0167f); //TDA FIX
 
     direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->WaitForFenceCPUBlocking(mPreviousFrameFence);
 
