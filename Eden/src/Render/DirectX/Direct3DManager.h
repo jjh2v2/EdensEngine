@@ -1,10 +1,7 @@
 #pragma once
 
-#include <d3d12.h>
-#include <d3d11.h>
-#include <dxgi1_4.h>
-#include "Render/DirectX/D3D12Helper.h"
 #include "Core/Platform/PlatformCore.h"
+#include "Render/DirectX/D3D12Helper.h"
 #include "Core/Containers/DynamicArray.h"
 #include "Core/Vector/Vector2.h"
 #include "Render/Display/DisplayOrientation.h"
@@ -21,6 +18,7 @@ public:
 	void Present();
 	
 	ID3D12Device	 *GetDevice() { return mDevice; }
+    ID3D12DeviceRaytracingPrototype *GetRayTraceDevice() { return mDXRDevice; }
 	IDXGISwapChain3  *GetSwapChain() { return mSwapChain; }
 	BackBufferTarget *GetBackBufferTarget() { return mBackBuffers[mCurrentBackBuffer]; }
 
@@ -29,6 +27,8 @@ public:
     uint32          GetFrameIndex() { return mCurrentBackBuffer; }
 
 	Direct3DContextManager *GetContextManager() { return mContextManager; }
+
+    bool IsDXRSupported() { return mSupportsDXR; }
 
 private:
 	void InitializeDeviceResources();
@@ -40,6 +40,7 @@ private:
 	DXGI_MODE_ROTATION ComputeDisplayRotation();
 	
 	ID3D12Device *mDevice;
+    ID3D12DeviceRaytracingPrototype *mDXRDevice;
 	IDXGIFactory4 *mDXGIFactory;
 	IDXGISwapChain3	*mSwapChain;
 	DynamicArray<BackBufferTarget*> mBackBuffers;
@@ -50,6 +51,7 @@ private:
 	bool mDeviceRemoved;
 	bool mUseVsync;
 	bool mIsFullScreen;
+    bool mSupportsDXR;
 
 	D3D12_VIEWPORT mScreenViewport;
 	Vector2	mOutputSize;

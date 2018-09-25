@@ -123,7 +123,7 @@ public:
 		return mMaxSize;
 	}
 
-	T* GetInnerArray()
+	const T* GetInnerArray()
 	{
 		return mArray;
 	}

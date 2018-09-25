@@ -1,7 +1,9 @@
 #pragma once
 #include <stdint.h>
 #include <stdexcept>
-#include <d3d12.h>
+#include "Render/DirectX/DXRExperimental/d3d12.h"      //<d3d12.h> //dxr
+#include "Render/DirectX/DXRExperimental/d3d12_1.h"    //<d3d12.h> //dxr
+#include <atlbase.h>                                   //dxr
 #include <d3d11.h>
 #include <dxgi1_4.h>
 #include <assert.h>
@@ -16,6 +18,14 @@
 #define SAMPLER_DESCRIPTOR_HEAP_SIZE		    64
 #define RENDER_PASS_DESCRIPTOR_HEAP_MULTIPLE    256
 #define MAX_TEXTURE_SUBRESOURCE_COUNT		    512
+
+//For some reason, on the 2080 (didn't happen on 1080), a sampler desc heap and srv desc heap are created with base cpu descriptor offsets only 1 apart from each other
+//when experimental DXR is enabled, which doesn't make sense, and this doesn't happen for any other heap type. Offsetting the base non-visible descriptor heap so that they
+//don't overlap. Despite being in different heaps, and ultimately functioning properly, copying sampler descriptors was generating d3d12 errors saying
+//the source and destination ranges overlap, which they appear to based solely on the cpu handle information given. This only happens for samplers and srvs, the rest
+//behave as expected. Can remove this once this issue is fixed.
+#define SAMPLER_DESCRIPTOR_HEAP_OFFSET_FIXUP    64
+#define SRV_DESCRIPTOR_HEAP_OFFSET_FIXUP		4096
 
 #define UPLOAD_BUFFER_SIZE					                2048 * 2048 * 32
 #define MAX_GPU_UPLOADS						                16
@@ -60,6 +70,7 @@ class Direct3DUtils
 public:
 	static void ThrowIfHRESULTFailed(HRESULT hr);
 	static void ThrowRuntimeError(char *errorMessage);
+    static void ThrowLogicError(char *errorMessage);
 	static void OutputShaderCompileError(ID3DBlob *shaderErrorBlob);
 };
 

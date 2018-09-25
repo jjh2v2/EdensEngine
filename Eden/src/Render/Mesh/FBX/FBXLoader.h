@@ -118,7 +118,7 @@ public:
 				mesh->GetPolygonVertexUV(polygonIndex, vertIndex, lUVNames.GetStringAt(0), uv, isMapped);
 				int testC = mesh->GetElementTangentCount();
 
-				Vector3 placeHolder = Vector3::One();
+				Vector4 placeHolder = Vector4::One();
 				Vector3 normal, tangent, binormal;
 
 				ReadNormal(mesh, controlPointIndex, polygonIndex*3 + vertIndex, normal);
@@ -131,11 +131,11 @@ public:
 				meshData.Position.Z = (float)pVertices[controlPointIndex].mData[2];
 				meshData.Position.W = 1.0f;
 				meshData.Color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-				meshData.Normal = Vector3(normal.X, normal.Y, normal.Z);
+				meshData.Normal = Vector4(normal.X, normal.Y, normal.Z, 0.0f);
 
 				if(tangentFound)
 				{
-					meshData.Tangent = Vector3(tangent.X, tangent.Y, tangent.Z);
+					meshData.Tangent = Vector4(tangent.X, tangent.Y, tangent.Z, 0.0f);
 				}
 				else
 				{
@@ -144,7 +144,7 @@ public:
 
 				if(binormalFound)
 				{
-					meshData.Binormal = Vector3(binormal.X, binormal.Y, binormal.Z);
+					meshData.Binormal = Vector4(binormal.X, binormal.Y, binormal.Z, 0.0f);
 				}
 				else
 				{
@@ -161,18 +161,18 @@ public:
 				Vector3 tangent;
 				Vector3 binormal;
 				MeshVertexData::GetTangentAndBinormal(outVertexVector[polygonIndex*3], outVertexVector[polygonIndex*3+1], outVertexVector[polygonIndex*3+2], tangent, binormal);
-				outVertexVector[polygonIndex*3].Tangent = tangent;
-				outVertexVector[polygonIndex*3+1].Tangent = tangent;
-				outVertexVector[polygonIndex*3+2].Tangent = tangent;
+				outVertexVector[polygonIndex*3].Tangent = Vector4(tangent.X, tangent.Y, tangent.Z, 0.0f);
+				outVertexVector[polygonIndex*3+1].Tangent = Vector4(tangent.X, tangent.Y, tangent.Z, 0.0f);
+				outVertexVector[polygonIndex*3+2].Tangent = Vector4(tangent.X, tangent.Y, tangent.Z, 0.0f);
 			}
 			if(!binormalFound)
 			{
 				Vector3 tangent;
 				Vector3 binormal;
 				MeshVertexData::GetTangentAndBinormal(outVertexVector[polygonIndex*3], outVertexVector[polygonIndex*3+1], outVertexVector[polygonIndex*3+2], tangent, binormal);
-				outVertexVector[polygonIndex*3].Binormal = binormal;
-				outVertexVector[polygonIndex*3+1].Binormal = binormal;
-				outVertexVector[polygonIndex*3+2].Binormal = binormal;
+				outVertexVector[polygonIndex*3].Binormal = Vector4(binormal.X, binormal.Y, binormal.Z, 0.0f);
+				outVertexVector[polygonIndex*3+1].Binormal = Vector4(binormal.X, binormal.Y, binormal.Z, 0.0f);
+				outVertexVector[polygonIndex*3+2].Binormal = Vector4(binormal.X, binormal.Y, binormal.Z, 0.0f);
 			}
 		}
 

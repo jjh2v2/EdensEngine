@@ -255,6 +255,18 @@ private:
     std::mutex mUploadProcessMutex; //specifically for the purpose of allowing safe synchronous uploads while the background uploads are potentially processing
 };
 
+class RayTraceContext : public Direct3DContext
+{
+public:
+    RayTraceContext(ID3D12Device *device);
+    virtual ~RayTraceContext();
+
+    void BuildAccelerationStructure(const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC &structureDesc);
+
+private:
+    ID3D12CommandListRaytracingPrototype *mDXRCommandList;
+};
+
 class RenderPassContext
 {
 public:

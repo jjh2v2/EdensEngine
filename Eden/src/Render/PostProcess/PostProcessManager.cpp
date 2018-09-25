@@ -70,22 +70,39 @@ PostProcessManager::PostProcessManager(GraphicsManager *graphicsManager)
     mCurrentToneMapBuffer.bloomMagnitude = 1.0f;
     mCurrentToneMapBuffer.toneMapMode = 0;
 
-    mToneMapAndBloomEnabled = true;
+    mToneMapAndBloomEnabled = false;
 }
 
 PostProcessManager::~PostProcessManager()
 {
     Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
 
-//     contextManager->FreeConstantBuffer(mToneMapBuffer);
-//     contextManager->FreeConstantBuffer(mBloomBlurBuffer);
-//     contextManager->FreeRenderTarget(mBloomDownsampleTarget);
-//     contextManager->FreeRenderTarget(mBloomBlurTarget);
-//     contextManager->FreeRenderTarget(mTonemapTarget);
+    contextManager->FreeRenderTarget(mBloomThresholdTarget);
+    contextManager->FreeRenderTarget(mHalfScaleTarget);
+    contextManager->FreeRenderTarget(mQuarterScaleTarget);
+    contextManager->FreeRenderTarget(mEighthScaleTarget);
+    contextManager->FreeRenderTarget(mBlurTempTarget);
+    contextManager->FreeRenderTarget(mTonemapCompositeTarget);
+
+    for (uint32 i = 0; i < mLuminanceDownSampleTargets.CurrentSize(); i++)
+    {
+        contextManager->FreeRenderTarget(mLuminanceDownSampleTargets[i]);
+    }
+    
+    mLuminanceDownSampleTargets.Clear();
+
+    for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+    {
+        contextManager->FreeConstantBuffer(mLuminanceBuffers[i]);
+        contextManager->FreeConstantBuffer(mThresholdBuffers[i]);
+        contextManager->FreeConstantBuffer(mBloomBlurBuffers[i]);
+        contextManager->FreeConstantBuffer(mToneMapBuffers[i]);
+    }
 }
 
 void PostProcessManager::RenderPostProcessing(RenderTarget *hdrTarget, float deltaTime)
 {
+    //if(firstTime){clear luminance buffers to black}
     if (mToneMapAndBloomEnabled)
     {
         CalculateLuminance(hdrTarget, deltaTime);

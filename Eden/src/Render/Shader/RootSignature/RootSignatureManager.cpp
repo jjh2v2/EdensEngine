@@ -1,6 +1,7 @@
 #include "Render/Shader/RootSignature/RootSignatureManager.h"
 
 //TDA: Serialize root signatures to files, and automate this when I finally get fed up with manually adding them
+//TDA: https://docs.microsoft.com/en-us/windows/desktop/api/d3d12/ne-d3d12-d3d12_root_signature_flags use flags properly
 RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 {
 	//Performance is best if ranges are ordered from most frequent to least frequently changed
@@ -451,6 +452,37 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 
         mRootSignatures.Add(toneMapSignature);
     }
+
+    {
+        //RootSignatureType_Ray_Test_Generation
+        CD3DX12_DESCRIPTOR_RANGE ranges[2];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); //1 uav, output of ray trace
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); //1 srv, acceleration structure
+
+        CD3DX12_ROOT_PARAMETER rootParameters[2];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);
+
+        RootSignatureInfo rayGenSignature;
+        rayGenSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&rayGenSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &rayGenSignature.RootSignatureBlob, &rayGenSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, rayGenSignature.RootSignatureBlob->GetBufferPointer(), rayGenSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&rayGenSignature.RootSignature)));
+
+        mRootSignatures.Add(rayGenSignature);
+    }
+
+    {
+        //RootSignatureType_Ray_Test_Hit_And_Miss
+        RootSignatureInfo rayHitMissSignature;
+        rayHitMissSignature.Desc.Init(0, NULL, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&rayHitMissSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &rayHitMissSignature.RootSignatureBlob, &rayHitMissSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, rayHitMissSignature.RootSignatureBlob->GetBufferPointer(), rayHitMissSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&rayHitMissSignature.RootSignature)));
+
+        mRootSignatures.Add(rayHitMissSignature);
+    }
+
 }
 
 RootSignatureManager::~RootSignatureManager()

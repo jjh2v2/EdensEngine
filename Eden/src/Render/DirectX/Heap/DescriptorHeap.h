@@ -33,7 +33,6 @@ public:
 	DynamicDescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, uint32 numDescriptors, bool isReferencedByShader);
 	virtual ~DynamicDescriptorHeap();
 
-	void Reset();
 	DescriptorHeapHandle GetNewHeapHandle();
 	void FreeHeapHandle(DescriptorHeapHandle handle);
 

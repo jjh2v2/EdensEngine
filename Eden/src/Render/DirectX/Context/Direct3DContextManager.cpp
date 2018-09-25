@@ -1,6 +1,6 @@
 #include "Direct3DContextManager.h"
 
-Direct3DContextManager::Direct3DContextManager(ID3D12Device* device)
+Direct3DContextManager::Direct3DContextManager(ID3D12Device* device, bool isRayTracingSupported)
 {
 	mDevice = device;
 	mHeapManager = new Direct3DHeapManager(mDevice);
@@ -9,11 +9,23 @@ Direct3DContextManager::Direct3DContextManager(ID3D12Device* device)
     mComputeContext = new ComputeContext(mDevice);
 	mGraphicsContext = new GraphicsContext(mDevice);
 
+    mRayTraceContext = NULL;
+
+    if (isRayTracingSupported)
+    {
+        mRayTraceContext = new RayTraceContext(mDevice);
+    }
+
     memset(mBufferTracking, 0, ContextTrackingType_Max * sizeof(uint32));
 }
 
 Direct3DContextManager::~Direct3DContextManager()
 {
+    if (mRayTraceContext)
+    {
+        delete mRayTraceContext;
+    }
+
 	delete mUploadContext;
     delete mComputeContext;
 	delete mGraphicsContext;
@@ -28,10 +40,12 @@ Direct3DContextManager::~Direct3DContextManager()
 
 void Direct3DContextManager::FinishContextsAndWaitForIdle()
 {
+    mRayTraceContext->Flush(mQueueManager, true, true);
     mComputeContext->Flush(mQueueManager, true, true);
     mGraphicsContext->Flush(mQueueManager, true, true);
     mUploadContext->Flush(mQueueManager, true, true);
 
+    mRayTraceContext->WaitForCommandIdle(mQueueManager);
     mUploadContext->WaitForCommandIdle(mQueueManager);
     mComputeContext->WaitForCommandIdle(mQueueManager);
     mGraphicsContext->WaitForCommandIdle(mQueueManager);
@@ -159,7 +173,7 @@ IndexBuffer *Direct3DContextManager::CreateIndexBuffer(void* indexData, uint32 b
 ConstantBuffer *Direct3DContextManager::CreateConstantBuffer(uint32 bufferSize)
 {
 	ID3D12Resource *constantBufferResource = NULL;
-	uint32 alignedSize = MathHelper::AlignU32(bufferSize, 256); // Constant buffer size is required to be 256-byte aligned.
+	uint32 alignedSize = MathHelper::AlignU32(bufferSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT); // Constant buffer size is required to be 256-byte aligned.
 
 	D3D12_RESOURCE_DESC constantBufferDesc;
 	constantBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -673,8 +687,68 @@ FilteredCubeMapRenderTexture *Direct3DContextManager::CreateFilteredCubeMapRende
     return cubeTexture;
 }
 
+RayTraceBuffer *Direct3DContextManager::CreateRayTraceBuffer(uint64 bufferSize, D3D12_RESOURCE_STATES initialState, RayTraceBuffer::RayTraceBufferType bufferType)
+{
+    D3D12_RESOURCE_DESC bufferDesc;
+    bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    bufferDesc.Alignment = 0;
+    bufferDesc.Width = bufferSize;
+    bufferDesc.Height = 1;
+    bufferDesc.DepthOrArraySize = 1;
+    bufferDesc.MipLevels = 1;
+    bufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+    bufferDesc.SampleDesc.Count = 1;
+    bufferDesc.SampleDesc.Quality = 0;
+    bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    bufferDesc.Flags = bufferType == RayTraceBuffer::RayTraceBufferType_Acceleration_Structure ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
+
+    D3D12_HEAP_PROPERTIES defaultHeapProperties;
+    defaultHeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+    defaultHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    defaultHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    defaultHeapProperties.CreationNodeMask = 0;
+    defaultHeapProperties.VisibleNodeMask = 0;
+
+    D3D12_HEAP_PROPERTIES uploadHeapProperties;
+    uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+    uploadHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    uploadHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    uploadHeapProperties.CreationNodeMask = 0;
+    uploadHeapProperties.VisibleNodeMask = 0;
+
+    ID3D12Resource *bufferResource = NULL;
+
+    switch (bufferType)
+    {
+    case RayTraceBuffer::RayTraceBufferType_Acceleration_Structure:
+        Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &bufferDesc, initialState, NULL, IID_PPV_ARGS(&bufferResource)));
+        break;
+    case RayTraceBuffer::RayTraceBufferType_Instancing:
+        //state has to be generic read
+        initialState = D3D12_RESOURCE_STATE_GENERIC_READ;
+        Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &bufferDesc, initialState, NULL, IID_PPV_ARGS(&bufferResource)));
+        
+        void *mappedData;
+        bufferResource->Map(0, NULL, &mappedData);
+        memset(mappedData, 0, bufferSize);
+        bufferResource->Unmap(0, NULL);
+        break;
+    default:
+        Application::Assert(false);
+    }
+
+    RayTraceBuffer *rayTraceBuffer = new RayTraceBuffer(bufferResource, initialState, bufferType);
+    rayTraceBuffer->SetIsReady(true); //readiness is later determined by the RayTraceManager since the creation requires GPU command work
+    
+    mBufferTracking[ContextTrackingType_RayTraceBuffer]++;
+
+    return rayTraceBuffer;
+}
+
 void Direct3DContextManager::FreeRenderTarget(RenderTarget *renderTarget)
 {
+    Application::Assert(mBufferTracking[ContextTrackingType_RenderTarget] > 0);
+
 	mHeapManager->FreeRTVDescriptorHeapHandle(renderTarget->GetRenderTargetViewHandle());
 	mHeapManager->FreeSRVDescriptorHeapHandle(renderTarget->GetShaderResourceViewHandle());
 
@@ -703,6 +777,8 @@ void Direct3DContextManager::FreeRenderTarget(RenderTarget *renderTarget)
 
 void Direct3DContextManager::FreeDepthStencilTarget(DepthStencilTarget *depthStencilTarget)
 {
+    Application::Assert(mBufferTracking[ContextTrackingType_DepthStencil] > 0);
+
 	mHeapManager->FreeDSVDescriptorHeapHandle(depthStencilTarget->GetDepthStencilViewHandle());
 	mHeapManager->FreeDSVDescriptorHeapHandle(depthStencilTarget->GetReadOnlyDepthStencilViewHandle());
 	mHeapManager->FreeSRVDescriptorHeapHandle(depthStencilTarget->GetShaderResourceViewHandle());
@@ -720,6 +796,8 @@ void Direct3DContextManager::FreeDepthStencilTarget(DepthStencilTarget *depthSte
 
 void Direct3DContextManager::FreeConstantBuffer(ConstantBuffer *constantBuffer)
 {
+    Application::Assert(mBufferTracking[ContextTrackingType_ConstantBuffer] > 0);
+
 	mHeapManager->FreeSRVDescriptorHeapHandle(constantBuffer->GetConstantBufferViewHandle());
 	delete constantBuffer;
     mBufferTracking[ContextTrackingType_ConstantBuffer]--;
@@ -727,6 +805,8 @@ void Direct3DContextManager::FreeConstantBuffer(ConstantBuffer *constantBuffer)
 
 void Direct3DContextManager::FreeStructuredBuffer(StructuredBuffer *structuredBuffer)
 {
+    Application::Assert(mBufferTracking[ContextTrackingType_StructuredBuffer] > 0);
+
     mHeapManager->FreeSRVDescriptorHeapHandle(structuredBuffer->GetUnorderedAccessViewHandle());
     mHeapManager->FreeSRVDescriptorHeapHandle(structuredBuffer->GetShaderResourceViewHandle());
     delete structuredBuffer;
@@ -735,6 +815,8 @@ void Direct3DContextManager::FreeStructuredBuffer(StructuredBuffer *structuredBu
 
 void Direct3DContextManager::FreeFilteredCubeMap(FilteredCubeMapRenderTexture *cubeMapTexture)
 {
+    Application::Assert(mBufferTracking[ContextTrackingType_FilteredCube] > 0);
+
     for (uint32 arrayIndex = 0; arrayIndex < 6; arrayIndex++)
     {
         for (uint32 mipIndex = 0; mipIndex < cubeMapTexture->GetMipCount(); mipIndex++)
@@ -746,4 +828,12 @@ void Direct3DContextManager::FreeFilteredCubeMap(FilteredCubeMapRenderTexture *c
     mHeapManager->FreeSRVDescriptorHeapHandle(cubeMapTexture->GetShaderResourceViewHandle());
     delete cubeMapTexture;
     mBufferTracking[ContextTrackingType_FilteredCube]--;
+}
+
+void Direct3DContextManager::FreeRayTraceBuffer(RayTraceBuffer *rayTraceBuffer)
+{
+    Application::Assert(mBufferTracking[ContextTrackingType_RayTraceBuffer] > 0);
+
+    delete rayTraceBuffer;
+    mBufferTracking[ContextTrackingType_RayTraceBuffer]--;
 }

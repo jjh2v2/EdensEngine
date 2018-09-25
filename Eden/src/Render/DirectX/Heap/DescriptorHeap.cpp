@@ -14,6 +14,7 @@ DescriptorHeap::DescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE 
 
 	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&mDescriptorHeap)));
 	mDescriptorHeapCPUStart = mDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+
 	if (mIsReferencedByShader)
 	{
 		mDescriptorHeapGPUStart = mDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
@@ -33,6 +34,16 @@ DynamicDescriptorHeap::DynamicDescriptorHeap(ID3D12Device* device, D3D12_DESCRIP
 {
 	mCurrentDescriptorIndex = 0;
 	mActiveHandleCount = 0;
+
+    if ((heapType == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) && !isReferencedByShader)
+    {
+        mCurrentDescriptorIndex = SAMPLER_DESCRIPTOR_HEAP_OFFSET_FIXUP;
+    }
+
+    if ((heapType == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) && !isReferencedByShader)
+    {
+        mCurrentDescriptorIndex = SRV_DESCRIPTOR_HEAP_OFFSET_FIXUP;
+    }
 }
 
 DynamicDescriptorHeap::~DynamicDescriptorHeap()
@@ -90,13 +101,6 @@ void DynamicDescriptorHeap::FreeHeapHandle(DescriptorHeapHandle handle)
 		Direct3DUtils::ThrowRuntimeError("Freeing heap handles when there should be none left");
 	}
 	mActiveHandleCount--;
-}
-
-void DynamicDescriptorHeap::Reset()
-{
-	mFreeDescriptors.Clear();
-	mCurrentDescriptorIndex = 0;
-	mActiveHandleCount = 0;
 }
 
 RenderPassDescriptorHeap::RenderPassDescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, uint32 numDescriptors)

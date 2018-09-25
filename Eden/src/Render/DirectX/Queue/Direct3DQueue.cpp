@@ -11,7 +11,7 @@ Direct3DQueue::Direct3DQueue(ID3D12Device* device, D3D12_COMMAND_LIST_TYPE comma
 
 	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 	queueDesc.Type = mQueueType;
-	queueDesc.NodeMask = 1;
+	queueDesc.NodeMask = 0;
 	device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue));
 	mCommandQueue->SetName(L"Direct3DQueue::mCommandQueue");
 

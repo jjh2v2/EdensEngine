@@ -5,6 +5,9 @@
 #include "Asset/Manifest/ManifestLoader.h"
 #include "Render/Shader/RootSignature/RootSignatureManager.h"
 
+#include "Render/DirectX/DXRExperimental/dxcapi.h"
+#include "Render/DirectX/DXRExperimental/dxcapi.use.h"
+
 class ShaderManager
 {
 public:
@@ -20,9 +23,21 @@ private:
 		RootSignatureType SignatureType;
 	};
 
+    struct RayTraceShaderBuilder
+    {
+        dxc::DxcDllSupport DxcSupport;
+        IDxcCompiler *DxcCompiler;
+        IDxcLibrary *DxcLibrary;
+        IDxcIncludeHandler *DxcIncludeHandler;
+    };
+
 	void LoadAllShaders(ID3D12Device *device);
 	ShaderTechniqueInfo LoadShader(ID3D12Device *device, const char *fileName);
 	void PreloadExpectedPermutations();
+
+    void LoadRayTraceShaders();
+    IDxcBlob *CompileRayShader(WCHAR *fileName);
+    IDxcBlob* CompileShaderLibrary(LPCWSTR fileName);
 
 	ID3D12Device *mDevice;
 
@@ -31,4 +46,9 @@ private:
 	ManifestLoader mManifestLoader;
 
 	RootSignatureManager *mRootSignatureManager;
+
+    RayTraceShaderBuilder mRayTraceShaderBuilder;
+    IDxcBlob *mRayGenerationShader;
+    IDxcBlob *mRayClosestHitShader;
+    IDxcBlob *mRayMissShader;
 };

@@ -46,8 +46,5 @@ private:
     ConstantBuffer *mBloomBlurBuffers[FRAME_BUFFER_COUNT];
     ConstantBuffer *mToneMapBuffers[FRAME_BUFFER_COUNT];
 
-    //ConstantBuffer *mBloomBlurBuffer; //not double buffered because it doesn't change frame to frame
-    //ConstantBuffer *mToneMapBuffer; //not double buffered because it doesn't change frame to frame
-
     bool mToneMapAndBloomEnabled;
 };

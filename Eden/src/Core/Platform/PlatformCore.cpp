@@ -24,6 +24,11 @@ void Direct3DUtils::ThrowRuntimeError(char *errorMessage)
 	throw std::runtime_error(errorMessage);
 }
 
+void Direct3DUtils::ThrowLogicError(char *errorMessage)
+{
+    throw std::logic_error(errorMessage);
+}
+
 void Direct3DUtils::OutputShaderCompileError(ID3DBlob *shaderErrorBlob)
 {
 	char* compileErrors = (char*)(shaderErrorBlob->GetBufferPointer());

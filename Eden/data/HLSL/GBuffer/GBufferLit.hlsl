@@ -10,15 +10,15 @@ GBufferVertexOutput GBufferLitVertexShader(GBufferVertexInput input)
     output.position = mul(output.position, pfProjectionMatrix);	
 	
     output.texCoord0 = input.texCoord0;
-    output.normal = normalize(mul(input.normal, (float3x3)poWorldMatrix));
+    output.normal = normalize(mul(input.normal.xyz, (float3x3)poWorldMatrix));
 	output.normal = normalize(mul(float4(output.normal, 0.0f), pfViewMatrix).xyz);
 	
 	if(poUsesNormalMap)
 	{
-		output.tangent = mul(input.tangent, (float3x3)poWorldMatrix);
+		output.tangent = mul(input.tangent.xyz, (float3x3)poWorldMatrix);
 		output.tangent = mul(float4(output.tangent, 0), pfViewMatrix).xyz;
 		output.tangent = normalize(output.tangent);
-		output.binormal = mul(input.binormal, (float3x3)poWorldMatrix);
+		output.binormal = mul(input.binormal.xyz, (float3x3)poWorldMatrix);
 		output.binormal = mul(float4(output.binormal, 0), pfViewMatrix).xyz;
 		output.binormal = normalize(output.binormal);
 	}

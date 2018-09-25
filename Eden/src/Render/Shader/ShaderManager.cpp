@@ -8,7 +8,8 @@ ShaderManager::ShaderManager(ID3D12Device *device)
 
 	ShaderPipelineStateCreator::BuildPipelineStates();
 	mRootSignatureManager = new RootSignatureManager(mDevice);
-	LoadAllShaders(mDevice);
+	
+    LoadAllShaders(mDevice);
 }
 
 ShaderManager::~ShaderManager()
@@ -64,6 +65,7 @@ void ShaderManager::LoadAllShaders(ID3D12Device *device)
 	}
 
 	PreloadExpectedPermutations();
+    LoadRayTraceShaders();
 }
 
 void ShaderManager::PreloadExpectedPermutations()
@@ -187,4 +189,121 @@ ShaderManager::ShaderTechniqueInfo ShaderManager::LoadShader(ID3D12Device *devic
 	techniqueInfo.Technique = new ShaderTechnique(device, pipelineDefinition);
 	
 	return techniqueInfo;
+}
+
+void ShaderManager::LoadRayTraceShaders()
+{
+    //TDA: clean up memory use
+    Direct3DUtils::ThrowIfHRESULTFailed(mRayTraceShaderBuilder.DxcSupport.Initialize());
+    Direct3DUtils::ThrowIfHRESULTFailed(mRayTraceShaderBuilder.DxcSupport.CreateInstance(CLSID_DxcCompiler, &mRayTraceShaderBuilder.DxcCompiler));
+    Direct3DUtils::ThrowIfHRESULTFailed(mRayTraceShaderBuilder.DxcSupport.CreateInstance(CLSID_DxcLibrary, &mRayTraceShaderBuilder.DxcLibrary));
+    Direct3DUtils::ThrowIfHRESULTFailed(mRayTraceShaderBuilder.DxcLibrary->CreateIncludeHandler(&mRayTraceShaderBuilder.DxcIncludeHandler));
+
+    mRayGenerationShader = CompileRayShader(L"../Eden/data/HLSL/RayTrace/RayTestGen.hlsl");
+    mRayClosestHitShader = CompileRayShader(L"../Eden/data/HLSL/RayTrace/RayTestClosestHit.hlsl");
+    mRayMissShader = CompileRayShader(L"../Eden/data/HLSL/RayTrace/RayTestMiss.hlsl");
+}
+
+IDxcBlob *ShaderManager::CompileRayShader(WCHAR *fileName)
+{
+    std::ifstream rayShaderFile(fileName);
+    if (!rayShaderFile.is_open())
+    {
+        Application::Assert(false);
+    }
+
+    std::stringstream strStream;
+    strStream << rayShaderFile.rdbuf();
+    std::string rayShaderString = strStream.str();
+
+    IDxcBlobEncoding *rayShaderBlobEncoding;
+    Direct3DUtils::ThrowIfHRESULTFailed(mRayTraceShaderBuilder.DxcLibrary->CreateBlobWithEncodingFromPinned((LPBYTE)rayShaderString.c_str(), (uint32_t)rayShaderString.size(), 0, &rayShaderBlobEncoding));
+
+    IDxcOperationResult* compilationResult;
+    Direct3DUtils::ThrowIfHRESULTFailed(mRayTraceShaderBuilder.DxcCompiler->Compile(rayShaderBlobEncoding, fileName, L"", L"lib_6_3", nullptr, 0, nullptr, 0,
+        mRayTraceShaderBuilder.DxcIncludeHandler, &compilationResult));
+
+    HRESULT resultCode;
+    Direct3DUtils::ThrowIfHRESULTFailed(compilationResult->GetStatus(&resultCode));
+    if (FAILED(resultCode))
+    {
+        IDxcBlobEncoding* pError;
+        if (FAILED(compilationResult->GetErrorBuffer(&pError)))
+        {
+            Direct3DUtils::ThrowLogicError("Failed to get shader compiler error.");
+        }
+
+        Direct3DUtils::ThrowLogicError("Shader compilation error.");
+    }
+
+    IDxcBlob* shaderBlob;
+    Direct3DUtils::ThrowIfHRESULTFailed(compilationResult->GetResult(&shaderBlob));
+    return shaderBlob;
+}
+
+IDxcBlob* ShaderManager::CompileShaderLibrary(LPCWSTR fileName)
+{
+    static dxc::DxcDllSupport gDxcDllHelper;
+    static IDxcCompiler* pCompiler = nullptr;
+    static IDxcLibrary* pLibrary = nullptr;
+    static IDxcIncludeHandler* dxcIncludeHandler;
+
+    HRESULT hr;
+
+    Direct3DUtils::ThrowIfHRESULTFailed(gDxcDllHelper.Initialize());
+
+    // Initialize the DXC compiler and compiler helper
+    if (!pCompiler)
+    {
+        Direct3DUtils::ThrowIfHRESULTFailed(gDxcDllHelper.CreateInstance(CLSID_DxcCompiler, &pCompiler));
+        Direct3DUtils::ThrowIfHRESULTFailed(gDxcDllHelper.CreateInstance(CLSID_DxcLibrary, &pLibrary));
+        Direct3DUtils::ThrowIfHRESULTFailed(pLibrary->CreateIncludeHandler(&dxcIncludeHandler));
+    }
+    // Open and read the file
+    std::ifstream shaderFile(fileName);
+    if (shaderFile.good() == false)
+    {
+        throw std::logic_error("Cannot find shader file");
+    }
+    std::stringstream strStream;
+    strStream << shaderFile.rdbuf();
+    std::string sShader = strStream.str();
+
+    // Create blob from the string
+    IDxcBlobEncoding* pTextBlob;
+    Direct3DUtils::ThrowIfHRESULTFailed(pLibrary->CreateBlobWithEncodingFromPinned(
+        (LPBYTE)sShader.c_str(), (uint32_t)sShader.size(), 0, &pTextBlob));
+
+    // Compile
+    IDxcOperationResult* pResult;
+    Direct3DUtils::ThrowIfHRESULTFailed(pCompiler->Compile(pTextBlob, fileName, L"", L"lib_6_3", nullptr, 0, nullptr, 0,
+        dxcIncludeHandler, &pResult));
+
+    // Verify the result
+    HRESULT resultCode;
+    Direct3DUtils::ThrowIfHRESULTFailed(pResult->GetStatus(&resultCode));
+    if (FAILED(resultCode))
+    {
+        IDxcBlobEncoding* pError;
+        hr = pResult->GetErrorBuffer(&pError);
+        if (FAILED(hr))
+        {
+            throw std::logic_error("Failed to get shader compiler error");
+        }
+
+        // Convert error blob to a string
+        std::vector<char> infoLog(pError->GetBufferSize() + 1);
+        memcpy(infoLog.data(), pError->GetBufferPointer(), pError->GetBufferSize());
+        infoLog[pError->GetBufferSize()] = 0;
+
+        std::string errorMsg = "Shader Compiler Error:\n";
+        errorMsg.append(infoLog.data());
+
+        MessageBoxA(nullptr, errorMsg.c_str(), "Error!", MB_OK);
+        throw std::logic_error("Failed compile shader");
+    }
+
+    IDxcBlob* pBlob;
+    Direct3DUtils::ThrowIfHRESULTFailed(pResult->GetResult(&pBlob));
+    return pBlob;
 }

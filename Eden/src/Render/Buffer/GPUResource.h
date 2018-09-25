@@ -204,3 +204,20 @@ private:
     DynamicArray<DescriptorHeapHandle> mUAVHandles;
     DescriptorHeapHandle mSRVHandle;
 };
+
+class RayTraceBuffer : public GPUResource
+{
+public:
+    enum RayTraceBufferType
+    {
+        RayTraceBufferType_Acceleration_Structure = 0,
+        RayTraceBufferType_Instancing
+    };
+
+    RayTraceBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, RayTraceBufferType bufferType);
+    virtual ~RayTraceBuffer();
+
+    void MapInstanceDescData(const void *instanceDescData, uint32 numInstanceDescs);
+private:
+    RayTraceBufferType mBufferType;
+};

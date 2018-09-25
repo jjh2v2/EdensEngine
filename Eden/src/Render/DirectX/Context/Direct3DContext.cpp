@@ -458,7 +458,7 @@ void GraphicsContext::ClearDepthStencilTarget(D3D12_CPU_DESCRIPTOR_HANDLE target
 
 void GraphicsContext::DrawFullScreenTriangle()
 {
-	SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	SetVertexBuffer(0, NULL);
 	SetIndexBuffer(NULL);
 	Draw(3);
@@ -855,4 +855,20 @@ uint64 UploadContext::FlushUpload(Direct3DUploadInfo& uploadInfo, Direct3DQueueM
 	mUploads[uploadInfo.UploadID].IsUploading = true;
 
 	return uploadFence;
+}
+
+RayTraceContext::RayTraceContext(ID3D12Device *device)
+    : Direct3DContext(device, D3D12_COMMAND_LIST_TYPE_DIRECT)
+{
+    Direct3DUtils::ThrowIfHRESULTFailed(mCommandList->QueryInterface(IID_PPV_ARGS(&mDXRCommandList)));
+}
+
+RayTraceContext::~RayTraceContext()
+{
+    mDXRCommandList->Release();
+}
+
+void RayTraceContext::BuildAccelerationStructure(const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC &structureDesc)
+{
+    mDXRCommandList->BuildRaytracingAccelerationStructure(&structureDesc);
 }

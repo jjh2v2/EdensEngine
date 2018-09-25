@@ -7,6 +7,7 @@ GraphicsManager::GraphicsManager()
 	mShaderManager = NULL;
 	mTextureManager = NULL;
 	mMeshManager = NULL;
+    mRayTraceManager = NULL;
 
     mBackgroundJob = new UploadUpdateBackgroundJob(mDirect3DManager->GetContextManager());
     mBackgroundUpdateJobBatch = new JobBatch();
@@ -18,6 +19,7 @@ GraphicsManager::~GraphicsManager()
     delete mBackgroundUpdateJobBatch;
     delete mBackgroundJob;
 
+    delete mRayTraceManager;
 	delete mMeshManager;
 	delete mShaderManager;
 	delete mSamplerManager;
@@ -33,6 +35,8 @@ void GraphicsManager::InitializeGraphicsResources()
 	mShaderManager = new ShaderManager(mDirect3DManager->GetDevice());
 	mMeshManager = new MeshManager();
 	mMeshManager->LoadAllMeshes(mDirect3DManager);
+    mRayTraceManager = new RayTraceManager(mDirect3DManager);
+    mRayTraceManager->QueueRayTraceAccelerationStructureCreation();
 }
 
 GraphicsManager::UploadUpdateBackgroundJob::UploadUpdateBackgroundJob(Direct3DContextManager *contextManager)
@@ -58,6 +62,7 @@ void GraphicsManager::Update(float deltaTime)
 
     mTextureManager->ProcessCurrentUploads();
     mTextureManager->ProcessCurrentComputeWork();
+    mRayTraceManager->Update();
     mDirect3DManager->GetContextManager()->GetGraphicsContext()->FlushDeferredTransitions();
 }
 

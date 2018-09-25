@@ -21,6 +21,12 @@ public:
 		return (uint32)((valueToAlign + alignment) & ~alignment);
 	}
 
+    static uint64 AlignU64(uint64 valueToAlign, uint64 alignment)
+    {
+        alignment -= 1;
+        return (uint64)((valueToAlign + alignment) & ~alignment);
+    }
+
 	template <class T>
 	static T Clamp(T val, T min, T max)
 	{

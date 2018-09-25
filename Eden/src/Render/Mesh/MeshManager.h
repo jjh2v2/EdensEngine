@@ -11,9 +11,7 @@ public:
 	~MeshManager();
 
 	void LoadAllMeshes(Direct3DManager *direct3DManager);
-
 	Mesh *GetMesh(std::string meshName);
-	void ReleaseMeshes();
 
 private:
 	Mesh *LoadFromAssimp(Direct3DManager *direct3DManager, char *fileName, char *serializationFile);

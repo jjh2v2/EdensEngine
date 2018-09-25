@@ -7,7 +7,7 @@
 class Direct3DContextManager
 {
 public:
-	Direct3DContextManager(ID3D12Device* device);
+	Direct3DContextManager(ID3D12Device* device, bool isRayTracingSupported);
 	~Direct3DContextManager();
     void FinishContextsAndWaitForIdle();
 
@@ -17,6 +17,7 @@ public:
 	GraphicsContext *GetGraphicsContext() { return mGraphicsContext; }
     ComputeContext *GetComputeContext() { return mComputeContext; }
 	UploadContext *GetUploadContext() { return mUploadContext; }
+    RayTraceContext *GetRayTraceContext() { return mRayTraceContext; }
 
 	RenderTarget *CreateRenderTarget(uint32 width, uint32 height, DXGI_FORMAT format, bool hasUAV, uint16 arraySize, uint32 sampleCount, uint32 quality, uint32 mipLevels = 1);
 	DepthStencilTarget *CreateDepthStencilTarget(uint32 width, uint32 height, DXGI_FORMAT format, uint16 arraySize, uint32 sampleCount, uint32 quality, float depthClearValue = 0.0f, uint8 stencilClearValue = 0);
@@ -26,11 +27,14 @@ public:
     StructuredBuffer *CreateStructuredBuffer(uint32 elementSize, uint32 numElements, StructuredBufferAccess accessType, bool isRaw);
     FilteredCubeMapRenderTexture *CreateFilteredCubeMapRenderTexture(uint32 dimensionSize, DXGI_FORMAT format, uint32 mipLevels);
 
+    RayTraceBuffer *CreateRayTraceBuffer(uint64 bufferSize, D3D12_RESOURCE_STATES initialState, RayTraceBuffer::RayTraceBufferType bufferType);
+
 	void FreeRenderTarget(RenderTarget *renderTarget);
 	void FreeDepthStencilTarget(DepthStencilTarget *depthStencilTarget);
 	void FreeConstantBuffer(ConstantBuffer *constantBuffer);
     void FreeStructuredBuffer(StructuredBuffer *structuredBuffer);
     void FreeFilteredCubeMap(FilteredCubeMapRenderTexture *cubeMapTexture);
+    void FreeRayTraceBuffer(RayTraceBuffer *rayTraceBuffer);
 
 private:
     class VertexBufferBackgroundUpload : public UploadContext::BackgroundUpload
@@ -66,6 +70,7 @@ private:
         ContextTrackingType_ConstantBuffer,
         ContextTrackingType_StructuredBuffer,
         ContextTrackingType_FilteredCube,
+        ContextTrackingType_RayTraceBuffer,
         ContextTrackingType_Max
     };
 
@@ -75,6 +80,7 @@ private:
 	GraphicsContext *mGraphicsContext;
     ComputeContext *mComputeContext;
 	UploadContext *mUploadContext;
+    RayTraceContext *mRayTraceContext;
 
     uint32 mBufferTracking[ContextTrackingType_Max];
 };

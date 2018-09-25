@@ -9,6 +9,8 @@ Direct3DManager::Direct3DManager()
 	mUseVsync = false;
 	mContextManager = NULL;
 	mCurrentBackBuffer = 0;
+    mSupportsDXR = false;
+    mDXRDevice = NULL;
 
 	InitializeDeviceResources();
 }
@@ -37,6 +39,9 @@ Direct3DManager::~Direct3DManager()
 	mDebugController = NULL;
 #endif
 
+    mDXRDevice->Release();
+    mDXRDevice = NULL;
+
 	mDevice->Release();
 	mDevice = NULL;
 
@@ -46,7 +51,9 @@ Direct3DManager::~Direct3DManager()
 
 void Direct3DManager::InitializeDeviceResources()
 {
-	
+    UUID experimentalFeatures[] = { D3D12ExperimentalShaderModels, D3D12RaytracingPrototype };
+    mSupportsDXR = D3D12EnableExperimentalFeatures(2, experimentalFeatures, NULL, NULL) == S_OK;
+
 #if defined(_DEBUG)
 	// If the project is in a debug build, enable debugging via SDK Layers.
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&mDebugController))))
@@ -60,11 +67,16 @@ void Direct3DManager::InitializeDeviceResources()
 	// Create the Direct3D 12 API device object
 	Direct3DUtils::ThrowIfHRESULTFailed(D3D12CreateDevice(
 		nullptr,						// Specify nullptr to use the default adapter.
-		D3D_FEATURE_LEVEL_11_0,			// Minimum feature level this app can support.
+		D3D_FEATURE_LEVEL_12_0,			// Minimum feature level this app can support.
 		IID_PPV_ARGS(&mDevice)		// Returns the Direct3D device created.
 		));
 
-	mContextManager = new Direct3DContextManager(mDevice);
+    if (mSupportsDXR)
+    {
+        Direct3DUtils::ThrowIfHRESULTFailed(mDevice->QueryInterface(IID_PPV_ARGS(&mDXRDevice)));
+    }
+
+	mContextManager = new Direct3DContextManager(mDevice, mSupportsDXR);
 }
 
 void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND windowHandle, bool vsync /*= false*/, bool fullScreen /*= false*/)
