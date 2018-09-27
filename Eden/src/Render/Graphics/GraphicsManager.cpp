@@ -35,7 +35,7 @@ void GraphicsManager::InitializeGraphicsResources()
 	mShaderManager = new ShaderManager(mDirect3DManager->GetDevice());
 	mMeshManager = new MeshManager();
 	mMeshManager->LoadAllMeshes(mDirect3DManager);
-    mRayTraceManager = new RayTraceManager(mDirect3DManager);
+    mRayTraceManager = new RayTraceManager(mDirect3DManager, mShaderManager->GetRootSignatureManager());
     mRayTraceManager->QueueRayTraceAccelerationStructureCreation();
 }
 

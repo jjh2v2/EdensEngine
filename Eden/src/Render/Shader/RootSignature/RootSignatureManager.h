@@ -29,6 +29,8 @@ enum RootSignatureType
     RootSignatureType_ToneMap_Composite = 21,
     RootSignatureType_Ray_Test_Generation = 22,
     RootSignatureType_Ray_Test_Hit_And_Miss = 23,
+    RootSignatureType_Ray_Empty_Global = 24,
+    RootSignatureType_Ray_Empty_Local = 25,
 	NumRootSignatures
 };
 

@@ -128,6 +128,11 @@ public:
 		return mArray;
 	}
 
+    T* GetInnerArrayNonConst()
+    {
+        return mArray;
+    }
+
 	T* GetInnerArrayCopy()
 	{
 		T* copyArray = new T[mSize];

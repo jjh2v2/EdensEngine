@@ -483,6 +483,27 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
         mRootSignatures.Add(rayHitMissSignature);
     }
 
+    {
+        //RootSignatureType_Ray_Empty_Global
+        RootSignatureInfo rayEmptySignature;
+        rayEmptySignature.Desc.Init(0, NULL, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_NONE);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&rayEmptySignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &rayEmptySignature.RootSignatureBlob, &rayEmptySignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, rayEmptySignature.RootSignatureBlob->GetBufferPointer(), rayEmptySignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&rayEmptySignature.RootSignature)));
+
+        mRootSignatures.Add(rayEmptySignature);
+    }
+
+    {
+        //RootSignatureType_Ray_Empty_Local
+        RootSignatureInfo rayEmptySignature;
+        rayEmptySignature.Desc.Init(0, NULL, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&rayEmptySignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &rayEmptySignature.RootSignatureBlob, &rayEmptySignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, rayEmptySignature.RootSignatureBlob->GetBufferPointer(), rayEmptySignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&rayEmptySignature.RootSignature)));
+
+        mRootSignatures.Add(rayEmptySignature);
+    }
 }
 
 RootSignatureManager::~RootSignatureManager()
