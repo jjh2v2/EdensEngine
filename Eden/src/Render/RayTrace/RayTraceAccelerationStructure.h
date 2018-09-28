@@ -15,6 +15,8 @@ public:
     void AddBottomLevelInstance(D3DXMATRIX transform, uint32 instanceID, uint32 hitGroupIndex);
     void BuildTopLevelStructure(bool isUpdate);
 
+    RayTraceBuffer *GetTopLevelResultBuffer() { return mTopLevelResultBuffer; }
+
     struct RTXVertex
     {
         Vector3 Position;

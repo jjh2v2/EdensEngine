@@ -39,9 +39,31 @@ private:
         D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION Association;
     };
 
+    struct ShaderBindingTableEntry
+    {
+        std::wstring EntryPoint;
+        DynamicArray<void*> InputData;
+    };
+
+    struct ShaderBindingTable
+    {
+        DynamicArray<ShaderBindingTableEntry*> RayGenEntries;
+        DynamicArray<ShaderBindingTableEntry*> MissEntries;
+        DynamicArray<ShaderBindingTableEntry*> HitGroupEntries;
+
+        uint32 rayGenEntrySize;
+        uint32 missEntrySize;
+        uint32 hitEntrySize;
+        uint32 programIdSize;
+
+        RayTraceBuffer *ShaderBindingTableStorage;
+    };
+
     void LoadRayTraceShaders(RootSignatureManager *rootSignatureManager);
     RayTraceShaderInfo *CompileRayShader(WCHAR *fileName, WCHAR *symbolName);
     void BuildPipelineResources();
+    void BuildHeap();
+    void BuildShaderBindingTable();
 
     RayTraceAccelerationStructure::RTXVertex mVertices[3];
     uint32 mIndices[3];
@@ -66,4 +88,7 @@ private:
     ID3D12StateObjectPrototype *mRayTraceStateObject;
     ID3D12StateObjectPropertiesPrototype *mRayTraceStateObjectProperties;
     RenderTarget *mRayTraceRenderTarget;
+    DescriptorHeap *mRayTraceHeap;
+
+    ShaderBindingTable mShaderBindingTable;
 };

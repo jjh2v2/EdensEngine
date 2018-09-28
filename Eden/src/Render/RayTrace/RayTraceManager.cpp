@@ -74,6 +74,7 @@ void RayTraceManager::Update()
         {
             mStructureCreationFence = 0;
             mIsStructureReady = true;
+            BuildHeap();
             return;
         }
     }
@@ -334,5 +335,108 @@ void RayTraceManager::BuildPipelineResources()
     Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DManager->GetRayTraceDevice()->CreateStateObject(&pipelineDesc, IID_PPV_ARGS(&mRayTraceStateObject)));
     Direct3DUtils::ThrowIfHRESULTFailed(mRayTraceStateObject->QueryInterface(IID_PPV_ARGS(&mRayTraceStateObjectProperties)));
 
-    mRayTraceRenderTarget = mDirect3DManager->GetContextManager()->CreateRenderTarget(mDirect3DManager->)
+    Vector2 screenSize = mDirect3DManager->GetScreenSize();
+    mRayTraceRenderTarget = mDirect3DManager->GetContextManager()->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R8G8B8A8_UNORM, true, 1, 1, 0);
+}
+
+void RayTraceManager::BuildHeap()
+{
+    mRayTraceHeap = new DescriptorHeap(mDirect3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, RAY_TRACE_DESCRIPTOR_HEAP_SIZE, true);
+    D3D12_CPU_DESCRIPTOR_HANDLE uavSrvHandle = mRayTraceHeap->GetHeapCPUStart();
+
+    mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mRayTraceRenderTarget->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    uavSrvHandle.ptr += mRayTraceHeap->GetDescriptorSize();
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
+    srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDesc.RaytracingAccelerationStructure.Location = mAccelerationStructure->GetTopLevelResultBuffer()->GetGpuAddress();
+
+    mDirect3DManager->GetDevice()->CreateShaderResourceView(NULL, &srvDesc, uavSrvHandle);
+}
+
+void RayTraceManager::BuildShaderBindingTable()
+{
+    D3D12_GPU_DESCRIPTOR_HANDLE srvUavHeapHandle = mRayTraceHeap->GetHeapGPUStart();
+    uint64 *heapU64 = reinterpret_cast<uint64*>(srvUavHeapHandle.ptr);
+
+    ShaderBindingTableEntry *newEntry = new ShaderBindingTableEntry();
+    newEntry->EntryPoint = L"RayGen";
+    newEntry->InputData.Add(heapU64);
+    mShaderBindingTable.RayGenEntries.Add(newEntry);
+
+    newEntry = new ShaderBindingTableEntry();
+    newEntry->EntryPoint = L"Miss";
+    mShaderBindingTable.MissEntries.Add(newEntry);
+
+    newEntry = new ShaderBindingTableEntry();
+    newEntry->EntryPoint = L"HitGroup";
+    mShaderBindingTable.MissEntries.Add(newEntry);
+
+    mShaderBindingTable.programIdSize = mDirect3DManager->GetRayTraceDevice()->GetShaderIdentifierSize();
+
+    size_t maxArgs = 0;
+    for (uint32 i = 0; i < mShaderBindingTable.RayGenEntries.CurrentSize(); i++)
+    {
+        maxArgs = max(maxArgs, mShaderBindingTable.RayGenEntries[i]->InputData.CurrentSize());
+    }
+
+    // A SBT entry is made of a program ID and a set of parameters, taking 8 bytes each. Those
+    // parameters can either be 8-bytes pointers, or 4-bytes constants
+    mShaderBindingTable.rayGenEntrySize = mShaderBindingTable.programIdSize + 8 * static_cast<uint32>(maxArgs);
+    mShaderBindingTable.rayGenEntrySize = MathHelper::AlignU32(mShaderBindingTable.rayGenEntrySize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+
+    maxArgs = 0;
+    for (uint32 i = 0; i < mShaderBindingTable.MissEntries.CurrentSize(); i++)
+    {
+        maxArgs = max(maxArgs, mShaderBindingTable.MissEntries[i]->InputData.CurrentSize());
+    }
+
+    // A SBT entry is made of a program ID and a set of parameters, taking 8 bytes each. Those
+    // parameters can either be 8-bytes pointers, or 4-bytes constants
+    mShaderBindingTable.missEntrySize = mShaderBindingTable.programIdSize + 8 * static_cast<uint32>(maxArgs);
+    mShaderBindingTable.missEntrySize = MathHelper::AlignU32(mShaderBindingTable.missEntrySize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+
+    maxArgs = 0;
+    for (uint32 i = 0; i < mShaderBindingTable.HitGroupEntries.CurrentSize(); i++)
+    {
+        maxArgs = max(maxArgs, mShaderBindingTable.HitGroupEntries[i]->InputData.CurrentSize());
+    }
+
+    // A SBT entry is made of a program ID and a set of parameters, taking 8 bytes each. Those
+    // parameters can either be 8-bytes pointers, or 4-bytes constants
+    mShaderBindingTable.hitEntrySize = mShaderBindingTable.programIdSize + 8 * static_cast<uint32>(maxArgs);
+    mShaderBindingTable.hitEntrySize = MathHelper::AlignU32(mShaderBindingTable.hitEntrySize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+
+    uint32 sbtSize = MathHelper::AlignU32(mShaderBindingTable.rayGenEntrySize * static_cast<uint32>(mShaderBindingTable.RayGenEntries.CurrentSize()) +
+                                            mShaderBindingTable.missEntrySize * static_cast<uint32>(mShaderBindingTable.MissEntries.CurrentSize()) +
+                                            mShaderBindingTable.hitEntrySize  * static_cast<uint32>(mShaderBindingTable.HitGroupEntries.CurrentSize()),
+                                            256);
+
+    mShaderBindingTable.ShaderBindingTableStorage = mDirect3DManager->GetContextManager()->CreateRayTraceBuffer(sbtSize, D3D12_RESOURCE_STATE_GENERIC_READ, 
+        RayTraceBuffer::RayTraceBufferType_Shader_Binding_Table_Storage);
+
+    /*
+    uint8_t* pData;
+    HRESULT hr = mShaderBindingTable.ShaderBindingTableStorage->Map(0, nullptr, reinterpret_cast<void**>(&pData));
+    if (FAILED(hr))
+    {
+        throw std::logic_error("Could not map the shader binding table");
+    }
+    // Copy the shader identifiers followed by their resource pointers or root constants: first the
+    // ray generation, then the miss shaders, and finally the set of hit groups
+    uint32_t offset = 0;
+
+    offset = CopyShaderData(raytracingPipeline, pData, m_rayGen, m_rayGenEntrySize);
+    pData += offset;
+
+    offset = CopyShaderData(raytracingPipeline, pData, m_miss, m_missEntrySize);
+    pData += offset;
+
+    offset = CopyShaderData(raytracingPipeline, pData, m_hitGroup, m_hitGroupEntrySize);
+
+    // Unmap the SBT
+    sbtBuffer->Unmap(0, nullptr);*/
 }

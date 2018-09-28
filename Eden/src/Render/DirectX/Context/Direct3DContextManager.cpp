@@ -724,6 +724,7 @@ RayTraceBuffer *Direct3DContextManager::CreateRayTraceBuffer(uint64 bufferSize, 
         Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &bufferDesc, initialState, NULL, IID_PPV_ARGS(&bufferResource)));
         break;
     case RayTraceBuffer::RayTraceBufferType_Instancing:
+    case RayTraceBuffer::RayTraceBufferType_Shader_Binding_Table_Storage:
         //state has to be generic read
         initialState = D3D12_RESOURCE_STATE_GENERIC_READ;
         Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &bufferDesc, initialState, NULL, IID_PPV_ARGS(&bufferResource)));

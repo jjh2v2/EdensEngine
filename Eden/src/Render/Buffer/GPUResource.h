@@ -211,13 +211,16 @@ public:
     enum RayTraceBufferType
     {
         RayTraceBufferType_Acceleration_Structure = 0,
-        RayTraceBufferType_Instancing
+        RayTraceBufferType_Instancing,
+        RayTraceBufferType_Shader_Binding_Table_Storage
     };
 
     RayTraceBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, RayTraceBufferType bufferType);
     virtual ~RayTraceBuffer();
 
     void MapInstanceDescData(const void *instanceDescData, uint32 numInstanceDescs);
+    void Map(void *&mapData);
+    void Unmap();
 private:
     RayTraceBufferType mBufferType;
 };
