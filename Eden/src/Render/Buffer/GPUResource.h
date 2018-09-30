@@ -217,10 +217,8 @@ public:
 
     RayTraceBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, RayTraceBufferType bufferType);
     virtual ~RayTraceBuffer();
-
     void MapInstanceDescData(const void *instanceDescData, uint32 numInstanceDescs);
-    void Map(void *&mapData);
-    void Unmap();
+
 private:
     RayTraceBufferType mBufferType;
 };

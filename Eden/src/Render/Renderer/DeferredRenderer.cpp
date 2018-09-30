@@ -592,7 +592,15 @@ void DeferredRenderer::Render()
     RenderSky();
     RenderShadows(lightView, lightProj);
     RenderLightingMain(cameraBuffer.viewMatrix, cameraBuffer.projectionMatrix, cameraBuffer.viewToLightProjMatrix, cameraBuffer.viewInvMatrix);
-    mPostProcessManager->RenderPostProcessing(mHDRTarget, 0.0167f); //TDA FIX
+    
+    if (!mGraphicsManager->GetRayTraceManager()->GetIsStructureReady())
+    {
+        mPostProcessManager->RenderPostProcessing(mHDRTarget, 0.0167f); //TDA FIX
+    }
+    else
+    {
+        mPostProcessManager->RenderPostProcessing(mGraphicsManager->GetRayTraceManager()->GetRenderTarget(), 0.0167f);
+    }
 
     direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->WaitForFenceCPUBlocking(mPreviousFrameFence);
 

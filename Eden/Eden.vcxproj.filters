@@ -154,6 +154,9 @@
     <Filter Include="Source Files\Render\RayTrace">
       <UniqueIdentifier>{ead7ea47-77ff-49f2-bec2-8b224ee6b52b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Render\DirectX\DXRExperimental\Helpers">
+      <UniqueIdentifier>{cf5110ae-db0f-4b10-a0c6-4c373d4cce62}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Core\Threading\Job.h">
@@ -414,6 +417,12 @@
     <ClInclude Include="src\Render\RayTrace\RayTraceManager.h">
       <Filter>Source Files\Render\RayTrace</Filter>
     </ClInclude>
+    <ClInclude Include="src\Render\DirectX\DXRExperimental\Helpers\RaytracingPipelineGenerator.h">
+      <Filter>Source Files\Render\DirectX\DXRExperimental\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\DirectX\DXRExperimental\Helpers\ShaderBindingTableGenerator.h">
+      <Filter>Source Files\Render\DirectX\DXRExperimental\Helpers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -616,6 +625,12 @@
     </ClCompile>
     <ClCompile Include="src\Render\RayTrace\RayTraceManager.cpp">
       <Filter>Source Files\Render\RayTrace</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\DirectX\DXRExperimental\Helpers\RaytracingPipelineGenerator.cpp">
+      <Filter>Source Files\Render\DirectX\DXRExperimental\Helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Render\DirectX\DXRExperimental\Helpers\ShaderBindingTableGenerator.cpp">
+      <Filter>Source Files\Render\DirectX\DXRExperimental\Helpers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

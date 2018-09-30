@@ -180,6 +180,8 @@
     <ClInclude Include="src\Render\DirectX\DXRExperimental\d3dx12.h" />
     <ClInclude Include="src\Render\DirectX\DXRExperimental\dxcapi.h" />
     <ClInclude Include="src\Render\DirectX\DXRExperimental\dxcapi.use.h" />
+    <ClInclude Include="src\Render\DirectX\DXRExperimental\Helpers\RaytracingPipelineGenerator.h" />
+    <ClInclude Include="src\Render\DirectX\DXRExperimental\Helpers\ShaderBindingTableGenerator.h" />
     <ClInclude Include="src\Render\DirectX\Heap\DescriptorHeap.h" />
     <ClInclude Include="src\Render\DirectX\Heap\DescriptorHeapHandle.h" />
     <ClInclude Include="src\Render\DirectX\Heap\Direct3DHeapManager.h" />
@@ -259,6 +261,8 @@
     <ClCompile Include="src\Render\DirectX\Context\Direct3DContext.cpp" />
     <ClCompile Include="src\Render\DirectX\Context\Direct3DContextManager.cpp" />
     <ClCompile Include="src\Render\DirectX\Direct3DManager.cpp" />
+    <ClCompile Include="src\Render\DirectX\DXRExperimental\Helpers\RaytracingPipelineGenerator.cpp" />
+    <ClCompile Include="src\Render\DirectX\DXRExperimental\Helpers\ShaderBindingTableGenerator.cpp" />
     <ClCompile Include="src\Render\DirectX\Heap\DescriptorHeap.cpp" />
     <ClCompile Include="src\Render\DirectX\Heap\Direct3DHeapManager.cpp" />
     <ClCompile Include="src\Render\DirectX\Queue\Direct3DQueue.cpp" />

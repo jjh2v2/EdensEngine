@@ -263,13 +263,3 @@ void RayTraceBuffer::MapInstanceDescData(const void *instanceDescData, uint32 nu
     memcpy(mappedData, instanceDescData, numInstanceDescs * sizeof(D3D12_RAYTRACING_INSTANCE_DESC));
     mResource->Unmap(0, NULL);
 }
-
-void RayTraceBuffer::Map(void *&mapData)
-{
-    mResource->Map(0, NULL, &mapData);
-}
-
-void RayTraceBuffer::Unmap()
-{
-    mResource->Unmap(0, NULL);
-}

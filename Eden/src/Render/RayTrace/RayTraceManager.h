@@ -3,18 +3,29 @@
 #include "Render/DirectX/DXRExperimental/dxcapi.h"
 #include "Render/DirectX/DXRExperimental/dxcapi.use.h"
 
+//using nvidia helpers for the clumsier part of the ray pipeline
+#include "Render/DirectX/DXRExperimental/Helpers/RaytracingPipelineGenerator.h"
+#include "Render/DirectX/DXRExperimental/Helpers/ShaderBindingTableGenerator.h"
+
 class RayTraceManager
 {
 public:
     RayTraceManager(Direct3DManager *direct3DManager, RootSignatureManager *rootSignatureManager);
     ~RayTraceManager();
 
-    void AddMeshToAccelerationStructure(Mesh *meshToAdd);
     void QueueRayTraceAccelerationStructureCreation();
     void Update();
     bool GetIsStructureReady() { return mIsStructureReady; }
+    RenderTarget *GetRenderTarget() { return mRayTraceRenderTarget; }
 
 private:
+    struct AccelerationStructureBuffers
+    {
+        ID3D12Resource *pScratch;      // Scratch memory for AS builder
+        ID3D12Resource *pResult;       // Where the AS is
+        ID3D12Resource *pInstanceDesc; // Hold the matrices of the instances
+    };
+
     struct RayTraceShaderBuilder
     {
         dxc::DxcDllSupport DxcSupport;
@@ -23,72 +34,37 @@ private:
         IDxcIncludeHandler *DxcIncludeHandler;
     };
 
-    struct RayTraceShaderInfo
-    {
-        IDxcBlob *RayTraceShader;
-        D3D12_DXIL_LIBRARY_DESC LibraryDesc;
-        DynamicArray<std::wstring> ExportedSymbols;
-        DynamicArray<D3D12_EXPORT_DESC> Exports;
-    };
-
-    struct RootSignatureAssociation
-    {
-        ID3D12RootSignature *RootSignature;
-        DynamicArray<std::wstring> Symbols;
-        DynamicArray<LPCWSTR> SymbolPointers;
-        D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION Association;
-    };
-
-    struct ShaderBindingTableEntry
-    {
-        std::wstring EntryPoint;
-        DynamicArray<void*> InputData;
-    };
-
-    struct ShaderBindingTable
-    {
-        DynamicArray<ShaderBindingTableEntry*> RayGenEntries;
-        DynamicArray<ShaderBindingTableEntry*> MissEntries;
-        DynamicArray<ShaderBindingTableEntry*> HitGroupEntries;
-
-        uint32 rayGenEntrySize;
-        uint32 missEntrySize;
-        uint32 hitEntrySize;
-        uint32 programIdSize;
-
-        RayTraceBuffer *ShaderBindingTableStorage;
-    };
-
     void LoadRayTraceShaders(RootSignatureManager *rootSignatureManager);
-    RayTraceShaderInfo *CompileRayShader(WCHAR *fileName, WCHAR *symbolName);
-    void BuildPipelineResources();
+    IDxcBlob *CompileRayShader(WCHAR *fileName);
     void BuildHeap();
     void BuildShaderBindingTable();
+    void DispatchRayTrace();
+    void CreateAccelerationStructures();
 
     RayTraceAccelerationStructure::RTXVertex mVertices[3];
-    uint32 mIndices[3];
     VertexBuffer *mVertexBuffer;
-    IndexBuffer *mIndexBuffer;
-
     Direct3DManager *mDirect3DManager;
 
     bool mShouldBuildAccelerationStructure;
     bool mIsStructureReady;
-    uint64 mStructureCreationFence;
-    DynamicArray<Mesh*> mMeshesForRayAcceleration;
-    RayTraceAccelerationStructure *mAccelerationStructure;
 
     RayTraceShaderBuilder mRayTraceShaderBuilder;
+    //RootSignatureInfo mEmptyGlobalRootSignature;
+    //RootSignatureInfo mEmptyLocalRootSignature;
 
-    DynamicArray<RayTraceShaderInfo*> mRayTraceShaderInfos;
-    DynamicArray<RootSignatureAssociation*> mRootSignatureAssociations;
-    RootSignatureInfo mEmptyGlobalRootSignature;
-    RootSignatureInfo mEmptyLocalRootSignature;
-
+    RayTraceAccelerationStructure *mAccelerationStructure;
     ID3D12StateObjectPrototype *mRayTraceStateObject;
     ID3D12StateObjectPropertiesPrototype *mRayTraceStateObjectProperties;
     RenderTarget *mRayTraceRenderTarget;
     DescriptorHeap *mRayTraceHeap;
 
-    ShaderBindingTable mShaderBindingTable;
+    nv_helpers_dx12::ShaderBindingTableGenerator mShaderBindingTableHelper;
+    RayTraceBuffer *mShaderBindingTableStorage;
+
+    IDxcBlob *mRayGenShader;
+    IDxcBlob *mMissShader;
+    IDxcBlob *mHitShader;
+    ID3D12RootSignature *mRayGenSignature;
+    ID3D12RootSignature *mHitSignature;
+    ID3D12RootSignature *mMissSignature;
 };

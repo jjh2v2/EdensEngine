@@ -872,3 +872,8 @@ void RayTraceContext::BuildAccelerationStructure(const D3D12_BUILD_RAYTRACING_AC
 {
     mDXRCommandList->BuildRaytracingAccelerationStructure(&structureDesc);
 }
+
+void RayTraceContext::DispatchRays(ID3D12StateObjectPrototype *rayTraceStateObject, D3D12_DISPATCH_RAYS_DESC &dispatchDesc)
+{
+    mDXRCommandList->DispatchRays(rayTraceStateObject, &dispatchDesc);
+}
