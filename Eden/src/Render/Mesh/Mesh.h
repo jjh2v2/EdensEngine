@@ -13,9 +13,9 @@ struct MeshVertexData
 {
 	Vector4 Position;
 	Vector4 TexCoord;
-	Vector4 Normal;
-	Vector4 Tangent;
-	Vector4 Binormal;
+	Vector3 Normal;
+	Vector3 Tangent;
+	Vector3 Binormal;
 	Vector4 Color;
 
 	static void GetTangentAndBinormal(MeshVertexData data1, MeshVertexData data2, MeshVertexData data3, Vector3 &tangent, Vector3 &binormal)

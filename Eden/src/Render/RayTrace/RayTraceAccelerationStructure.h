@@ -20,6 +20,7 @@ public:
     struct RTXVertex
     {
         Vector3 Position;
+        Vector4 Color;
     };
 
 private:

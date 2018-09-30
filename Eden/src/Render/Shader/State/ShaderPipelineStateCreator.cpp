@@ -234,7 +234,7 @@ void ShaderPipelineStateCreator::BuildPipelineStates()
 
     standardInputLayout.InputElementDescs[2].SemanticName = "NORMAL";
     standardInputLayout.InputElementDescs[2].SemanticIndex = 0;
-    standardInputLayout.InputElementDescs[2].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    standardInputLayout.InputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
     standardInputLayout.InputElementDescs[2].InputSlot = 0;
     standardInputLayout.InputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
     standardInputLayout.InputElementDescs[2].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
@@ -242,7 +242,7 @@ void ShaderPipelineStateCreator::BuildPipelineStates()
 
     standardInputLayout.InputElementDescs[3].SemanticName = "TANGENT";
     standardInputLayout.InputElementDescs[3].SemanticIndex = 0;
-    standardInputLayout.InputElementDescs[3].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    standardInputLayout.InputElementDescs[3].Format = DXGI_FORMAT_R32G32B32_FLOAT;
     standardInputLayout.InputElementDescs[3].InputSlot = 0;
     standardInputLayout.InputElementDescs[3].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
     standardInputLayout.InputElementDescs[3].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
@@ -250,7 +250,7 @@ void ShaderPipelineStateCreator::BuildPipelineStates()
 
     standardInputLayout.InputElementDescs[4].SemanticName = "BINORMAL";
     standardInputLayout.InputElementDescs[4].SemanticIndex = 0;
-    standardInputLayout.InputElementDescs[4].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    standardInputLayout.InputElementDescs[4].Format = DXGI_FORMAT_R32G32B32_FLOAT;
     standardInputLayout.InputElementDescs[4].InputSlot = 0;
     standardInputLayout.InputElementDescs[4].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
     standardInputLayout.InputElementDescs[4].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;

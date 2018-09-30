@@ -4,9 +4,9 @@ struct GBufferVertexInput
 {
     float4 position  : POSITION;
     float4 texCoord0 : TEXCOORD0;
-	float4 normal    : NORMAL;
-	float4 tangent   : TANGENT;
-    float4 binormal  : BINORMAL;
+	float3 normal    : NORMAL;
+	float3 tangent   : TANGENT;
+    float3 binormal  : BINORMAL;
 	float4 color     : COLOR;
 };
 

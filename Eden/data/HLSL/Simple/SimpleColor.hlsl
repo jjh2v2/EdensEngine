@@ -2,9 +2,9 @@ struct VertexInput
 {
     float4 position  : POSITION;
     float4 texCoord0 : TEXCOORD0;
-	float4 normal    : NORMAL;
-	float4 tangent   : TANGENT;
-    float4 binormal  : BINORMAL;
+	float3 normal    : NORMAL;
+	float3 tangent   : TANGENT;
+    float3 binormal  : BINORMAL;
 	float4 color     : COLOR;
 };
 
@@ -34,8 +34,8 @@ VertexOutput SimpleColorVertexShader(VertexInput input)
     output.position = mul(output.position, projectionMatrix);	
 	
     output.texCoord0 = input.texCoord0;
-    output.normal = normalize(mul(input.normal.xyz, (float3x3)worldMatrix));
-	output.normal = normalize(mul(float4(output.normal.xyz, 0.0f), viewMatrix).xyz);
+    output.normal = normalize(mul(input.normal, (float3x3)worldMatrix));
+	output.normal = normalize(mul(float4(output.normal, 0.0f), viewMatrix).xyz);
 
     return output;
 }
