@@ -687,7 +687,7 @@ FilteredCubeMapRenderTexture *Direct3DContextManager::CreateFilteredCubeMapRende
     return cubeTexture;
 }
 
-RayTraceBuffer *Direct3DContextManager::CreateRayTraceBuffer(uint64 bufferSize, D3D12_RESOURCE_STATES initialState, RayTraceBuffer::RayTraceBufferType bufferType)
+RayTraceBuffer *Direct3DContextManager::CreateRayTraceBuffer(uint64 bufferSize, D3D12_RESOURCE_STATES initialState, RayTraceBuffer::RayTraceBufferType bufferType, bool hasSRV /*= false*/)
 {
     D3D12_RESOURCE_DESC bufferDesc;
     bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -738,7 +738,20 @@ RayTraceBuffer *Direct3DContextManager::CreateRayTraceBuffer(uint64 bufferSize, 
         Application::Assert(false);
     }
 
-    RayTraceBuffer *rayTraceBuffer = new RayTraceBuffer(bufferResource, initialState, bufferType);
+    DescriptorHeapHandle srvHandle = mHeapManager->GetNewSRVDescriptorHeapHandle();
+
+    if (hasSRV)
+    {
+        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
+        srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
+        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        srvDesc.RaytracingAccelerationStructure.Location = bufferResource->GetGPUVirtualAddress();
+
+        mDevice->CreateShaderResourceView(NULL, &srvDesc, srvHandle.GetCPUHandle());
+    }
+
+    RayTraceBuffer *rayTraceBuffer = new RayTraceBuffer(bufferResource, initialState, bufferType, srvHandle);
     rayTraceBuffer->SetIsReady(true); //readiness is later determined by the RayTraceManager since the creation requires GPU command work
     
     mBufferTracking[ContextTrackingType_RayTraceBuffer]++;

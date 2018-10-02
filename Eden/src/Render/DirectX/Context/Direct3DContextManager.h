@@ -27,7 +27,7 @@ public:
     StructuredBuffer *CreateStructuredBuffer(uint32 elementSize, uint32 numElements, StructuredBufferAccess accessType, bool isRaw);
     FilteredCubeMapRenderTexture *CreateFilteredCubeMapRenderTexture(uint32 dimensionSize, DXGI_FORMAT format, uint32 mipLevels);
 
-    RayTraceBuffer *CreateRayTraceBuffer(uint64 bufferSize, D3D12_RESOURCE_STATES initialState, RayTraceBuffer::RayTraceBufferType bufferType);
+    RayTraceBuffer *CreateRayTraceBuffer(uint64 bufferSize, D3D12_RESOURCE_STATES initialState, RayTraceBuffer::RayTraceBufferType bufferType, bool hasSRV = false);
 
 	void FreeRenderTarget(RenderTarget *renderTarget);
 	void FreeDepthStencilTarget(DepthStencilTarget *depthStencilTarget);

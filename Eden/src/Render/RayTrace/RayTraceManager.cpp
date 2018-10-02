@@ -2,6 +2,8 @@
 #include "Render/Mesh/Mesh.h"
 #include "Util/String/StringConverter.h"
 #include "Asset/Manifest/ManifestLoader.h"
+#include "Render/Shader/Definitions/ConstantBufferDefinitions.h"
+#include "Camera/Camera.h"
 
 //TDA: Implement update support
 RayTraceManager::RayTraceManager(Direct3DManager *direct3DManager, RootSignatureManager *rootSignatureManager)
@@ -15,6 +17,11 @@ RayTraceManager::RayTraceManager(Direct3DManager *direct3DManager, RootSignature
 
     Vector2 screenSize = mDirect3DManager->GetScreenSize();
     mRayTraceRenderTarget = mDirect3DManager->GetContextManager()->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R8G8B8A8_UNORM, true, 1, 1, 0);
+
+    for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
+    {
+        mCameraBuffers[i] = mDirect3DManager->GetContextManager()->CreateConstantBuffer(sizeof(CameraRayTraceBuffer));
+    }
 
     LoadRayTraceShaders(rootSignatureManager);
 }
@@ -44,11 +51,27 @@ void RayTraceManager::QueueRayTraceAccelerationStructureCreation()
     mVertexBuffer = mDirect3DManager->GetContextManager()->CreateVertexBuffer(mVertices, sizeof(RayTraceAccelerationStructure::RTXVertex), 3 * sizeof(RayTraceAccelerationStructure::RTXVertex));
 }
 
-void RayTraceManager::Update()
+void RayTraceManager::Update(Camera *camera)
 {
+    D3DXMATRIX cameraView = camera->GetViewMatrix();
+    D3DXMATRIX cameraViewInv;
+    D3DXMatrixInverse(&cameraViewInv, NULL, &cameraView);
+
+    D3DXMATRIX cameraProj = camera->GetProjectionMatrix();
+    D3DXMATRIX cameraProjInv;
+    D3DXMatrixInverse(&cameraProjInv, NULL, &cameraProj);
+
+    CameraRayTraceBuffer cameraBuffer;
+    cameraBuffer.viewMatrix = cameraView;
+    cameraBuffer.viewInvMatrix = cameraViewInv;
+    cameraBuffer.projectionMatrix = camera->GetProjectionMatrix();
+    cameraBuffer.projectionInvMatrix = cameraProjInv;
+    mCameraBuffers[mDirect3DManager->GetFrameIndex()]->SetConstantBufferData(&cameraBuffer, sizeof(CameraRayTraceBuffer));
+
     if (mIsStructureReady)
     {
         //nothing to do if there's no meshes or we've already built it (no rebuild support here yet)
+        DispatchRayTrace();
         return;
     }
 
@@ -177,17 +200,15 @@ void RayTraceManager::BuildHeap()
     mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mRayTraceRenderTarget->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     uavSrvHandle.ptr += mRayTraceHeap->GetDescriptorSize();
 
-    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
-    srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
-    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    srvDesc.RaytracingAccelerationStructure.Location = mAccelerationStructure->GetTopLevelResultBuffer()->GetGpuAddress();
-
-    mDirect3DManager->GetDevice()->CreateShaderResourceView(NULL, &srvDesc, uavSrvHandle);
+    mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mAccelerationStructure->GetTopLevelResultBuffer()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 }
 
 void RayTraceManager::DispatchRayTrace()
 {
+    D3D12_CPU_DESCRIPTOR_HANDLE uavSrvHandle = mRayTraceHeap->GetHeapCPUStart();
+    uavSrvHandle.ptr += mRayTraceHeap->GetDescriptorSize() * 2; //TDA: clean this up
+    mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mCameraBuffers[mDirect3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
     RayTraceContext *rayTraceContext = mDirect3DManager->GetContextManager()->GetRayTraceContext();
     rayTraceContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mRayTraceHeap->GetHeap());
 

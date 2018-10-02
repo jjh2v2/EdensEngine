@@ -135,7 +135,7 @@ void RayTraceAccelerationStructure::BuildTopLevelStructure(bool isUpdate)
     mTopLevelInstanceBufferSize = MathHelper::AlignU64(sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * mInstanceDescs.CurrentSize(), D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
     mTopLevelScratchBuffer = mDirect3DManager->GetContextManager()->CreateRayTraceBuffer(mTopLevelScratchBufferSize, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, RayTraceBuffer::RayTraceBufferType_Acceleration_Structure);
-    mTopLevelResultBuffer = mDirect3DManager->GetContextManager()->CreateRayTraceBuffer(mTopLevelResultBufferSize, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, RayTraceBuffer::RayTraceBufferType_Acceleration_Structure);
+    mTopLevelResultBuffer = mDirect3DManager->GetContextManager()->CreateRayTraceBuffer(mTopLevelResultBufferSize, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, RayTraceBuffer::RayTraceBufferType_Acceleration_Structure, true);
     mInstanceBuffer = mDirect3DManager->GetContextManager()->CreateRayTraceBuffer(mTopLevelResultBufferSize, D3D12_RESOURCE_STATE_GENERIC_READ, RayTraceBuffer::RayTraceBufferType_Instancing);
 
     Application::Assert(mInstanceDescs.CurrentSize() > 0);

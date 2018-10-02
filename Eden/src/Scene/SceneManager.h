@@ -12,6 +12,7 @@ public:
 	void OnScreenChanged(Vector2 screenSize);
 
 	void Update(float delta);
+    void UpdateInput(float delta);
 	Scene *GetActiveScene() { return mActiveScene; }
 
 private:

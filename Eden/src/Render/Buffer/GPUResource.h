@@ -215,10 +215,12 @@ public:
         RayTraceBufferType_Shader_Binding_Table_Storage
     };
 
-    RayTraceBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, RayTraceBufferType bufferType);
+    RayTraceBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, RayTraceBufferType bufferType, DescriptorHeapHandle srvHandle);
     virtual ~RayTraceBuffer();
     void MapInstanceDescData(const void *instanceDescData, uint32 numInstanceDescs);
+    DescriptorHeapHandle GetShaderResourceViewHandle() { return mSRVHandle; }
 
 private:
     RayTraceBufferType mBufferType;
+    DescriptorHeapHandle mSRVHandle;
 };

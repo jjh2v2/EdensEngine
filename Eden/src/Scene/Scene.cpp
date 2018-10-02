@@ -70,5 +70,10 @@ void Scene::ApplyInput(InputManager *inputManager, float delta)
 
 void Scene::Update(float delta)
 {
-	mCameraManager->Update(delta);
+	
+}
+
+void Scene::UpdateCamera(float delta)
+{
+    mCameraManager->Update(delta);
 }

@@ -13,7 +13,7 @@ public:
 	~GraphicsManager();
 
 	void InitializeGraphicsResources();
-    void Update(float deltaTime);
+    void Update(float deltaTime, Camera *camera);
     void FlushAllAndWaitForIdle();
 
 	Direct3DManager *GetDirect3DManager() { return mDirect3DManager; }

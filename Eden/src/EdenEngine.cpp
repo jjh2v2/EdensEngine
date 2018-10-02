@@ -86,18 +86,21 @@ void EdenEngine::OnScreenChanged()
 
 bool EdenEngine::Update(float delta)
 {
-    mGraphicsManager->Update(delta);
-	mInputManager->Update();
+    mInputManager->Update();
 
-	if (mInputManager->GetRightClickDown())
-	{
-		mEngineWindow->ShowWindowCursor(false);
-	}
-	else if (mInputManager->GetRightClickUp())
-	{
-		mEngineWindow->ShowWindowCursor(true);
-	}
+    if (mInputManager->GetRightClickDown())
+    {
+        mEngineWindow->ShowWindowCursor(false);
+    }
+    else if (mInputManager->GetRightClickUp())
+    {
+        mEngineWindow->ShowWindowCursor(true);
+    }
 
+    mSceneManager->UpdateInput(delta);
+
+    mGraphicsManager->Update(delta, mSceneManager->GetActiveScene()->GetMainCamera());
+	
 	mSceneManager->Update(delta);
 	return true;
 }

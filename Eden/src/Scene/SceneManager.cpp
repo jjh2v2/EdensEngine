@@ -24,6 +24,11 @@ void SceneManager::OnScreenChanged(Vector2 screenSize)
 
 void SceneManager::Update(float delta)
 {
-	mActiveScene->ApplyInput(mInputManager, delta);
-	mActiveScene->Update(delta);
+    mActiveScene->Update(delta);
+}
+
+void SceneManager::UpdateInput(float delta)
+{
+    mActiveScene->ApplyInput(mInputManager, delta);
+    mActiveScene->UpdateCamera(delta);
 }

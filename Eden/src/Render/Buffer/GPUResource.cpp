@@ -242,11 +242,12 @@ DescriptorHeapHandle FilteredCubeMapRenderTexture::GetUnorderedAccessViewHandle(
     return mUAVHandles[arrayIndex * mNumMips + mipIndex];
 }
 
-RayTraceBuffer::RayTraceBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, RayTraceBufferType bufferType)
+RayTraceBuffer::RayTraceBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, RayTraceBufferType bufferType, DescriptorHeapHandle srvHandle)
     :GPUResource(resource, usageState)
 {
     mGPUAddress = resource->GetGPUVirtualAddress();
     mBufferType = bufferType;
+    mSRVHandle = srvHandle;
 }
 
 RayTraceBuffer::~RayTraceBuffer()

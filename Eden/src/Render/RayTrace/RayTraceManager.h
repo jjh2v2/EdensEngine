@@ -7,6 +7,8 @@
 #include "Render/DirectX/DXRExperimental/Helpers/RaytracingPipelineGenerator.h"
 #include "Render/DirectX/DXRExperimental/Helpers/ShaderBindingTableGenerator.h"
 
+class Camera;
+
 class RayTraceManager
 {
 public:
@@ -14,18 +16,11 @@ public:
     ~RayTraceManager();
 
     void QueueRayTraceAccelerationStructureCreation();
-    void Update();
+    void Update(Camera *camera);
     bool GetIsStructureReady() { return mIsStructureReady; }
     RenderTarget *GetRenderTarget() { return mRayTraceRenderTarget; }
 
 private:
-    struct AccelerationStructureBuffers
-    {
-        ID3D12Resource *pScratch;      // Scratch memory for AS builder
-        ID3D12Resource *pResult;       // Where the AS is
-        ID3D12Resource *pInstanceDesc; // Hold the matrices of the instances
-    };
-
     struct RayTraceShaderBuilder
     {
         dxc::DxcDllSupport DxcSupport;
@@ -57,6 +52,7 @@ private:
     ID3D12StateObjectPropertiesPrototype *mRayTraceStateObjectProperties;
     RenderTarget *mRayTraceRenderTarget;
     DescriptorHeap *mRayTraceHeap;
+    ConstantBuffer *mCameraBuffers[FRAME_BUFFER_COUNT];
 
     nv_helpers_dx12::ShaderBindingTableGenerator mShaderBindingTableHelper;
     RayTraceBuffer *mShaderBindingTableStorage;

@@ -455,12 +455,13 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 
     {
         //RootSignatureType_Ray_Test_Generation
-        CD3DX12_DESCRIPTOR_RANGE ranges[2];
+        CD3DX12_DESCRIPTOR_RANGE ranges[3];
         ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); //1 uav, output of ray trace
         ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); //1 srv, acceleration structure
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv, camera matrices
 
         CD3DX12_ROOT_PARAMETER rootParameters[1];
-        rootParameters[0].InitAsDescriptorTable(2, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[0].InitAsDescriptorTable(3, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
 
         RootSignatureInfo rayGenSignature;
         rayGenSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);

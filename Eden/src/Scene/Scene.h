@@ -20,7 +20,8 @@ public:
 	
 	void ApplyInput(InputManager *inputManager, float delta);
 	void Update(float delta);
-	
+    void UpdateCamera(float delta);
+
 private:
 	GraphicsManager *mGraphicsManager;
 	CameraManager *mCameraManager;

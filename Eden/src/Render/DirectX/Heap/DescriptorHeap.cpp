@@ -34,16 +34,6 @@ DynamicDescriptorHeap::DynamicDescriptorHeap(ID3D12Device* device, D3D12_DESCRIP
 {
 	mCurrentDescriptorIndex = 0;
 	mActiveHandleCount = 0;
-
-    if ((heapType == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) && !isReferencedByShader)
-    {
-        mCurrentDescriptorIndex = SAMPLER_DESCRIPTOR_HEAP_OFFSET_FIXUP;
-    }
-
-    if ((heapType == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) && !isReferencedByShader)
-    {
-        mCurrentDescriptorIndex = SRV_DESCRIPTOR_HEAP_OFFSET_FIXUP;
-    }
 }
 
 DynamicDescriptorHeap::~DynamicDescriptorHeap()

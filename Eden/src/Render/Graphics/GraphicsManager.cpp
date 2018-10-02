@@ -50,7 +50,7 @@ void GraphicsManager::UploadUpdateBackgroundJob::Execute()
     mContextManager->GetUploadContext()->ProcessFinishedUploads(mContextManager->GetQueueManager()->GetCopyQueue()->PollCurrentFenceValue());
 }
 
-void GraphicsManager::Update(float deltaTime)
+void GraphicsManager::Update(float deltaTime, Camera *camera)
 {
     if (mBackgroundUpdateJobBatch->IsCompleted())
     {
@@ -62,7 +62,7 @@ void GraphicsManager::Update(float deltaTime)
 
     mTextureManager->ProcessCurrentUploads();
     mTextureManager->ProcessCurrentComputeWork();
-    mRayTraceManager->Update();
+    mRayTraceManager->Update(camera);
     mDirect3DManager->GetContextManager()->GetGraphicsContext()->FlushDeferredTransitions();
 }
 
