@@ -870,10 +870,11 @@ RayTraceContext::~RayTraceContext()
 
 void RayTraceContext::BuildAccelerationStructure(const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC &structureDesc)
 {
-    mDXRCommandList->BuildRaytracingAccelerationStructure(&structureDesc);
+    mDXRCommandList->BuildRaytracingAccelerationStructure(&structureDesc, 0, NULL);
 }
 
-void RayTraceContext::DispatchRays(ID3D12StateObjectPrototype *rayTraceStateObject, D3D12_DISPATCH_RAYS_DESC &dispatchDesc)
+void RayTraceContext::DispatchRays(ID3D12StateObject *rayTraceStateObject, D3D12_DISPATCH_RAYS_DESC &dispatchDesc)
 {
-    mDXRCommandList->DispatchRays(rayTraceStateObject, &dispatchDesc);
+    mDXRCommandList->SetPipelineState1(rayTraceStateObject);
+    mDXRCommandList->DispatchRays(&dispatchDesc);
 }

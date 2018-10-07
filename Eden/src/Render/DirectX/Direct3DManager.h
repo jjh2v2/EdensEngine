@@ -18,7 +18,7 @@ public:
 	void Present();
 	
 	ID3D12Device	 *GetDevice() { return mDevice; }
-    ID3D12DeviceRaytracingPrototype *GetRayTraceDevice() { return mDXRDevice; }
+    ID3D12Device5    *GetRayTraceDevice() { return mDXRDevice; }
 	IDXGISwapChain3  *GetSwapChain() { return mSwapChain; }
 	BackBufferTarget *GetBackBufferTarget() { return mBackBuffers[mCurrentBackBuffer]; }
 
@@ -39,8 +39,8 @@ private:
 
 	DXGI_MODE_ROTATION ComputeDisplayRotation();
 	
-	ID3D12Device *mDevice;
-    ID3D12DeviceRaytracingPrototype *mDXRDevice;
+	ID3D12Device  *mDevice;
+    ID3D12Device5 *mDXRDevice;
 	IDXGIFactory4 *mDXGIFactory;
 	IDXGISwapChain3	*mSwapChain;
 	DynamicArray<BackBufferTarget*> mBackBuffers;

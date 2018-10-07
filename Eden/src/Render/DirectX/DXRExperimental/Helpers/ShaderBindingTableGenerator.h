@@ -129,13 +129,13 @@ public:
   void AddHitGroup(const std::wstring& entryPoint, const std::vector<void*>& inputData);
 
   /// Compute the size of the SBT based on the set of programs and hit groups it contains
-  uint32_t ComputeSBTSize(ID3D12DeviceRaytracingPrototype* rtDevice);
+  uint32_t ComputeSBTSize(ID3D12Device5* rtDevice);
 
   /// Build the SBT and store it into sbtBuffer, which has to be pre-allocated on the upload heap.
   /// Access to the raytracing pipeline object is required to fetch program identifiers using their
   /// names
   void Generate(ID3D12Resource* sbtBuffer,
-                ID3D12StateObjectPropertiesPrototype* raytracingPipeline);
+                ID3D12StateObjectProperties* raytracingPipeline);
 
   /// Reset the sets of programs and hit groups
   void Reset();
@@ -172,7 +172,7 @@ private:
   /// For each entry, copy the shader identifier followed by its resource pointers and/or root
   /// constants in outputData, with a stride in bytes of entrySize, and returns the size in bytes
   /// actually written to outputData.
-  uint32_t CopyShaderData(ID3D12StateObjectPropertiesPrototype* raytracingPipeline,
+  uint32_t CopyShaderData(ID3D12StateObjectProperties* raytracingPipeline,
                           uint8_t* outputData, const std::vector<SBTEntry>& shaders,
                           uint32_t entrySize);
 

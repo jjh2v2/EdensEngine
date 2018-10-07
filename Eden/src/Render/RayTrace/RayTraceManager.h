@@ -48,8 +48,8 @@ private:
     //RootSignatureInfo mEmptyLocalRootSignature;
 
     RayTraceAccelerationStructure *mAccelerationStructure;
-    ID3D12StateObjectPrototype *mRayTraceStateObject;
-    ID3D12StateObjectPropertiesPrototype *mRayTraceStateObjectProperties;
+    ID3D12StateObject *mRayTraceStateObject;
+    ID3D12StateObjectProperties *mRayTraceStateObjectProperties;
     RenderTarget *mRayTraceRenderTarget;
     DescriptorHeap *mRayTraceHeap;
     ConstantBuffer *mCameraBuffers[FRAME_BUFFER_COUNT];

@@ -77,7 +77,7 @@ class RayTracingPipelineGenerator
 public:
   /// The pipeline helper requires access to the device, as well as the
   /// raytracing device prior to Windows 10 RS5.
-  RayTracingPipelineGenerator(ID3D12Device* device, ID3D12DeviceRaytracingPrototype* rtDevice);
+  RayTracingPipelineGenerator(ID3D12Device* device, ID3D12Device5* rtDevice);
 
   /// Add a DXIL library to the pipeline. Note that this library has to be
   /// compiled with dxc, using a lib_6_3 target. The exported symbols must correspond exactly to the
@@ -120,7 +120,7 @@ public:
   void SetMaxRecursionDepth(UINT maxDepth);
 
   /// Compiles the raytracing state object
-  ID3D12StateObjectPrototype* Generate();
+  ID3D12StateObject* Generate();
 
 private:
   /// Storage for DXIL libraries and their exported symbols
@@ -191,7 +191,7 @@ private:
   ID3D12RootSignature* m_dummyLocalRootSignature;
   ID3D12RootSignature* m_dummyGlobalRootSignature;
 
-  ID3D12DeviceRaytracingPrototype* m_rtDevice;
+  ID3D12Device5* m_rtDevice;
 };
 
 } // namespace nv_helpers_dx12

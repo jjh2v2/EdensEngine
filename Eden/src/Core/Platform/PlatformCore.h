@@ -1,9 +1,8 @@
 #pragma once
 #include <stdint.h>
 #include <stdexcept>
-#include "Render/DirectX/DXRExperimental/d3d12.h"      //<d3d12.h> //dxr
-#include "Render/DirectX/DXRExperimental/d3d12_1.h"    //<d3d12.h> //dxr
-#include <atlbase.h>                                   //dxr
+#include <d3d12.h> //dxr
+#include <atlbase.h>
 #include <d3d11.h>
 #include <dxgi1_4.h>
 #include <assert.h>

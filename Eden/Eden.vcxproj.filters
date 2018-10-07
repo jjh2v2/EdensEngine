@@ -393,18 +393,6 @@
     <ClInclude Include="src\Render\PostProcess\PostProcessManager.h">
       <Filter>Source Files\Render\PostProcess</Filter>
     </ClInclude>
-    <ClInclude Include="src\Render\DirectX\DXRExperimental\d3d12.h">
-      <Filter>Source Files\Render\DirectX\DXRExperimental</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Render\DirectX\DXRExperimental\d3d12_1.h">
-      <Filter>Source Files\Render\DirectX\DXRExperimental</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Render\DirectX\DXRExperimental\d3d12video.h">
-      <Filter>Source Files\Render\DirectX\DXRExperimental</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Render\DirectX\DXRExperimental\d3dx12.h">
-      <Filter>Source Files\Render\DirectX\DXRExperimental</Filter>
-    </ClInclude>
     <ClInclude Include="src\Render\DirectX\DXRExperimental\dxcapi.h">
       <Filter>Source Files\Render\DirectX\DXRExperimental</Filter>
     </ClInclude>
@@ -421,6 +409,9 @@
       <Filter>Source Files\Render\DirectX\DXRExperimental\Helpers</Filter>
     </ClInclude>
     <ClInclude Include="src\Render\DirectX\DXRExperimental\Helpers\ShaderBindingTableGenerator.h">
+      <Filter>Source Files\Render\DirectX\DXRExperimental\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\DirectX\DXRExperimental\Helpers\D3D12RaytracingHelpers.hpp">
       <Filter>Source Files\Render\DirectX\DXRExperimental\Helpers</Filter>
     </ClInclude>
   </ItemGroup>

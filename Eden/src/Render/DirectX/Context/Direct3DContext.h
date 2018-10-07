@@ -262,10 +262,10 @@ public:
     virtual ~RayTraceContext();
 
     void BuildAccelerationStructure(const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC &structureDesc);
-    void DispatchRays(ID3D12StateObjectPrototype *rayTraceStateObject, D3D12_DISPATCH_RAYS_DESC &dispatchDesc);
+    void DispatchRays(ID3D12StateObject *rayTraceStateObject, D3D12_DISPATCH_RAYS_DESC &dispatchDesc);
 
 private:
-    ID3D12CommandListRaytracingPrototype *mDXRCommandList;
+    ID3D12GraphicsCommandList4 *mDXRCommandList;
 };
 
 class RenderPassContext

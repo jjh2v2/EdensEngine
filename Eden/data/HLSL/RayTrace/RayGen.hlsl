@@ -19,7 +19,7 @@ void RayGen()
     payload.colorAndDistance = float4(0.0, 0.0, 0.0, 0.0); //float4(0.9, 0.6, 0.2, 1);
   
     uint2 launchIndex = DispatchRaysIndex().xy;
-    float2 dims = float2(DispatchRaysDimensions());
+    float2 dims = float2(DispatchRaysDimensions().xy);
     float2 d = (((launchIndex.xy + 0.5f) / dims.xy) * 2.f - 1.f);
     float aspectRatio = dims.x / dims.y;
     

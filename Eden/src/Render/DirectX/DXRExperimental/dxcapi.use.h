@@ -1,13 +1,3 @@
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
 //////////////////////////////////////////////////////////////////////////////
 //                                                                           //
 // dxcapi.use.h                                                              //
@@ -35,14 +25,30 @@ protected:
 
   HRESULT InitializeInternal(LPCWSTR dllName, LPCSTR fnName) {
     if (m_dll != nullptr) return S_OK;
+
+#ifdef _WIN32
     m_dll = LoadLibraryW(dllName);
+#else
+    char nameStr[256];
+    std::wcstombs(nameStr, dllName, 256);
+    m_dll = ::dlopen(nameStr, RTLD_LAZY);
+#endif
 
     if (m_dll == nullptr) return HRESULT_FROM_WIN32(GetLastError());
+
+#ifdef _WIN32
     m_createFn = (DxcCreateInstanceProc)GetProcAddress(m_dll, fnName);
+#else
+    m_createFn = (DxcCreateInstanceProc)::dlsym(m_dll, fnName);
+#endif
 
     if (m_createFn == nullptr) {
       HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+#ifdef _WIN32
       FreeLibrary(m_dll);
+#else
+      ::dlclose(m_dll);
+#endif
       m_dll = nullptr;
       return hr;
     }
@@ -55,7 +61,11 @@ protected:
       memcpy(fnName2, fnName, s);
       fnName2[s] = '2';
       fnName2[s + 1] = '\0';
+#ifdef _WIN32
       m_createFn2 = (DxcCreateInstance2Proc)GetProcAddress(m_dll, fnName2);
+#else
+      m_createFn2 = (DxcCreateInstance2Proc)::dlsym(m_dll, fnName2);
+#endif
     }
 
     return S_OK;
@@ -76,7 +86,13 @@ public:
   }
 
   HRESULT Initialize() {
+    #ifdef _WIN32
     return InitializeInternal(L"dxcompiler.dll", "DxcCreateInstance");
+    #elif __APPLE__
+    return InitializeInternal(L"libdxcompiler.dylib", "DxcCreateInstance");
+    #else
+    return InitializeInternal(L"libdxcompiler.so", "DxcCreateInstance");
+    #endif
   }
 
   HRESULT InitializeForDll(_In_z_ const wchar_t* dll, _In_z_ const char* entryPoint) {
@@ -120,7 +136,11 @@ public:
     if (m_dll != nullptr) {
       m_createFn = nullptr;
       m_createFn2 = nullptr;
+#ifdef _WIN32
       FreeLibrary(m_dll);
+#else
+      ::dlclose(m_dll);
+#endif
       m_dll = nullptr;
     }
   }

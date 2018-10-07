@@ -51,9 +51,6 @@ Direct3DManager::~Direct3DManager()
 
 void Direct3DManager::InitializeDeviceResources()
 {
-    UUID experimentalFeatures[] = { D3D12ExperimentalShaderModels, D3D12RaytracingPrototype };
-    mSupportsDXR = D3D12EnableExperimentalFeatures(2, experimentalFeatures, NULL, NULL) == S_OK;
-
 #if defined(_DEBUG)
 	// If the project is in a debug build, enable debugging via SDK Layers.
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&mDebugController))))
@@ -70,6 +67,10 @@ void Direct3DManager::InitializeDeviceResources()
 		D3D_FEATURE_LEVEL_12_0,			// Minimum feature level this app can support.
 		IID_PPV_ARGS(&mDevice)		// Returns the Direct3D device created.
 		));
+
+    D3D12_FEATURE_DATA_D3D12_OPTIONS5 featureSupportInfo = {};
+    HRESULT featureCheckResult = mDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureSupportInfo, sizeof(featureSupportInfo));
+    mSupportsDXR = featureCheckResult == S_OK && featureSupportInfo.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED;
 
     if (mSupportsDXR)
     {

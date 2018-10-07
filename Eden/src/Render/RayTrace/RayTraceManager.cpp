@@ -5,6 +5,8 @@
 #include "Render/Shader/Definitions/ConstantBufferDefinitions.h"
 #include "Camera/Camera.h"
 
+#include "Render/DirectX/DXRExperimental/Helpers/D3D12RaytracingHelpers.hpp"
+
 //TDA: Implement update support
 RayTraceManager::RayTraceManager(Direct3DManager *direct3DManager, RootSignatureManager *rootSignatureManager)
 {
@@ -108,7 +110,74 @@ void RayTraceManager::LoadRayTraceShaders(RootSignatureManager *rootSignatureMan
     mMissShader = CompileRayShader(L"../Eden/data/HLSL/RayTrace/Miss.hlsl");
     mHitShader = CompileRayShader(L"../Eden/data/HLSL/RayTrace/Hit.hlsl");
 
-    nv_helpers_dx12::RayTracingPipelineGenerator pipeline(mDirect3DManager->GetDevice(), mDirect3DManager->GetRayTraceDevice());
+    CD3D12_STATE_OBJECT_DESC raytracingPipeline{ D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE };
+
+    
+    CD3D12_DXIL_LIBRARY_SUBOBJECT *librarySubObject = raytracingPipeline.CreateSubobject<CD3D12_DXIL_LIBRARY_SUBOBJECT>();
+    D3D12_SHADER_BYTECODE libraryByteCode1 = CD3DX12_SHADER_BYTECODE(mRayGenShader->GetBufferPointer(), mRayGenShader->GetBufferSize());
+    librarySubObject->SetDXILLibrary(&libraryByteCode1);
+    librarySubObject->DefineExport(L"RayGen");
+
+
+    CD3D12_DXIL_LIBRARY_SUBOBJECT *librarySubObject2 = raytracingPipeline.CreateSubobject<CD3D12_DXIL_LIBRARY_SUBOBJECT>();
+    D3D12_SHADER_BYTECODE libraryByteCode2 = CD3DX12_SHADER_BYTECODE(mMissShader->GetBufferPointer(), mMissShader->GetBufferSize());
+    librarySubObject2->SetDXILLibrary(&libraryByteCode2);
+    librarySubObject2->DefineExport(L"Miss");
+
+
+    CD3D12_DXIL_LIBRARY_SUBOBJECT *librarySubObject3 = raytracingPipeline.CreateSubobject<CD3D12_DXIL_LIBRARY_SUBOBJECT>();
+    D3D12_SHADER_BYTECODE libraryByteCode3 = CD3DX12_SHADER_BYTECODE(mHitShader->GetBufferPointer(), mHitShader->GetBufferSize());
+    librarySubObject3->SetDXILLibrary(&libraryByteCode3);
+    librarySubObject3->DefineExport(L"ClosestHit");
+    
+    
+    CD3D12_HIT_GROUP_SUBOBJECT *hitGroupSubObject = raytracingPipeline.CreateSubobject<CD3D12_HIT_GROUP_SUBOBJECT>();
+    hitGroupSubObject->SetClosestHitShaderImport(L"ClosestHit");
+    hitGroupSubObject->SetHitGroupExport(L"HitGroup");
+    hitGroupSubObject->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
+
+    CD3D12_RAYTRACING_SHADER_CONFIG_SUBOBJECT *shaderConfig = raytracingPipeline.CreateSubobject<CD3D12_RAYTRACING_SHADER_CONFIG_SUBOBJECT>();
+    UINT payloadSize = 4 * sizeof(float);   // float4 color
+    UINT attributeSize = 2 * sizeof(float); // float2 barycentrics
+    shaderConfig->Config(payloadSize, attributeSize);
+
+    {
+        auto localRootSignature = raytracingPipeline.CreateSubobject<CD3D12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
+        localRootSignature->SetRootSignature(mRayGenSignature);
+        // Shader association
+        auto rootSignatureAssociation = raytracingPipeline.CreateSubobject<CD3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
+        rootSignatureAssociation->SetSubobjectToAssociate(*localRootSignature);
+        rootSignatureAssociation->AddExport(L"RayGen");
+    }
+
+    {
+        auto localRootSignature = raytracingPipeline.CreateSubobject<CD3D12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
+        localRootSignature->SetRootSignature(mMissSignature);
+        // Shader association
+        auto rootSignatureAssociation = raytracingPipeline.CreateSubobject<CD3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
+        rootSignatureAssociation->SetSubobjectToAssociate(*localRootSignature);
+        rootSignatureAssociation->AddExport(L"Miss");
+    }
+
+    {
+        auto localRootSignature = raytracingPipeline.CreateSubobject<CD3D12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
+        localRootSignature->SetRootSignature(mHitSignature);
+        // Shader association
+        auto rootSignatureAssociation = raytracingPipeline.CreateSubobject<CD3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
+        rootSignatureAssociation->SetSubobjectToAssociate(*localRootSignature);
+        rootSignatureAssociation->AddExport(L"HitGroup");
+    }
+
+    auto globalRootSignature = raytracingPipeline.CreateSubobject<CD3D12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
+    globalRootSignature->SetRootSignature(rootSignatureManager->GetRootSignature(RootSignatureType_Ray_Empty_Global).RootSignature);
+
+    auto pipelineConfig = raytracingPipeline.CreateSubobject<CD3D12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT>();
+    UINT maxRecursionDepth = 1; // ~ primary rays only. 
+    pipelineConfig->Config(maxRecursionDepth);
+
+    Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DManager->GetRayTraceDevice()->CreateStateObject(raytracingPipeline, IID_PPV_ARGS(&mRayTraceStateObject)));
+
+    /*nv_helpers_dx12::RayTracingPipelineGenerator pipeline(mDirect3DManager->GetDevice(), mDirect3DManager->GetRayTraceDevice());
     pipeline.AddLibrary(mRayGenShader, { L"RayGen" });
     pipeline.AddLibrary(mMissShader, { L"Miss" });
     pipeline.AddLibrary(mHitShader, { L"ClosestHit" });
@@ -121,7 +190,7 @@ void RayTraceManager::LoadRayTraceShaders(RootSignatureManager *rootSignatureMan
     pipeline.SetMaxRecursionDepth(1);
 
     mRayTraceStateObject = pipeline.Generate();
-    Direct3DUtils::ThrowIfHRESULTFailed(mRayTraceStateObject->QueryInterface(IID_PPV_ARGS(&mRayTraceStateObjectProperties)));
+    Direct3DUtils::ThrowIfHRESULTFailed(mRayTraceStateObject->QueryInterface(IID_PPV_ARGS(&mRayTraceStateObjectProperties)));*/
 }
 
 IDxcBlob *RayTraceManager::CompileRayShader(WCHAR *fileName)
@@ -142,17 +211,19 @@ IDxcBlob *RayTraceManager::CompileRayShader(WCHAR *fileName)
     IDxcOperationResult* compilationResult;
     Direct3DUtils::ThrowIfHRESULTFailed(mRayTraceShaderBuilder.DxcCompiler->Compile(rayShaderBlobEncoding, fileName, L"", L"lib_6_3", nullptr, 0, nullptr, 0,
         mRayTraceShaderBuilder.DxcIncludeHandler, &compilationResult));
-
+    
     HRESULT resultCode;
     Direct3DUtils::ThrowIfHRESULTFailed(compilationResult->GetStatus(&resultCode));
     if (FAILED(resultCode))
     {
+        
         IDxcBlobEncoding* pError;
         if (FAILED(compilationResult->GetErrorBuffer(&pError)))
         {
             Direct3DUtils::ThrowLogicError("Failed to get shader compiler error.");
         }
 
+        const char *pStart = pError ? (const char *)pError->GetBufferPointer() : NULL;
         Direct3DUtils::ThrowLogicError("Shader compilation error.");
     }
 
