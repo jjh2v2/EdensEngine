@@ -31,6 +31,7 @@ enum RootSignatureType
     RootSignatureType_Ray_Test_Hit_And_Miss = 23,
     RootSignatureType_Ray_Empty_Global = 24,
     RootSignatureType_Ray_Empty_Local = 25,
+    RootSignatureType_Ray_Global = 26,
 	NumRootSignatures
 };
 

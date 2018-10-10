@@ -261,8 +261,11 @@ public:
     RayTraceContext(ID3D12Device *device);
     virtual ~RayTraceContext();
 
+    void SetRayPipelineState(ID3D12StateObject *rayTraceStateObject);
     void BuildAccelerationStructure(const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC &structureDesc);
-    void DispatchRays(ID3D12StateObject *rayTraceStateObject, D3D12_DISPATCH_RAYS_DESC &dispatchDesc);
+    void DispatchRays(D3D12_DISPATCH_RAYS_DESC &dispatchDesc);
+    void SetComputeDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle);
+    void SetComputeRootSignature(ID3D12RootSignature *computeRootSignature);
 
 private:
     ID3D12GraphicsCommandList4 *mDXRCommandList;

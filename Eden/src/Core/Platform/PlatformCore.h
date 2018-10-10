@@ -29,6 +29,8 @@
 #define UPLOAD_BUFFER_ALIGNMENT				                512	 //upload buffers need to be 512 aligned
 #define NUM_STARTING_COMMAND_ALLOCATORS                     10   //TDA: obviously this needs to be intelligently driven rather than hardcoded
 #define MAX_ASYNC_COMPUTE_TEXTURES_TO_PROCESS_PER_FRAME     1
+#define ALLOW_RAY_TRACING                                   1
+#define ENABLE_DEBUG_LAYER                                  1
 
 #define VALID_COMPUTE_QUEUE_RESOURCE_STATES \
 	( D3D12_RESOURCE_STATE_UNORDERED_ACCESS \

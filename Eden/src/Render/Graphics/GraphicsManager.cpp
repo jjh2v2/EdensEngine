@@ -35,8 +35,12 @@ void GraphicsManager::InitializeGraphicsResources()
 	mShaderManager = new ShaderManager(mDirect3DManager->GetDevice());
 	mMeshManager = new MeshManager();
 	mMeshManager->LoadAllMeshes(mDirect3DManager);
-    mRayTraceManager = new RayTraceManager(mDirect3DManager, mShaderManager->GetRootSignatureManager());
-    mRayTraceManager->QueueRayTraceAccelerationStructureCreation();
+
+    if (mDirect3DManager->IsDXRSupported())
+    {
+        mRayTraceManager = new RayTraceManager(mDirect3DManager, mShaderManager->GetRootSignatureManager());
+        mRayTraceManager->QueueRayTraceAccelerationStructureCreation();
+    }
 }
 
 GraphicsManager::UploadUpdateBackgroundJob::UploadUpdateBackgroundJob(Direct3DContextManager *contextManager)
@@ -62,7 +66,12 @@ void GraphicsManager::Update(float deltaTime, Camera *camera)
 
     mTextureManager->ProcessCurrentUploads();
     mTextureManager->ProcessCurrentComputeWork();
-    mRayTraceManager->Update(camera);
+
+    if (mRayTraceManager)
+    {
+        mRayTraceManager->Update(camera);
+    }
+    
     mDirect3DManager->GetContextManager()->GetGraphicsContext()->FlushDeferredTransitions();
 }
 

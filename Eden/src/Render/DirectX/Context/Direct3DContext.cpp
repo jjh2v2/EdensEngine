@@ -873,8 +873,26 @@ void RayTraceContext::BuildAccelerationStructure(const D3D12_BUILD_RAYTRACING_AC
     mDXRCommandList->BuildRaytracingAccelerationStructure(&structureDesc, 0, NULL);
 }
 
-void RayTraceContext::DispatchRays(ID3D12StateObject *rayTraceStateObject, D3D12_DISPATCH_RAYS_DESC &dispatchDesc)
+void RayTraceContext::SetRayPipelineState(ID3D12StateObject *rayTraceStateObject)
 {
     mDXRCommandList->SetPipelineState1(rayTraceStateObject);
+}
+
+void RayTraceContext::DispatchRays(D3D12_DISPATCH_RAYS_DESC &dispatchDesc)
+{
     mDXRCommandList->DispatchRays(&dispatchDesc);
+}
+
+void RayTraceContext::SetComputeDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDLE handle)
+{
+    mDXRCommandList->SetComputeRootDescriptorTable(index, handle);
+}
+
+void RayTraceContext::SetComputeRootSignature(ID3D12RootSignature *computeRootSignature)
+{
+    //if (computeRootSignature != mCurrentComputeRootSignature)
+    //{
+    //    mCurrentComputeRootSignature = computeRootSignature;
+        mCommandList->SetComputeRootSignature(computeRootSignature);
+    //}
 }

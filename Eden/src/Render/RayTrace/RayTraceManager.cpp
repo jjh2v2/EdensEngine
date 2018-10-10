@@ -26,6 +26,7 @@ RayTraceManager::RayTraceManager(Direct3DManager *direct3DManager, RootSignature
     }
 
     LoadRayTraceShaders(rootSignatureManager);
+    mRootSignatureManager = rootSignatureManager;
 }
 
 RayTraceManager::~RayTraceManager()
@@ -102,7 +103,7 @@ void RayTraceManager::LoadRayTraceShaders(RootSignatureManager *rootSignatureMan
      Direct3DUtils::ThrowIfHRESULTFailed(mRayTraceShaderBuilder.DxcSupport.CreateInstance(CLSID_DxcLibrary, &mRayTraceShaderBuilder.DxcLibrary));
      Direct3DUtils::ThrowIfHRESULTFailed(mRayTraceShaderBuilder.DxcLibrary->CreateIncludeHandler(&mRayTraceShaderBuilder.DxcIncludeHandler));
 
-    mRayGenSignature = rootSignatureManager->GetRootSignature(RootSignatureType_Ray_Test_Generation).RootSignature;
+    mRayGenSignature = rootSignatureManager->GetRootSignature(RootSignatureType_Ray_Test_Hit_And_Miss).RootSignature;
     mHitSignature = rootSignatureManager->GetRootSignature(RootSignatureType_Ray_Test_Hit_And_Miss).RootSignature;
     mMissSignature = rootSignatureManager->GetRootSignature(RootSignatureType_Ray_Test_Hit_And_Miss).RootSignature;
 
@@ -169,28 +170,14 @@ void RayTraceManager::LoadRayTraceShaders(RootSignatureManager *rootSignatureMan
     }
 
     auto globalRootSignature = raytracingPipeline.CreateSubobject<CD3D12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
-    globalRootSignature->SetRootSignature(rootSignatureManager->GetRootSignature(RootSignatureType_Ray_Empty_Global).RootSignature);
+    globalRootSignature->SetRootSignature(rootSignatureManager->GetRootSignature(RootSignatureType_Ray_Global).RootSignature);
 
     auto pipelineConfig = raytracingPipeline.CreateSubobject<CD3D12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT>();
     UINT maxRecursionDepth = 1; // ~ primary rays only. 
     pipelineConfig->Config(maxRecursionDepth);
 
     Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DManager->GetRayTraceDevice()->CreateStateObject(raytracingPipeline, IID_PPV_ARGS(&mRayTraceStateObject)));
-
-    /*nv_helpers_dx12::RayTracingPipelineGenerator pipeline(mDirect3DManager->GetDevice(), mDirect3DManager->GetRayTraceDevice());
-    pipeline.AddLibrary(mRayGenShader, { L"RayGen" });
-    pipeline.AddLibrary(mMissShader, { L"Miss" });
-    pipeline.AddLibrary(mHitShader, { L"ClosestHit" });
-    pipeline.AddHitGroup(L"HitGroup", L"ClosestHit");
-    pipeline.AddRootSignatureAssociation(mRayGenSignature, { L"RayGen" });
-    pipeline.AddRootSignatureAssociation(mMissSignature, { L"Miss" });
-    pipeline.AddRootSignatureAssociation(mHitSignature, { L"HitGroup" });
-    pipeline.SetMaxPayloadSize(4 * sizeof(float));
-    pipeline.SetMaxAttributeSize(2 * sizeof(float));
-    pipeline.SetMaxRecursionDepth(1);
-
-    mRayTraceStateObject = pipeline.Generate();
-    Direct3DUtils::ThrowIfHRESULTFailed(mRayTraceStateObject->QueryInterface(IID_PPV_ARGS(&mRayTraceStateObjectProperties)));*/
+    Direct3DUtils::ThrowIfHRESULTFailed(mRayTraceStateObject->QueryInterface(IID_PPV_ARGS(&mRayTraceStateObjectProperties)));
 }
 
 IDxcBlob *RayTraceManager::CompileRayShader(WCHAR *fileName)
@@ -216,7 +203,6 @@ IDxcBlob *RayTraceManager::CompileRayShader(WCHAR *fileName)
     Direct3DUtils::ThrowIfHRESULTFailed(compilationResult->GetStatus(&resultCode));
     if (FAILED(resultCode))
     {
-        
         IDxcBlobEncoding* pError;
         if (FAILED(compilationResult->GetErrorBuffer(&pError)))
         {
@@ -249,18 +235,40 @@ void RayTraceManager::CreateAccelerationStructures()
 
 void RayTraceManager::BuildShaderBindingTable()
 {
-    mShaderBindingTableHelper.Reset();
-    D3D12_GPU_DESCRIPTOR_HANDLE srvUavHeapHandle = mRayTraceHeap->GetHeapGPUStart();
-    uint64 *heapPointer = reinterpret_cast<uint64*>(srvUavHeapHandle.ptr); //necessary reinterpret according to docs
+    uint32 shaderIdentifierSize = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
 
-    mShaderBindingTableHelper.AddRayGenerationProgram(L"RayGen", { heapPointer });
-    mShaderBindingTableHelper.AddMissProgram(L"Miss", {});
-    mShaderBindingTableHelper.AddHitGroup(L"HitGroup", {});
+    {
+        uint32 shaderRecordSize = MathHelper::AlignU32(shaderIdentifierSize/* + 8*/, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+        mRayGenShaderTable = mDirect3DManager->GetContextManager()->CreateRayTraceBuffer(shaderRecordSize, D3D12_RESOURCE_STATE_GENERIC_READ, RayTraceBuffer::RayTraceBufferType_Shader_Binding_Table_Storage);
+        const void* shaderId = mRayTraceStateObjectProperties->GetShaderIdentifier(L"RayGen");
 
-    uint32_t sbtSize = mShaderBindingTableHelper.ComputeSBTSize(mDirect3DManager->GetRayTraceDevice());
-    mShaderBindingTableStorage = mDirect3DManager->GetContextManager()->CreateRayTraceBuffer(sbtSize, D3D12_RESOURCE_STATE_GENERIC_READ, RayTraceBuffer::RayTraceBufferType_Shader_Binding_Table_Storage);
+        uint8_t *mappedData;
+        mRayGenShaderTable->GetResource()->Map(0, NULL, reinterpret_cast<void**>(&mappedData));
+        memcpy(mappedData, shaderId, shaderIdentifierSize);
+        mRayGenShaderTable->GetResource()->Unmap(0, NULL);
+    }
 
-    mShaderBindingTableHelper.Generate(mShaderBindingTableStorage->GetResource(), mRayTraceStateObjectProperties);
+    {
+        uint32 shaderRecordSize = MathHelper::AlignU32(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+        mMissShaderTable = mDirect3DManager->GetContextManager()->CreateRayTraceBuffer(shaderRecordSize, D3D12_RESOURCE_STATE_GENERIC_READ, RayTraceBuffer::RayTraceBufferType_Shader_Binding_Table_Storage);
+        const void* shaderId = mRayTraceStateObjectProperties->GetShaderIdentifier(L"Miss");
+
+        uint8_t *mappedData;
+        mMissShaderTable->GetResource()->Map(0, NULL, reinterpret_cast<void**>(&mappedData));
+        memcpy(mappedData, shaderId, shaderIdentifierSize);
+        mMissShaderTable->GetResource()->Unmap(0, NULL);
+    }
+
+    {
+        uint32 shaderRecordSize = MathHelper::AlignU32(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
+        mHitGroupShaderTable = mDirect3DManager->GetContextManager()->CreateRayTraceBuffer(shaderRecordSize, D3D12_RESOURCE_STATE_GENERIC_READ, RayTraceBuffer::RayTraceBufferType_Shader_Binding_Table_Storage);
+        const void* shaderId = mRayTraceStateObjectProperties->GetShaderIdentifier(L"HitGroup");
+
+        uint8_t *mappedData;
+        mHitGroupShaderTable->GetResource()->Map(0, NULL, reinterpret_cast<void**>(&mappedData));
+        memcpy(mappedData, shaderId, shaderIdentifierSize);
+        mHitGroupShaderTable->GetResource()->Unmap(0, NULL);
+    }
 }
 
 void RayTraceManager::BuildHeap()
@@ -277,30 +285,29 @@ void RayTraceManager::BuildHeap()
 void RayTraceManager::DispatchRayTrace()
 {
     D3D12_CPU_DESCRIPTOR_HANDLE uavSrvHandle = mRayTraceHeap->GetHeapCPUStart();
-    uavSrvHandle.ptr += mRayTraceHeap->GetDescriptorSize() * 2; //TDA: clean this up
-    mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mCameraBuffers[mDirect3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    //uavSrvHandle.ptr += mRayTraceHeap->GetDescriptorSize() * 2; //TDA: clean this up
+    //mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mCameraBuffers[mDirect3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     RayTraceContext *rayTraceContext = mDirect3DManager->GetContextManager()->GetRayTraceContext();
-    rayTraceContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mRayTraceHeap->GetHeap());
-
     rayTraceContext->TransitionResource(mRayTraceRenderTarget, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
-
-    uint32 rayGenerationSectionSizeInBytes = mShaderBindingTableHelper.GetRayGenSectionSize();
-    uint32 missSectionSizeInBytes = mShaderBindingTableHelper.GetMissSectionSize();
-    uint32 hitGroupsSectionSize = mShaderBindingTableHelper.GetHitGroupSectionSize();
-
+    rayTraceContext->SetComputeRootSignature(mRootSignatureManager->GetRootSignature(RootSignatureType_Ray_Global).RootSignature);
+    rayTraceContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mRayTraceHeap->GetHeap());
+    rayTraceContext->SetComputeDescriptorTable(0, mRayTraceHeap->GetHeapGPUStart());
+    rayTraceContext->SetRayPipelineState(mRayTraceStateObject);
+    
     D3D12_DISPATCH_RAYS_DESC dispatchDesc = {};
-    dispatchDesc.RayGenerationShaderRecord.StartAddress = mShaderBindingTableStorage->GetGpuAddress();
-    dispatchDesc.RayGenerationShaderRecord.SizeInBytes = rayGenerationSectionSizeInBytes;
-    dispatchDesc.MissShaderTable.StartAddress = mShaderBindingTableStorage->GetGpuAddress() + rayGenerationSectionSizeInBytes;
-    dispatchDesc.MissShaderTable.SizeInBytes = missSectionSizeInBytes;
-    dispatchDesc.MissShaderTable.StrideInBytes = mShaderBindingTableHelper.GetMissEntrySize();
-    dispatchDesc.HitGroupTable.StartAddress = dispatchDesc.MissShaderTable.StartAddress + missSectionSizeInBytes;
-    dispatchDesc.HitGroupTable.SizeInBytes = hitGroupsSectionSize;
-    dispatchDesc.HitGroupTable.StrideInBytes = mShaderBindingTableHelper.GetHitGroupEntrySize();
+    dispatchDesc.RayGenerationShaderRecord.StartAddress = mRayGenShaderTable->GetGpuAddress();
+    dispatchDesc.RayGenerationShaderRecord.SizeInBytes = mRayGenShaderTable->GetResource()->GetDesc().Width;
+    dispatchDesc.MissShaderTable.StartAddress = mMissShaderTable->GetGpuAddress();
+    dispatchDesc.MissShaderTable.SizeInBytes = mMissShaderTable->GetResource()->GetDesc().Width;
+    dispatchDesc.MissShaderTable.StrideInBytes = dispatchDesc.MissShaderTable.SizeInBytes;
+    dispatchDesc.HitGroupTable.StartAddress = mHitGroupShaderTable->GetGpuAddress();
+    dispatchDesc.HitGroupTable.SizeInBytes = mHitGroupShaderTable->GetResource()->GetDesc().Width;
+    dispatchDesc.HitGroupTable.StrideInBytes = dispatchDesc.HitGroupTable.SizeInBytes;
     dispatchDesc.Width = mRayTraceRenderTarget->GetWidth();
     dispatchDesc.Height = mRayTraceRenderTarget->GetHeight();
+    dispatchDesc.Depth = 1;
 
-    rayTraceContext->DispatchRays(mRayTraceStateObject, dispatchDesc);
+    rayTraceContext->DispatchRays(dispatchDesc);
     rayTraceContext->Flush(mDirect3DManager->GetContextManager()->GetQueueManager(), true);
 }

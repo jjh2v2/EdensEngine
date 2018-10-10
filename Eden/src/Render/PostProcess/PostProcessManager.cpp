@@ -35,7 +35,11 @@ PostProcessManager::PostProcessManager(GraphicsManager *graphicsManager)
     {
         luminanceDownScaleSizeX = MathHelper::DivideByMultipleOf(luminanceDownScaleSizeX, mLuminanceDimensionSize);
         luminanceDownScaleSizeY = MathHelper::DivideByMultipleOf(luminanceDownScaleSizeY, mLuminanceDimensionSize);
-        mLuminanceDownSampleTargets.Add(contextManager->CreateRenderTarget(luminanceDownScaleSizeX, luminanceDownScaleSizeY, DXGI_FORMAT_R32_FLOAT, true, 1, 1, 0));
+
+        RenderTarget *lumDownsampleTarget = contextManager->CreateRenderTarget(luminanceDownScaleSizeX, luminanceDownScaleSizeY, DXGI_FORMAT_R32_FLOAT, true, 1, 1, 0);
+        mLuminanceDownSampleTargets.Add(lumDownsampleTarget);
+        float blackColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+        contextManager->GetGraphicsContext()->ClearRenderTarget(lumDownsampleTarget->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
 
     } while (luminanceDownScaleSizeX > 1 || luminanceDownScaleSizeY > 1);
 

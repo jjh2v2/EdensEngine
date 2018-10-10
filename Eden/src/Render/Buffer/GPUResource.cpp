@@ -137,7 +137,7 @@ ConstantBuffer::ConstantBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES u
 	mConstantBufferViewHandle = constantBufferViewHandle;
 
 	mMappedBuffer = NULL;
-	mResource->Map(0, NULL, &mMappedBuffer);
+	mResource->Map(0, NULL, &mMappedBuffer); //TDA ThrowIfFailed(m_resource->Map(0, &readRange, reinterpret_cast<void**>(&mappedData)));
 }
 
 ConstantBuffer::~ConstantBuffer()

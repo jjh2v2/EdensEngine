@@ -40,12 +40,20 @@ Direct3DContextManager::~Direct3DContextManager()
 
 void Direct3DContextManager::FinishContextsAndWaitForIdle()
 {
-    mRayTraceContext->Flush(mQueueManager, true, true);
+    if (mRayTraceContext)
+    {
+        mRayTraceContext->Flush(mQueueManager, true, true);
+    }
+    
     mComputeContext->Flush(mQueueManager, true, true);
     mGraphicsContext->Flush(mQueueManager, true, true);
     mUploadContext->Flush(mQueueManager, true, true);
 
-    mRayTraceContext->WaitForCommandIdle(mQueueManager);
+    if (mRayTraceContext)
+    {
+        mRayTraceContext->WaitForCommandIdle(mQueueManager);
+    }
+    
     mUploadContext->WaitForCommandIdle(mQueueManager);
     mComputeContext->WaitForCommandIdle(mQueueManager);
     mGraphicsContext->WaitForCommandIdle(mQueueManager);

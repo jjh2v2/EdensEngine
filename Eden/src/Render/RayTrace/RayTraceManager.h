@@ -54,8 +54,10 @@ private:
     DescriptorHeap *mRayTraceHeap;
     ConstantBuffer *mCameraBuffers[FRAME_BUFFER_COUNT];
 
-    nv_helpers_dx12::ShaderBindingTableGenerator mShaderBindingTableHelper;
-    RayTraceBuffer *mShaderBindingTableStorage;
+    //nv_helpers_dx12::ShaderBindingTableGenerator mShaderBindingTableHelper;
+    RayTraceBuffer *mRayGenShaderTable;
+    RayTraceBuffer *mMissShaderTable;
+    RayTraceBuffer *mHitGroupShaderTable;
 
     IDxcBlob *mRayGenShader;
     IDxcBlob *mMissShader;
@@ -63,4 +65,6 @@ private:
     ID3D12RootSignature *mRayGenSignature;
     ID3D12RootSignature *mHitSignature;
     ID3D12RootSignature *mMissSignature;
+
+    RootSignatureManager *mRootSignatureManager;
 };

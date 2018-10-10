@@ -11,6 +11,7 @@ Direct3DManager::Direct3DManager()
 	mCurrentBackBuffer = 0;
     mSupportsDXR = false;
     mDXRDevice = NULL;
+    mDebugController = NULL;
 
 	InitializeDeviceResources();
 }
@@ -35,12 +36,18 @@ Direct3DManager::~Direct3DManager()
 #endif
 
 #if defined(_DEBUG)
-	mDebugController->Release();
-	mDebugController = NULL;
+    if (mDebugController)
+    {
+        mDebugController->Release();
+        mDebugController = NULL;
+    }
 #endif
 
-    mDXRDevice->Release();
-    mDXRDevice = NULL;
+    if (mDXRDevice)
+    {
+        mDXRDevice->Release();
+        mDXRDevice = NULL;
+    }
 
 	mDevice->Release();
 	mDevice = NULL;
@@ -53,7 +60,7 @@ void Direct3DManager::InitializeDeviceResources()
 {
 #if defined(_DEBUG)
 	// If the project is in a debug build, enable debugging via SDK Layers.
-	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&mDebugController))))
+	if (ENABLE_DEBUG_LAYER && SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&mDebugController))))
 	{
 		mDebugController->EnableDebugLayer();
 	}
@@ -70,7 +77,7 @@ void Direct3DManager::InitializeDeviceResources()
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS5 featureSupportInfo = {};
     HRESULT featureCheckResult = mDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureSupportInfo, sizeof(featureSupportInfo));
-    mSupportsDXR = featureCheckResult == S_OK && featureSupportInfo.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED;
+    mSupportsDXR = featureCheckResult == S_OK && featureSupportInfo.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED && ALLOW_RAY_TRACING;
 
     if (mSupportsDXR)
     {
