@@ -11,7 +11,6 @@ Direct3DManager::Direct3DManager()
 	mCurrentBackBuffer = 0;
     mSupportsDXR = false;
     mDXRDevice = NULL;
-    mDebugController = NULL;
 
 	InitializeDeviceResources();
 }
@@ -26,23 +25,6 @@ Direct3DManager::~Direct3DManager()
 	delete mContextManager;
 	mContextManager = NULL;
 
-#ifdef _DEBUG
-	IDXGIDebug1* pDebug = nullptr;
-	if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&pDebug))))
-	{
-		pDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_SUMMARY);
-		pDebug->Release();
-	}
-#endif
-
-#if defined(_DEBUG)
-    if (mDebugController)
-    {
-        mDebugController->Release();
-        mDebugController = NULL;
-    }
-#endif
-
     if (mDXRDevice)
     {
         mDXRDevice->Release();
@@ -54,26 +36,30 @@ Direct3DManager::~Direct3DManager()
 
 	mDXGIFactory->Release();
 	mDXGIFactory = NULL;
+
+#ifdef _DEBUG
+    IDXGIDebug1* pDebug = nullptr;
+    if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&pDebug))))
+    {
+        pDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_FLAGS(DXGI_DEBUG_RLO_SUMMARY | DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL));
+        pDebug->Release();
+    }
+#endif
 }
 
 void Direct3DManager::InitializeDeviceResources()
 {
 #if defined(_DEBUG)
-	// If the project is in a debug build, enable debugging via SDK Layers.
-	if (ENABLE_DEBUG_LAYER && SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&mDebugController))))
+    ID3D12Debug *debugController;
+	if (ENABLE_DEBUG_LAYER && SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
 	{
-		mDebugController->EnableDebugLayer();
+        debugController->EnableDebugLayer();
+        debugController->Release();
 	}
 #endif
 
 	Direct3DUtils::ThrowIfHRESULTFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mDXGIFactory)));
-
-	// Create the Direct3D 12 API device object
-	Direct3DUtils::ThrowIfHRESULTFailed(D3D12CreateDevice(
-		nullptr,						// Specify nullptr to use the default adapter.
-		D3D_FEATURE_LEVEL_12_0,			// Minimum feature level this app can support.
-		IID_PPV_ARGS(&mDevice)		// Returns the Direct3D device created.
-		));
+	Direct3DUtils::ThrowIfHRESULTFailed(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&mDevice)));
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS5 featureSupportInfo = {};
     HRESULT featureCheckResult = mDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureSupportInfo, sizeof(featureSupportInfo));
@@ -89,16 +75,12 @@ void Direct3DManager::InitializeDeviceResources()
 
 void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND windowHandle, bool vsync /*= false*/, bool fullScreen /*= false*/)
 {
-	// Wait until all previous GPU work is complete.
 	mContextManager->GetGraphicsContext()->Flush(mContextManager->GetQueueManager(), true);
 
 	mOutputSize = screenSize;
-	mUseVsync = vsync;				//need to handle if vsync or fullscreen changes
+	mUseVsync = vsync;				//TDA need to handle if vsync or fullscreen changes
 	mIsFullScreen = fullScreen;
 
-	// The width and height of the swap chain must be based on the window's
-	// natively-oriented width and height. If the window is not in the native
-	// orientation, the dimensions must be reversed.
 	DXGI_MODE_ROTATION displayRotation = ComputeDisplayRotation();
 
 	bool swapDimensions = displayRotation == DXGI_MODE_ROTATION_ROTATE90 || displayRotation == DXGI_MODE_ROTATION_ROTATE270;
@@ -108,12 +90,11 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 	if (mSwapChain != NULL)
 	{
 		ReleaseSwapChainDependentResources();
-		// If the swap chain already exists, resize it.
+
 		HRESULT hr = mSwapChain->ResizeBuffers(FRAME_BUFFER_COUNT, lround(mOutputSize.X), lround(mOutputSize.Y), DXGI_FORMAT_R8G8B8A8_UNORM, 0);
 
 		if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
 		{
-			// If the device was removed for any reason, a new device and swap chain will need to be created.
 			mDeviceRemoved = true;
 			return;
 		}
@@ -124,7 +105,6 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 	}
 	else
 	{
-		// Otherwise, create a new one using the same adapter as the existing Direct3D device.
 		IDXGIAdapter* adapter = NULL;
 		IDXGIOutput* adapterOutput = NULL;
 		uint32 numDisplayModes = 0;
@@ -152,23 +132,22 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 
 		/*
 		DXGI_ADAPTER_DESC adapterDesc;
-		// Get the adapter (video card) description.
+		
 		result = adapter->GetDesc(&adapterDesc);
 		if(FAILED(result))
 		{
 			return false;
 		}
 
-		// Store the dedicated video card memory in megabytes.
 		m_videoCardMemory = (int)(adapterDesc.DedicatedVideoMemory / 1024 / 1024);
 
-		// Convert the name of the video card to a character array and store it.
 		error = wcstombs_s(&stringLength, m_videoCardDescription, 128, adapterDesc.Description, 128);
 		if(error != 0)
 		{
 			return false;
 		}
 		*/
+
 		delete[] displayModeList;
 		displayModeList = NULL;
 		adapterOutput->Release();
@@ -208,7 +187,6 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 			swapChainFullScreenDesc.RefreshRate.Denominator = 1;
 		}
 
-
 		IDXGISwapChain1 *swapChain = NULL;
 		Direct3DUtils::ThrowIfHRESULTFailed(
 			mDXGIFactory->CreateSwapChainForHwnd(
@@ -222,13 +200,13 @@ void Direct3DManager::CreateWindowDependentResources(Vector2 screenSize, HWND wi
 			);
 		
 		Direct3DUtils::ThrowIfHRESULTFailed(swapChain->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&mSwapChain));
+        swapChain->Release();
 	}
 
 	Direct3DUtils::ThrowIfHRESULTFailed(mSwapChain->SetRotation(displayRotation));
 
 	BuildSwapChainDependentResources();
 
-	// Set the 3D rendering viewport to target the entire window.
 	mScreenViewport = { 0.0f, 0.0f, mOutputSize.X, mOutputSize.Y, 0.0f, 1.0f };
 
 	mContextManager->GetGraphicsContext()->Flush(mContextManager->GetQueueManager(), true);
@@ -276,16 +254,10 @@ void Direct3DManager::BuildSwapChainDependentResources()
 	mCurrentBackBuffer = 0;
 }
 
-// Present the contents of the swap chain to the screen.
 void Direct3DManager::Present()
 {
-	// The first argument instructs DXGI to block until VSync, putting the application
-	// to sleep until the next VSync. This ensures we don't waste any cycles rendering
-	// frames that will never be displayed to the screen.
 	HRESULT hr = mSwapChain->Present(mUseVsync ? 1 : 0, 0);
 
-	// If the device was removed either by a disconnection or a driver upgrade, we 
-	// must recreate all device resources.
 	if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
 	{
 		mDeviceRemoved = true;
@@ -299,44 +271,13 @@ void Direct3DManager::Present()
 
 void Direct3DManager::MoveToNextFrame()
 {
-	// Advance the frame index.
 	mCurrentBackBuffer = (mCurrentBackBuffer + 1) % FRAME_BUFFER_COUNT;
-	//uint64 fenceValue = mContextManager->GetQueueManager()->GetGraphicsQueue()->IncrementFence();
-	//mContextManager->GetQueueManager()->GetGraphicsQueue()->WaitForFence(fenceValue);
 }
 
 DXGI_MODE_ROTATION Direct3DManager::ComputeDisplayRotation()
 {
-	// Set the proper orientation for the swap chain, and generate
-	// 3D matrix transformations for rendering to the rotated swap chain.
-	// The 3D matrix is specified explicitly to avoid rounding errors.
-
-	/*switch (displayRotation)
-	{
-	case DXGI_MODE_ROTATION_IDENTITY:
-	m_orientationTransform3D = ScreenRotation::Rotation0;
-	break;
-
-	case DXGI_MODE_ROTATION_ROTATE90:
-	m_orientationTransform3D = ScreenRotation::Rotation270;
-	break;
-
-	case DXGI_MODE_ROTATION_ROTATE180:
-	m_orientationTransform3D = ScreenRotation::Rotation180;
-	break;
-
-	case DXGI_MODE_ROTATION_ROTATE270:
-	m_orientationTransform3D = ScreenRotation::Rotation90;
-	break;
-
-	default:
-	throw ref new FailureException();
-	}*/
-
 	DXGI_MODE_ROTATION rotation = DXGI_MODE_ROTATION_UNSPECIFIED;
 
-	// Note: NativeOrientation can only be Landscape or Portrait even though
-	// the DisplayOrientations enum has other values.
 	switch (mNativeOrientation)
 	{
 	case DisplayOrientation_Landscape:

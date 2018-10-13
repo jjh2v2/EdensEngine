@@ -17,12 +17,6 @@ public:
 
     RayTraceBuffer *GetTopLevelResultBuffer() { return mTopLevelResultBuffer; }
 
-    struct RTXVertex
-    {
-        Vector3 Position;
-        Vector4 Color;
-    };
-
 private:
     struct BottomLevelInstance
     {

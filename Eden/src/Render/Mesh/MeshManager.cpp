@@ -20,7 +20,7 @@ MeshManager::~MeshManager()
 	mMeshLookup.clear();
 }
 
-Mesh *MeshManager::GetMesh(std::string meshName)
+Mesh *MeshManager::GetMesh(const std::string &meshName)
 {
 	return mMeshLookup[meshName];
 }
@@ -72,7 +72,7 @@ void MeshManager::LoadAllMeshes(Direct3DManager *direct3DManager)
 
 Mesh *MeshManager::LoadFBXMesh(Direct3DManager *direct3DManager, char *fileName, char *serializationFile)
 {
-	DynamicArray<MeshVertexData> fbxData;
+	DynamicArray<MeshVertex> fbxData;
 	DynamicArray<uint32> indexSplits;
 
 	mFBXLoader.LoadFBX(fileName, fbxData, indexSplits);
@@ -95,11 +95,11 @@ void MeshManager::SerializeMeshToFile(Mesh *mesh, char *fileName)
 {
 	std::ofstream outputFile(fileName, std::ios::binary);
 
-	MeshVertexData *meshData = mesh->GetMeshData();
+	MeshVertex *meshData = mesh->GetMeshData();
 	uint32 indexCount = mesh->GetIndexCount();
 
 	outputFile.write((char*)&indexCount, sizeof(indexCount));
-	outputFile.write((char*)meshData, sizeof(MeshVertexData) * mesh->GetIndexCount());
+	outputFile.write((char*)meshData, sizeof(MeshVertex) * mesh->GetIndexCount());
 	outputFile.write((char*)mesh->GetIndices(), sizeof(uint32) * mesh->GetIndexCount());
 	uint32 splitCount = mesh->GetMeshSplitCount();
 
@@ -120,10 +120,10 @@ Mesh *MeshManager::DeserializeMeshFromFile(Direct3DManager *direct3DManager, cha
 
 	inputFile.read((char *)&indexCount, sizeof(indexCount));
 
-	MeshVertexData *meshData = new MeshVertexData[indexCount];
+	MeshVertex *meshData = new MeshVertex[indexCount];
 	uint32 *meshIndices = new uint32[indexCount];
 
-	inputFile.read((char *)meshData, sizeof(MeshVertexData) * indexCount);
+	inputFile.read((char *)meshData, sizeof(MeshVertex) * indexCount);
 	inputFile.read((char *)meshIndices, sizeof(uint32) * indexCount);
 
 	uint32 indexSplitCount = 0;
@@ -171,7 +171,7 @@ Mesh *MeshManager::LoadFromAssimp(Direct3DManager *direct3DManager, char *fileNa
 		indexSplits.Add(indexCount);
 	}
 
-	MeshVertexData *meshData = new MeshVertexData[vertCount];
+	MeshVertex *meshData = new MeshVertex[vertCount];
 	uint32 *indices = new uint32[indexCount];
 
 	uint32 meshDataIndex = 0;

@@ -1,7 +1,7 @@
 #include "Render/Mesh/Mesh.h"
 #include "Render/DirectX/Direct3DManager.h"
 
-Mesh::Mesh(Direct3DManager *direct3DManager, uint32 vertexCount, uint32 indexCount, MeshVertexData *meshData, DynamicArray<uint32> &splits, uint32 *indices)
+Mesh::Mesh(Direct3DManager *direct3DManager, uint32 vertexCount, uint32 indexCount, MeshVertex *meshData, DynamicArray<uint32> &splits, uint32 *indices)
 {
 	Application::Assert(vertexCount > 0 && indexCount > 0);
 
@@ -15,7 +15,7 @@ Mesh::Mesh(Direct3DManager *direct3DManager, uint32 vertexCount, uint32 indexCou
 		mIndexSplits.Add(splits[i]);
 	}
 
-	mVertexBuffer = direct3DManager->GetContextManager()->CreateVertexBuffer(meshData, sizeof(MeshVertexData), vertexCount * sizeof(MeshVertexData));
+	mVertexBuffer = direct3DManager->GetContextManager()->CreateVertexBuffer(meshData, sizeof(MeshVertex), vertexCount * sizeof(MeshVertex));
 	mIndexBuffer = direct3DManager->GetContextManager()->CreateIndexBuffer(meshData, indexCount * sizeof(uint32));
 
 	RecalculateBounds();

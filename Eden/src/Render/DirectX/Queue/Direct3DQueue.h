@@ -35,7 +35,6 @@ private:
 	std::mutex mFenceMutex;
 	std::mutex mEventMutex;
 
-	// Lifetime of these objects is managed by the descriptor cache
 	ID3D12Fence* mFence;
 	uint64 mNextFenceValue;
 	uint64 mLastCompletedFenceValue;

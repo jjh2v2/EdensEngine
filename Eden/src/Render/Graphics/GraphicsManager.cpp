@@ -39,7 +39,7 @@ void GraphicsManager::InitializeGraphicsResources()
     if (mDirect3DManager->IsDXRSupported())
     {
         mRayTraceManager = new RayTraceManager(mDirect3DManager, mShaderManager->GetRootSignatureManager());
-        mRayTraceManager->QueueRayTraceAccelerationStructureCreation();
+        mRayTraceManager->QueueRayTraceAccelerationStructureCreation(mMeshManager->GetMesh("MageBiNormals"));
     }
 }
 

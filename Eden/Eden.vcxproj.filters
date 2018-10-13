@@ -148,14 +148,11 @@
     <Filter Include="Source Files\Render\PostProcess">
       <UniqueIdentifier>{1fb0394b-1b7e-4a2a-845a-c18b95390fcf}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Render\DirectX\DXRExperimental">
-      <UniqueIdentifier>{2d335654-969b-42f6-b13d-30bea0715dc7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Render\RayTrace">
       <UniqueIdentifier>{ead7ea47-77ff-49f2-bec2-8b224ee6b52b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Render\DirectX\DXRExperimental\Helpers">
-      <UniqueIdentifier>{cf5110ae-db0f-4b10-a0c6-4c373d4cce62}</UniqueIdentifier>
+    <Filter Include="Source Files\Render\DirectX\DXR">
+      <UniqueIdentifier>{4af3844f-d7f8-4196-8540-1bdc9d93d86f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -393,26 +390,23 @@
     <ClInclude Include="src\Render\PostProcess\PostProcessManager.h">
       <Filter>Source Files\Render\PostProcess</Filter>
     </ClInclude>
-    <ClInclude Include="src\Render\DirectX\DXRExperimental\dxcapi.h">
-      <Filter>Source Files\Render\DirectX\DXRExperimental</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Render\DirectX\DXRExperimental\dxcapi.use.h">
-      <Filter>Source Files\Render\DirectX\DXRExperimental</Filter>
-    </ClInclude>
     <ClInclude Include="src\Render\RayTrace\RayTraceAccelerationStructure.h">
       <Filter>Source Files\Render\RayTrace</Filter>
     </ClInclude>
     <ClInclude Include="src\Render\RayTrace\RayTraceManager.h">
       <Filter>Source Files\Render\RayTrace</Filter>
     </ClInclude>
-    <ClInclude Include="src\Render\DirectX\DXRExperimental\Helpers\RaytracingPipelineGenerator.h">
-      <Filter>Source Files\Render\DirectX\DXRExperimental\Helpers</Filter>
+    <ClInclude Include="src\Render\DirectX\DXR\D3D12RaytracingHelpers.hpp">
+      <Filter>Source Files\Render\DirectX\DXR</Filter>
     </ClInclude>
-    <ClInclude Include="src\Render\DirectX\DXRExperimental\Helpers\ShaderBindingTableGenerator.h">
-      <Filter>Source Files\Render\DirectX\DXRExperimental\Helpers</Filter>
+    <ClInclude Include="src\Render\DirectX\DXR\dxcapi.h">
+      <Filter>Source Files\Render\DirectX\DXR</Filter>
     </ClInclude>
-    <ClInclude Include="src\Render\DirectX\DXRExperimental\Helpers\D3D12RaytracingHelpers.hpp">
-      <Filter>Source Files\Render\DirectX\DXRExperimental\Helpers</Filter>
+    <ClInclude Include="src\Render\DirectX\DXR\dxcapi.use.h">
+      <Filter>Source Files\Render\DirectX\DXR</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Render\RayTrace\RayTraceShaderManager.h">
+      <Filter>Source Files\Render\RayTrace</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -617,11 +611,8 @@
     <ClCompile Include="src\Render\RayTrace\RayTraceManager.cpp">
       <Filter>Source Files\Render\RayTrace</Filter>
     </ClCompile>
-    <ClCompile Include="src\Render\DirectX\DXRExperimental\Helpers\RaytracingPipelineGenerator.cpp">
-      <Filter>Source Files\Render\DirectX\DXRExperimental\Helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Render\DirectX\DXRExperimental\Helpers\ShaderBindingTableGenerator.cpp">
-      <Filter>Source Files\Render\DirectX\DXRExperimental\Helpers</Filter>
+    <ClCompile Include="src\Render\RayTrace\RayTraceShaderManager.cpp">
+      <Filter>Source Files\Render\RayTrace</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

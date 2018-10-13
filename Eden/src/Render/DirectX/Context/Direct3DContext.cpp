@@ -1,8 +1,6 @@
 #include "Render/DirectX/Context/Direct3DContext.h"
 #include "Render/DirectX/Allocator/Direct3DCommandAllocatorPool.h"
 
-#define ENABLE_PIX 1
-
 #if ENABLE_PIX
 #include "pix3.h"
 #endif 
@@ -76,11 +74,8 @@ uint64 Direct3DContext::Flush(Direct3DQueueManager *queueManager, bool waitForCo
         //grab a new allocator while the old one is used for the flush
         mCurrentCommandAllocator = mCommandAllocatorPool->GetAllocator(queueManager->GetQueue(mContextType)->PollCurrentFenceValue());
         Direct3DUtils::ThrowIfHRESULTFailed(mCurrentCommandAllocator->Reset());
-
-        // Reset the command list
         Direct3DUtils::ThrowIfHRESULTFailed(mCommandList->Reset(mCurrentCommandAllocator, NULL));
 
-        //flush current state, rebind descriptor heaps
         mCurrentGraphicsRootSignature = NULL;
         mCurrentGraphicsPipelineState = NULL;
         mCurrentComputeRootSignature = NULL;
@@ -629,8 +624,6 @@ UploadContext::UploadContext(ID3D12Device *device)
 	uploadBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 	uploadBufferDesc.Alignment = 0;
 
-	//TDA: A note for reference in case I ever forget this, Microsoft + Nvidia warn against using the generic read state for performance
-	//It's better to give specific states and transition between them. That said, upload heaps are required to be in the generic read state.
 	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &uploadBufferDesc,
 		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mUploadBuffer.BufferResource)));
 
@@ -689,7 +682,7 @@ void UploadContext::ProcessFinishedUploads(uint64 mostRecentFence)
     {
         BackgroundUpload *backgroundUpload = mBackgroundUploadsInFlight[i];
         uint64 currentUploadFence = backgroundUpload->GetUploadFence();
-        Application::Assert(currentUploadFence > 0); //ensure the backgroundupload set the upload fence
+        Application::Assert(currentUploadFence > 0); //ensure the background upload set the upload fence
 
         if (mostRecentFence >= currentUploadFence)
         {
@@ -781,7 +774,7 @@ bool UploadContext::CreateNewUpload(uint64 size, uint32 &uploadIndex)
 		}
 		else if (start >= size)
 		{
-			// Wrap around to the beginning
+			// Wrap
 			allocOffset = 0;
 			mUploadBuffer.BufferUsed += endAmount;
 			padding = endAmount;
@@ -890,9 +883,9 @@ void RayTraceContext::SetComputeDescriptorTable(uint32 index, D3D12_GPU_DESCRIPT
 
 void RayTraceContext::SetComputeRootSignature(ID3D12RootSignature *computeRootSignature)
 {
-    //if (computeRootSignature != mCurrentComputeRootSignature)
-    //{
-    //    mCurrentComputeRootSignature = computeRootSignature;
+    if (computeRootSignature != mCurrentComputeRootSignature)
+    {
+        mCurrentComputeRootSignature = computeRootSignature;
         mCommandList->SetComputeRootSignature(computeRootSignature);
-    //}
+    }
 }

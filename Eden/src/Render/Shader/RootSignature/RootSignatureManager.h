@@ -27,11 +27,8 @@ enum RootSignatureType
     RootSignatureType_Bloom_Threshold = 19,
     RootSignatureType_Simple_Blur = 20,
     RootSignatureType_ToneMap_Composite = 21,
-    RootSignatureType_Ray_Test_Generation = 22,
-    RootSignatureType_Ray_Test_Hit_And_Miss = 23,
-    RootSignatureType_Ray_Empty_Global = 24,
-    RootSignatureType_Ray_Empty_Local = 25,
-    RootSignatureType_Ray_Global = 26,
+    RootSignatureType_Ray_Empty_Local = 22,
+    RootSignatureType_Ray_Barycentric_Global = 23,
 	NumRootSignatures
 };
 

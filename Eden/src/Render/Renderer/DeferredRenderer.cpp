@@ -593,13 +593,13 @@ void DeferredRenderer::Render()
     RenderShadows(lightView, lightProj);
     RenderLightingMain(cameraBuffer.viewMatrix, cameraBuffer.projectionMatrix, cameraBuffer.viewToLightProjMatrix, cameraBuffer.viewInvMatrix);
     
-    if (!mGraphicsManager->GetRayTraceManager()->GetIsStructureReady())
+    if (mGraphicsManager->GetDirect3DManager()->IsDXRSupported() && mGraphicsManager->GetRayTraceManager()->GetIsReady())
     {
-        mPostProcessManager->RenderPostProcessing(mHDRTarget, 0.0167f); //TDA FIX
+        mPostProcessManager->RenderPostProcessing(mGraphicsManager->GetRayTraceManager()->GetRenderTarget(), 0.0167f);
     }
     else
     {
-        mPostProcessManager->RenderPostProcessing(mGraphicsManager->GetRayTraceManager()->GetRenderTarget(), 0.0167f);
+        mPostProcessManager->RenderPostProcessing(mHDRTarget, 0.0167f); //TDA FIX
     }
 
     direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->WaitForFenceCPUBlocking(mPreviousFrameFence);

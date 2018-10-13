@@ -9,6 +9,8 @@ Direct3DCommandAllocatorPool::Direct3DCommandAllocatorPool(ID3D12Device *device,
         newAllocator->SetName(L"Direct3DContext::mCommandAllocator");
         mAvailableAllocators.Add(newAllocator);
     }
+
+    mNumAllocators = numAllocators;
 }
 
 Direct3DCommandAllocatorPool::~Direct3DCommandAllocatorPool()
@@ -18,6 +20,8 @@ Direct3DCommandAllocatorPool::~Direct3DCommandAllocatorPool()
         bool allAllocatorsShouldBeDone = false;
         Application::Assert(allAllocatorsShouldBeDone);
     }
+
+    Application::Assert(mNumAllocators == mAvailableAllocators.CurrentSize());
     
     for (uint32 i = 0; i < mAvailableAllocators.CurrentSize(); i++)
     {

@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <stdexcept>
-#include <d3d12.h> //dxr
+#include <d3d12.h>
 #include <atlbase.h>
 #include <d3d11.h>
 #include <dxgi1_4.h>
@@ -31,6 +31,7 @@
 #define MAX_ASYNC_COMPUTE_TEXTURES_TO_PROCESS_PER_FRAME     1
 #define ALLOW_RAY_TRACING                                   1
 #define ENABLE_DEBUG_LAYER                                  1
+#define ENABLE_PIX                                          1
 
 #define VALID_COMPUTE_QUEUE_RESOURCE_STATES \
 	( D3D12_RESOURCE_STATE_UNORDERED_ACCESS \
@@ -55,6 +56,7 @@ public:
 	static char *MeshManifestFileLocation;
 	static char *MeshSerializationLocation;
 	static char *ShaderManifestFileLocation;
+    static char *RayShaderManifestFileLocation;
 	static bool  RebuildAllShaders;
 	static bool  RebuildAllMeshes;
 };

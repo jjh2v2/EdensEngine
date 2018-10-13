@@ -8,6 +8,7 @@ char *ApplicationSpecification::TextureManifestFileLocation = "../Eden/data/Mani
 char *ApplicationSpecification::MeshManifestFileLocation    = "../Eden/data/Manifests/MeshManifest.emf";
 char *ApplicationSpecification::MeshSerializationLocation   = "../Eden/data/Meshes/Serialized/";
 char *ApplicationSpecification::ShaderManifestFileLocation  = "../Eden/data/Manifests/ShaderManifest.emf";
+char *ApplicationSpecification::RayShaderManifestFileLocation = "../Eden/data/Manifests/RayShaderManifest.emf";
 bool ApplicationSpecification::RebuildAllShaders = true;
 bool ApplicationSpecification::RebuildAllMeshes = false;
 

@@ -53,7 +53,7 @@ void RayTraceAccelerationStructure::AddMesh(VertexBuffer *vertexBuffer, IndexBuf
     D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc = {};
     geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
     geometryDesc.Triangles.VertexBuffer.StartAddress = vertexBuffer->GetGpuAddress();
-    geometryDesc.Triangles.VertexBuffer.StrideInBytes = sizeof(RTXVertex);
+    geometryDesc.Triangles.VertexBuffer.StrideInBytes = sizeof(MeshVertex);
     geometryDesc.Triangles.VertexCount = numVertices;
     geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
     geometryDesc.Triangles.Transform3x4 = NULL;

@@ -174,11 +174,9 @@
     <ClInclude Include="src\Render\DirectX\Context\Direct3DContextManager.h" />
     <ClInclude Include="src\Render\DirectX\D3D12Helper.h" />
     <ClInclude Include="src\Render\DirectX\Direct3DManager.h" />
-    <ClInclude Include="src\Render\DirectX\DXRExperimental\dxcapi.h" />
-    <ClInclude Include="src\Render\DirectX\DXRExperimental\dxcapi.use.h" />
-    <ClInclude Include="src\Render\DirectX\DXRExperimental\Helpers\D3D12RaytracingHelpers.hpp" />
-    <ClInclude Include="src\Render\DirectX\DXRExperimental\Helpers\RaytracingPipelineGenerator.h" />
-    <ClInclude Include="src\Render\DirectX\DXRExperimental\Helpers\ShaderBindingTableGenerator.h" />
+    <ClInclude Include="src\Render\DirectX\DXR\D3D12RaytracingHelpers.hpp" />
+    <ClInclude Include="src\Render\DirectX\DXR\dxcapi.h" />
+    <ClInclude Include="src\Render\DirectX\DXR\dxcapi.use.h" />
     <ClInclude Include="src\Render\DirectX\Heap\DescriptorHeap.h" />
     <ClInclude Include="src\Render\DirectX\Heap\DescriptorHeapHandle.h" />
     <ClInclude Include="src\Render\DirectX\Heap\Direct3DHeapManager.h" />
@@ -197,6 +195,7 @@
     <ClInclude Include="src\Render\PostProcess\PostProcessManager.h" />
     <ClInclude Include="src\Render\RayTrace\RayTraceAccelerationStructure.h" />
     <ClInclude Include="src\Render\RayTrace\RayTraceManager.h" />
+    <ClInclude Include="src\Render\RayTrace\RayTraceShaderManager.h" />
     <ClInclude Include="src\Render\Renderer\DeferredRenderer.h" />
     <ClInclude Include="src\Render\Shader\Definitions\ConstantBufferDefinitions.h" />
     <ClInclude Include="src\Render\Shader\Definitions\MaterialDefinitions.h" />
@@ -258,8 +257,6 @@
     <ClCompile Include="src\Render\DirectX\Context\Direct3DContext.cpp" />
     <ClCompile Include="src\Render\DirectX\Context\Direct3DContextManager.cpp" />
     <ClCompile Include="src\Render\DirectX\Direct3DManager.cpp" />
-    <ClCompile Include="src\Render\DirectX\DXRExperimental\Helpers\RaytracingPipelineGenerator.cpp" />
-    <ClCompile Include="src\Render\DirectX\DXRExperimental\Helpers\ShaderBindingTableGenerator.cpp" />
     <ClCompile Include="src\Render\DirectX\Heap\DescriptorHeap.cpp" />
     <ClCompile Include="src\Render\DirectX\Heap\Direct3DHeapManager.cpp" />
     <ClCompile Include="src\Render\DirectX\Queue\Direct3DQueue.cpp" />
@@ -276,6 +273,7 @@
     <ClCompile Include="src\Render\PostProcess\PostProcessManager.cpp" />
     <ClCompile Include="src\Render\RayTrace\RayTraceAccelerationStructure.cpp" />
     <ClCompile Include="src\Render\RayTrace\RayTraceManager.cpp" />
+    <ClCompile Include="src\Render\RayTrace\RayTraceShaderManager.cpp" />
     <ClCompile Include="src\Render\Renderer\DeferredRenderer.cpp" />
     <ClCompile Include="src\Render\Shader\Definitions\ConstantBufferDefinitions.cpp" />
     <ClCompile Include="src\Render\Shader\RootSignature\RootSignatureManager.cpp" />

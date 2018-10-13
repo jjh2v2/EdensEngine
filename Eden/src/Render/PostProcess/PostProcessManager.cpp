@@ -106,7 +106,6 @@ PostProcessManager::~PostProcessManager()
 
 void PostProcessManager::RenderPostProcessing(RenderTarget *hdrTarget, float deltaTime)
 {
-    //if(firstTime){clear luminance buffers to black}
     if (mToneMapAndBloomEnabled)
     {
         CalculateLuminance(hdrTarget, deltaTime);

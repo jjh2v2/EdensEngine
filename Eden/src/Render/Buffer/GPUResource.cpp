@@ -137,7 +137,7 @@ ConstantBuffer::ConstantBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES u
 	mConstantBufferViewHandle = constantBufferViewHandle;
 
 	mMappedBuffer = NULL;
-	mResource->Map(0, NULL, &mMappedBuffer); //TDA ThrowIfFailed(m_resource->Map(0, &readRange, reinterpret_cast<void**>(&mappedData)));
+	mResource->Map(0, NULL, reinterpret_cast<void**>(&mMappedBuffer));
 }
 
 ConstantBuffer::~ConstantBuffer()
@@ -164,7 +164,7 @@ StructuredBuffer::StructuredBuffer(ID3D12Resource* resource, ID3D12Resource *upl
     
     if (mAccessType == CPU_WRITE_GPU_READ)
     {
-        Direct3DUtils::ThrowIfHRESULTFailed(mResource->Map(0, NULL, &mMappedBuffer));
+        Direct3DUtils::ThrowIfHRESULTFailed(mResource->Map(0, NULL, reinterpret_cast<void**>(&mMappedBuffer)));
     }
 }
 
@@ -203,7 +203,7 @@ bool StructuredBuffer::CopyToBuffer(const void* bufferData, uint32 bufferSize)
         {
             //copy data to the upload buffer
             void *mappedUpload = NULL;
-            Direct3DUtils::ThrowIfHRESULTFailed(mUploadResource->Map(0, NULL, &mappedUpload));
+            Direct3DUtils::ThrowIfHRESULTFailed(mUploadResource->Map(0, NULL, reinterpret_cast<void**>(&mappedUpload)));
             memcpy(mappedUpload, bufferData, bufferSize);
             mUploadResource->Unmap(0, NULL);
         }
@@ -260,7 +260,7 @@ void RayTraceBuffer::MapInstanceDescData(const void *instanceDescData, uint32 nu
     Application::Assert(mBufferType == RayTraceBufferType_Instancing);
 
     void *mappedData;
-    mResource->Map(0, NULL, &mappedData);
+    mResource->Map(0, NULL, reinterpret_cast<void**>(&mappedData));
     memcpy(mappedData, instanceDescData, numInstanceDescs * sizeof(D3D12_RAYTRACING_INSTANCE_DESC));
     mResource->Unmap(0, NULL);
 }

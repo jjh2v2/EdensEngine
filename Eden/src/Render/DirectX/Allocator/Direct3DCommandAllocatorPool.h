@@ -22,6 +22,7 @@ private:
         ID3D12CommandAllocator *Allocator;
     };
 
+    uint32 mNumAllocators;
     DynamicArray<ID3D12CommandAllocator*> mAvailableAllocators;
     DynamicArray<ReturnedAllocator> mReturnedAllocators;
 };

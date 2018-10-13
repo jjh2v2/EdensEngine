@@ -22,7 +22,7 @@ public:
 		mFBXSDKManager->Destroy();
 	}
 
-	bool LoadFBX(char *fileName, DynamicArray<MeshVertexData> &outVertexVector, DynamicArray<uint32> &indexSplits)
+	bool LoadFBX(char *fileName, DynamicArray<MeshVertex> &outVertexVector, DynamicArray<uint32> &indexSplits)
 	{
 		FbxImporter* pImporter = FbxImporter::Create(mFBXSDKManager,"");
 		FbxScene* pFbxScene = FbxScene::Create(mFBXSDKManager,"");
@@ -96,7 +96,7 @@ public:
 	}
 
 
-	uint32 AddToD3DMesh(FbxMesh *mesh, DynamicArray<MeshVertexData> &outVertexVector)
+	uint32 AddToD3DMesh(FbxMesh *mesh, DynamicArray<MeshVertex> &outVertexVector)
 	{
 		uint32 indexCount = 0;
 		FbxVector4* pVertices = mesh->GetControlPoints();
@@ -125,7 +125,7 @@ public:
 				tangentFound = ReadTangent(mesh, controlPointIndex, polygonIndex*3 + vertIndex, tangent);
 				binormalFound = ReadBiNormal(mesh, controlPointIndex, polygonIndex*3 + vertIndex, binormal);
 
-				MeshVertexData meshData;
+				MeshVertex meshData;
 				meshData.Position.X = (float)pVertices[controlPointIndex].mData[0];
 				meshData.Position.Y = (float)pVertices[controlPointIndex].mData[1];
 				meshData.Position.Z = (float)pVertices[controlPointIndex].mData[2];
@@ -160,7 +160,7 @@ public:
 			{
 				Vector3 tangent;
 				Vector3 binormal;
-				MeshVertexData::GetTangentAndBinormal(outVertexVector[polygonIndex*3], outVertexVector[polygonIndex*3+1], outVertexVector[polygonIndex*3+2], tangent, binormal);
+				MeshVertex::GetTangentAndBinormal(outVertexVector[polygonIndex*3], outVertexVector[polygonIndex*3+1], outVertexVector[polygonIndex*3+2], tangent, binormal);
 				outVertexVector[polygonIndex*3].Tangent = Vector3(tangent.X, tangent.Y, tangent.Z);
 				outVertexVector[polygonIndex*3+1].Tangent = Vector3(tangent.X, tangent.Y, tangent.Z);
 				outVertexVector[polygonIndex*3+2].Tangent = Vector3(tangent.X, tangent.Y, tangent.Z);
@@ -169,7 +169,7 @@ public:
 			{
 				Vector3 tangent;
 				Vector3 binormal;
-				MeshVertexData::GetTangentAndBinormal(outVertexVector[polygonIndex*3], outVertexVector[polygonIndex*3+1], outVertexVector[polygonIndex*3+2], tangent, binormal);
+				MeshVertex::GetTangentAndBinormal(outVertexVector[polygonIndex*3], outVertexVector[polygonIndex*3+1], outVertexVector[polygonIndex*3+2], tangent, binormal);
 				outVertexVector[polygonIndex*3].Binormal = Vector3(binormal.X, binormal.Y, binormal.Z);
 				outVertexVector[polygonIndex*3+1].Binormal = Vector3(binormal.X, binormal.Y, binormal.Z);
 				outVertexVector[polygonIndex*3+2].Binormal = Vector3(binormal.X, binormal.Y, binormal.Z);

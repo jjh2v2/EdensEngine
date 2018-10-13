@@ -1,11 +1,6 @@
 #pragma once
 #include "Render/RayTrace/RayTraceAccelerationStructure.h"
-#include "Render/DirectX/DXRExperimental/dxcapi.h"
-#include "Render/DirectX/DXRExperimental/dxcapi.use.h"
-
-//using nvidia helpers for the clumsier part of the ray pipeline
-#include "Render/DirectX/DXRExperimental/Helpers/RaytracingPipelineGenerator.h"
-#include "Render/DirectX/DXRExperimental/Helpers/ShaderBindingTableGenerator.h"
+#include "Render/RayTrace/RayTraceShaderManager.h"
 
 class Camera;
 
@@ -15,56 +10,38 @@ public:
     RayTraceManager(Direct3DManager *direct3DManager, RootSignatureManager *rootSignatureManager);
     ~RayTraceManager();
 
-    void QueueRayTraceAccelerationStructureCreation();
+    void QueueRayTraceAccelerationStructureCreation(Mesh *mesh);
     void Update(Camera *camera);
-    bool GetIsStructureReady() { return mIsStructureReady; }
+    bool GetIsReady() { return mRayTracingState == RayTracingState_Ready_For_Dispatch; }
     RenderTarget *GetRenderTarget() { return mRayTraceRenderTarget; }
 
 private:
-    struct RayTraceShaderBuilder
+    enum RayTracingState
     {
-        dxc::DxcDllSupport DxcSupport;
-        IDxcCompiler *DxcCompiler;
-        IDxcLibrary *DxcLibrary;
-        IDxcIncludeHandler *DxcIncludeHandler;
+        RayTracingState_Uninitialized = 0,
+        RayTracingState_Acceleration_Structure_Creation,
+        RayTracingState_Ready_For_Dispatch
     };
 
-    void LoadRayTraceShaders(RootSignatureManager *rootSignatureManager);
-    IDxcBlob *CompileRayShader(WCHAR *fileName);
+    void UpdateCameraBuffer(Camera *camera);
+    void LoadRayTracePipelines();
     void BuildHeap();
-    void BuildShaderBindingTable();
     void DispatchRayTrace();
-    void CreateAccelerationStructures();
+    uint64 CreateAccelerationStructures();
 
-    RayTraceAccelerationStructure::RTXVertex mVertices[3];
-    VertexBuffer *mVertexBuffer;
     Direct3DManager *mDirect3DManager;
+    Mesh *mMesh;
 
-    bool mShouldBuildAccelerationStructure;
-    bool mIsStructureReady;
-
-    RayTraceShaderBuilder mRayTraceShaderBuilder;
-    //RootSignatureInfo mEmptyGlobalRootSignature;
-    //RootSignatureInfo mEmptyLocalRootSignature;
-
+    RayTraceShaderManager *mRayShaderManager;
     RayTraceAccelerationStructure *mAccelerationStructure;
-    ID3D12StateObject *mRayTraceStateObject;
-    ID3D12StateObjectProperties *mRayTraceStateObjectProperties;
+    
     RenderTarget *mRayTraceRenderTarget;
     DescriptorHeap *mRayTraceHeap;
     ConstantBuffer *mCameraBuffers[FRAME_BUFFER_COUNT];
 
-    //nv_helpers_dx12::ShaderBindingTableGenerator mShaderBindingTableHelper;
-    RayTraceBuffer *mRayGenShaderTable;
-    RayTraceBuffer *mMissShaderTable;
-    RayTraceBuffer *mHitGroupShaderTable;
+    RayTraceShaderManager::RayTracePSO *mBarycentricRayTracePSO;
 
-    IDxcBlob *mRayGenShader;
-    IDxcBlob *mMissShader;
-    IDxcBlob *mHitShader;
-    ID3D12RootSignature *mRayGenSignature;
-    ID3D12RootSignature *mHitSignature;
-    ID3D12RootSignature *mMissSignature;
-
-    RootSignatureManager *mRootSignatureManager;
+    bool mShouldBuildAccelerationStructure;
+    uint64 mAccelerationStructureFence;
+    RayTracingState mRayTracingState;
 };

@@ -1,0 +1,14 @@
+GenShader
+[Barycentric/BarycentricGen.hlsl]
+[BarycentricGen]
+[22]
+MissShader
+[Barycentric/BarycentricMiss.hlsl]
+[BarycentricMiss]
+[22]
+ClosestHitShader
+[Barycentric/BarycentricClosestHit.hlsl]
+[BarycentricClosestHit]
+[22]
+GlobalRootSignature
+[23]

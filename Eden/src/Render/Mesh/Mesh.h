@@ -9,7 +9,7 @@
 
 class Direct3DManager;
 
-struct MeshVertexData
+struct MeshVertex
 {
 	Vector4 Position;
 	Vector4 TexCoord;
@@ -18,7 +18,7 @@ struct MeshVertexData
 	Vector3 Binormal;
 	Vector4 Color;
 
-	static void GetTangentAndBinormal(MeshVertexData data1, MeshVertexData data2, MeshVertexData data3, Vector3 &tangent, Vector3 &binormal)
+	static void GetTangentAndBinormal(MeshVertex data1, MeshVertex data2, MeshVertex data3, Vector3 &tangent, Vector3 &binormal)
 	{
 		Vector3 v1, v2;
 		Vector2 t1, t2;
@@ -47,14 +47,14 @@ struct MeshVertexData
 class Mesh
 {
 public:
-	Mesh(Direct3DManager *direct3DManager, uint32 vertexCount, uint32 indexCount, MeshVertexData *meshData, DynamicArray<uint32> &splits, uint32 *indices);
+	Mesh(Direct3DManager *direct3DManager, uint32 vertexCount, uint32 indexCount, MeshVertex *meshData, DynamicArray<uint32> &splits, uint32 *indices);
 	virtual ~Mesh();
 
 	uint32 GetIndexCount() { return mIndexCount; }
 	uint32 GetVertexCount() { return mVertexCount; }
 	uint32 GetMeshSplitCount() { return mIndexSplits.CurrentSize(); }
 	uint32 GetMeshIndexSplitByIndex(uint32 index) { return mIndexSplits[index]; }
-	MeshVertexData *GetMeshData() { return mMeshVertices; }
+	MeshVertex *GetMeshData() { return mMeshVertices; }
 	uint32 *GetIndices() { return mMeshIndices; }
 
 	void RecalculateBounds();
@@ -69,7 +69,7 @@ protected:
 
 	VertexBuffer *mVertexBuffer;
 	IndexBuffer *mIndexBuffer;
-	MeshVertexData *mMeshVertices;
+	MeshVertex *mMeshVertices;
 	uint32 *mMeshIndices;
 	DynamicArray<uint32> mIndexSplits;
 	uint32 mVertexCount;

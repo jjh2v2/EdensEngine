@@ -738,7 +738,7 @@ RayTraceBuffer *Direct3DContextManager::CreateRayTraceBuffer(uint64 bufferSize, 
         Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &bufferDesc, initialState, NULL, IID_PPV_ARGS(&bufferResource)));
         
         void *mappedData;
-        bufferResource->Map(0, NULL, &mappedData);
+        bufferResource->Map(0, NULL, reinterpret_cast<void**>(&mappedData));
         memset(mappedData, 0, bufferSize);
         bufferResource->Unmap(0, NULL);
         break;
@@ -855,6 +855,8 @@ void Direct3DContextManager::FreeFilteredCubeMap(FilteredCubeMapRenderTexture *c
 void Direct3DContextManager::FreeRayTraceBuffer(RayTraceBuffer *rayTraceBuffer)
 {
     Application::Assert(mBufferTracking[ContextTrackingType_RayTraceBuffer] > 0);
+
+    mHeapManager->FreeSRVDescriptorHeapHandle(rayTraceBuffer->GetShaderResourceViewHandle());
 
     delete rayTraceBuffer;
     mBufferTracking[ContextTrackingType_RayTraceBuffer]--;

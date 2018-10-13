@@ -22,7 +22,7 @@
 #ifndef __DXCAPI_USE_H__
 #define __DXCAPI_USE_H__
 
-#include "Render/DirectX/DXRExperimental/dxcapi.h"
+#include "Render/DirectX/DXR/dxcapi.h"
 
 namespace dxc {
 
