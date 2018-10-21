@@ -697,6 +697,11 @@ FilteredCubeMapRenderTexture *Direct3DContextManager::CreateFilteredCubeMapRende
 
 RayTraceBuffer *Direct3DContextManager::CreateRayTraceBuffer(uint64 bufferSize, D3D12_RESOURCE_STATES initialState, RayTraceBuffer::RayTraceBufferType bufferType, bool hasSRV /*= false*/)
 {
+    if (bufferType == RayTraceBuffer::RayTraceBufferType_Transform)
+    {
+        bufferSize = MathHelper::AlignU64(bufferSize, D3D12_RAYTRACING_TRANSFORM3X4_BYTE_ALIGNMENT);
+    }
+
     D3D12_RESOURCE_DESC bufferDesc;
     bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
     bufferDesc.Alignment = 0;
@@ -741,6 +746,10 @@ RayTraceBuffer *Direct3DContextManager::CreateRayTraceBuffer(uint64 bufferSize, 
         bufferResource->Map(0, NULL, reinterpret_cast<void**>(&mappedData));
         memset(mappedData, 0, bufferSize);
         bufferResource->Unmap(0, NULL);
+        break;
+    case RayTraceBuffer::RayTraceBufferType_Transform:
+        initialState = D3D12_RESOURCE_STATE_GENERIC_READ;
+        Direct3DUtils::ThrowIfHRESULTFailed(mDevice->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &bufferDesc, initialState, NULL, IID_PPV_ARGS(&bufferResource)));
         break;
     default:
         Application::Assert(false);

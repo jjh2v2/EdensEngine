@@ -5,6 +5,13 @@
 #include "Asset/Manifest/ManifestLoader.h"
 #include <map>
 
+/*
+A hit group with no shaders at all is allowed, by specifying NULL as the shader identifier.
+    -Useful if we only care about generating and misses
+    -Any hits, closest hits, and intersections can all be excluded
+    -Any hits should be excluded when unnecessary
+*/
+
 class Direct3DManager;
 class RootSignatureManager;
 

@@ -17,11 +17,13 @@ public:
 	void OnScreenChanged(Vector2 screenSize);
 	void SetActiveScene(Scene *scene) { mActiveScene = scene; }
 	void Render();
+    void ToggleRayTraceOutput(bool showRayTrace) { mShowRayTrace = showRayTrace; }
 
 private:
 	void FreeTargets();
 	void CreateTargets(Vector2 screenSize);
 
+    void RenderRayTracing();
 	void ClearFrameBuffers();
 	void RenderGBuffer();
     void RenderSky();
@@ -32,6 +34,7 @@ private:
 
     SDSMShadowManager *mShadowManager;
     PostProcessManager *mPostProcessManager;
+    RayTraceManager *mRayTraceManager;
 
 	Scene *mActiveScene;
 
@@ -55,5 +58,6 @@ private:
     RenderTarget *mEnvironmentMapLookup;
 
     uint64 mPreviousFrameFence;
-    uint64 mGBufferPassFence;
+    bool mMeshesAddedToRayTrace;
+    bool mShowRayTrace;
 };

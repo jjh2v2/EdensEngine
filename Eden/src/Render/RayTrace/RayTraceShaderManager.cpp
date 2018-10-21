@@ -229,7 +229,6 @@ RayTraceShaderManager::RayTracePSO *RayTraceShaderManager::LoadPipeline(const ch
     Direct3DUtils::ThrowIfHRESULTFailed(mDirect3DManager->GetRayTraceDevice()->CreateStateObject(raytracingPipelineDesc, IID_PPV_ARGS(&newRayTracePipeline->RayTraceStateObject)));
     Direct3DUtils::ThrowIfHRESULTFailed(newRayTracePipeline->RayTraceStateObject->QueryInterface(IID_PPV_ARGS(&newRayTracePipeline->RayTraceStateObjectProperties)));
 
-
     uint32 shaderIdentifierSize = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
     uint32 shaderRecordSize = MathHelper::AlignU32(shaderIdentifierSize, D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT);
     uint8_t *mappedData = NULL;

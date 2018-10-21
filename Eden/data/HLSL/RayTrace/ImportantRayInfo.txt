@@ -1,0 +1,17 @@
+Ray Flags:
+RAY_FLAG_NONE                            = 0x00,
+RAY_FLAG_FORCE_OPAQUE                    = 0x01,
+RAY_FLAG_FORCE_NON_OPAQUE                = 0x02,
+RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH = 0x04,
+RAY_FLAG_SKIP_CLOSEST_HIT_SHADER         = 0x08,
+RAY_FLAG_CULL_BACK_FACING_TRIANGLES      = 0x10,
+RAY_FLAG_CULL_FRONT_FACING_TRIANGLES     = 0x20,
+RAY_FLAG_CULL_OPAQUE                     = 0x40,
+RAY_FLAG_CULL_NON_OPAQUE                 = 0x80,
+
+Geometry instances in top-level acceleration structures each contain an 8-bit user defined InstanceMask.  
+TraceRay() has an 8-bit input parameter InstanceInclusionMask which gets ANDed with the InstanceMask from any geometry instance that is a candidate for intersection.
+If the result of the AND is zero, the intersection is ignored. This feature allows apps to represent different subsets of geometry within a single acceleration 
+structure as opposed to having to build separate acceleration structures for each subset.  The app can choose how to trade traversal performance versus overhead 
+for maintaining multiple acceleration structures.
+ - An example would be culling objects that an app doesn’t want to contribute to a shadow determination but otherwise remain visible.

@@ -10,9 +10,9 @@ public:
     RayTraceManager(Direct3DManager *direct3DManager, RootSignatureManager *rootSignatureManager);
     ~RayTraceManager();
 
-    void QueueRayTraceAccelerationStructureCreation(Mesh *mesh);
-    void Update(Camera *camera);
-    bool GetIsReady() { return mRayTracingState == RayTracingState_Ready_For_Dispatch; }
+    void AddMeshToAccelerationStructure(Mesh *mesh, const D3DXMATRIX &transform, RayTraceAccelerationStructureType structureType);
+    void RenderRayTrace(Camera *camera);
+    bool GetIsReady() { return true; }
     RenderTarget *GetRenderTarget() { return mRayTraceRenderTarget; }
 
 private:
@@ -23,25 +23,42 @@ private:
         RayTracingState_Ready_For_Dispatch
     };
 
+    struct RayMesh
+    {
+        Mesh *Mesh;
+        RayTraceBuffer *TransformBuffer;
+    };
+
+    struct RayTraceStructureGroup
+    {
+        RayTraceStructureGroup()
+        {
+            AccelerationStructure = NULL;
+            NeedsUpdate = false;
+            NeedsRebuild = false;
+        }
+
+        RayTraceAccelerationStructure *AccelerationStructure;
+        DynamicArray<RayMesh> Meshes;
+        bool NeedsUpdate;
+        bool NeedsRebuild;
+    };
+
     void UpdateCameraBuffer(Camera *camera);
     void LoadRayTracePipelines();
-    void BuildHeap();
     void DispatchRayTrace();
-    uint64 CreateAccelerationStructures();
+    void CreateAccelerationStructure(RayTraceAccelerationStructureType structureType);
 
     Direct3DManager *mDirect3DManager;
-    Mesh *mMesh;
 
     RayTraceShaderManager *mRayShaderManager;
-    RayTraceAccelerationStructure *mAccelerationStructure;
+    RayTraceStructureGroup* mRayTraceAccelerationStructures[RayTraceAccelerationStructureType_Num_Types];
     
     RenderTarget *mRayTraceRenderTarget;
     DescriptorHeap *mRayTraceHeap;
     ConstantBuffer *mCameraBuffers[FRAME_BUFFER_COUNT];
 
+    uint64 mRayTraceFence;
     RayTraceShaderManager::RayTracePSO *mBarycentricRayTracePSO;
-
-    bool mShouldBuildAccelerationStructure;
-    uint64 mAccelerationStructureFence;
-    RayTracingState mRayTracingState;
+    DynamicArray<RayTraceBuffer*> mTransformBufferCache;
 };

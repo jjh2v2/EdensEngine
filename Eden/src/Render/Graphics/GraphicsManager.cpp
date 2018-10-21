@@ -7,7 +7,6 @@ GraphicsManager::GraphicsManager()
 	mShaderManager = NULL;
 	mTextureManager = NULL;
 	mMeshManager = NULL;
-    mRayTraceManager = NULL;
 
     mBackgroundJob = new UploadUpdateBackgroundJob(mDirect3DManager->GetContextManager());
     mBackgroundUpdateJobBatch = new JobBatch();
@@ -19,7 +18,7 @@ GraphicsManager::~GraphicsManager()
     delete mBackgroundUpdateJobBatch;
     delete mBackgroundJob;
 
-    delete mRayTraceManager;
+    
 	delete mMeshManager;
 	delete mShaderManager;
 	delete mSamplerManager;
@@ -35,12 +34,6 @@ void GraphicsManager::InitializeGraphicsResources()
 	mShaderManager = new ShaderManager(mDirect3DManager->GetDevice());
 	mMeshManager = new MeshManager();
 	mMeshManager->LoadAllMeshes(mDirect3DManager);
-
-    if (mDirect3DManager->IsDXRSupported())
-    {
-        mRayTraceManager = new RayTraceManager(mDirect3DManager, mShaderManager->GetRootSignatureManager());
-        mRayTraceManager->QueueRayTraceAccelerationStructureCreation(mMeshManager->GetMesh("MageBiNormals"));
-    }
 }
 
 GraphicsManager::UploadUpdateBackgroundJob::UploadUpdateBackgroundJob(Direct3DContextManager *contextManager)
@@ -66,11 +59,6 @@ void GraphicsManager::Update(float deltaTime, Camera *camera)
 
     mTextureManager->ProcessCurrentUploads();
     mTextureManager->ProcessCurrentComputeWork();
-
-    if (mRayTraceManager)
-    {
-        mRayTraceManager->Update(camera);
-    }
     
     mDirect3DManager->GetContextManager()->GetGraphicsContext()->FlushDeferredTransitions();
 }

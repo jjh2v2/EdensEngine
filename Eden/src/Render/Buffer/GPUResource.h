@@ -212,12 +212,14 @@ public:
     {
         RayTraceBufferType_Acceleration_Structure = 0,
         RayTraceBufferType_Instancing,
-        RayTraceBufferType_Shader_Binding_Table_Storage
+        RayTraceBufferType_Shader_Binding_Table_Storage,
+        RayTraceBufferType_Transform
     };
 
     RayTraceBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, RayTraceBufferType bufferType, DescriptorHeapHandle srvHandle);
     virtual ~RayTraceBuffer();
     void MapInstanceDescData(const void *instanceDescData, uint32 numInstanceDescs);
+    void MapTransform(const void *transform, uint32 sizeOfTransform);
     DescriptorHeapHandle GetShaderResourceViewHandle() { return mSRVHandle; }
 
 private:

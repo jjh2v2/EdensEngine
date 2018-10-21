@@ -244,6 +244,9 @@ bool InputManager::IsKeyboardKeyPressed(KeyboardKey key)
 	case KeyboardKey_LeftShift:
 		isKeyDown = (mKeyboardState[DIK_LSHIFT] & 0x80) != 0;
 		break;
+    case KeyboardKey_Tab:
+        isKeyDown = (mKeyboardState[DIK_TAB] & 0x80) != 0;
+        break;
 	default:
 		break;
 	}

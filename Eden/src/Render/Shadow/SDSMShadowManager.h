@@ -35,7 +35,7 @@ public:
     SDSMShadowManager(GraphicsManager *graphicsManager);
     ~SDSMShadowManager();
 
-    void ComputeShadowPartitions(Camera *camera, D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjectionMatrix, DepthStencilTarget *depthStencil, uint64 gbufferPassFence);
+    void ComputeShadowPartitions(Camera *camera, D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjectionMatrix, DepthStencilTarget *depthStencil);
     void RenderShadowMapPartitions(const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities);
 
     RenderTarget *GetShadowEVSMTexture(uint32 index) { return mShadowEVSMTextures[index]; }

@@ -9,7 +9,8 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 {
 	mGraphicsManager = graphicsManager;
     mPreviousFrameFence = 0;
-    mGBufferPassFence = 0;
+    mMeshesAddedToRayTrace = false;
+    mShowRayTrace = false;
 
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
 	Direct3DContextManager *contextManager = direct3DManager->GetContextManager();
@@ -137,10 +138,16 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 
     mShadowManager = new SDSMShadowManager(mGraphicsManager);
     mPostProcessManager = new PostProcessManager(mGraphicsManager);
+
+    if (direct3DManager->IsDXRSupported())
+    {
+        mRayTraceManager = new RayTraceManager(direct3DManager, mGraphicsManager->GetShaderManager()->GetRootSignatureManager());
+    }
 }
 
 DeferredRenderer::~DeferredRenderer()
 {
+    delete mRayTraceManager;
     delete mPostProcessManager;
     delete mShadowManager;
 
@@ -231,6 +238,30 @@ void DeferredRenderer::FreeTargets()
 	}
 
     contextManager->FreeRenderTarget(mHDRTarget);
+}
+
+void DeferredRenderer::RenderRayTracing()
+{
+    if (mRayTraceManager)
+    {
+        if (!mMeshesAddedToRayTrace && mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals")->IsReady() && mGraphicsManager->GetMeshManager()->GetMesh("Cube")->IsReady())
+        {
+            mMeshesAddedToRayTrace = true;
+            D3DXMATRIX transform1 = mSceneEntity->CalculateTransform();
+            mRayTraceManager->AddMeshToAccelerationStructure(mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals"), transform1, RayTraceAccelerationStructureType_Fastest_Trace);
+
+            D3DXMATRIX transform2 = mSceneEntity2->CalculateTransform();
+            mRayTraceManager->AddMeshToAccelerationStructure(mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals"), transform2, RayTraceAccelerationStructureType_Fastest_Trace);
+
+            D3DXMATRIX transform3 = mSceneEntity3->CalculateTransform();
+            mRayTraceManager->AddMeshToAccelerationStructure(mGraphicsManager->GetMeshManager()->GetMesh("MageBiNormals"), transform3, RayTraceAccelerationStructureType_Fastest_Trace);
+        
+            D3DXMATRIX transform4 = mSceneEntity4->CalculateTransform();
+            mRayTraceManager->AddMeshToAccelerationStructure(mGraphicsManager->GetMeshManager()->GetMesh("Cube"), transform4, RayTraceAccelerationStructureType_Fastest_Trace);
+        }
+
+        mRayTraceManager->RenderRayTrace(mActiveScene->GetMainCamera());
+    }
 }
 
 void DeferredRenderer::CreateTargets(Vector2 screenSize)
@@ -415,7 +446,7 @@ void DeferredRenderer::RenderSky()
 
 void DeferredRenderer::RenderShadows(D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjMatrix)
 {
-    mShadowManager->ComputeShadowPartitions(mActiveScene->GetMainCamera(), lightViewMatrix, lightProjMatrix, mGBufferDepth, mGBufferPassFence);
+    mShadowManager->ComputeShadowPartitions(mActiveScene->GetMainCamera(), lightViewMatrix, lightProjMatrix, mGBufferDepth);
     
     D3DXMATRIX lightViewProjMatrix = lightViewMatrix * lightProjMatrix;
     DynamicArray<SceneEntity*> sceneEntities;
@@ -587,15 +618,16 @@ void DeferredRenderer::Render()
 
     mCameraConstantBuffer[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&cameraBuffer, sizeof(CameraBuffer));
     
+    RenderRayTracing();
 	ClearFrameBuffers();
 	RenderGBuffer();
     RenderSky();
     RenderShadows(lightView, lightProj);
     RenderLightingMain(cameraBuffer.viewMatrix, cameraBuffer.projectionMatrix, cameraBuffer.viewToLightProjMatrix, cameraBuffer.viewInvMatrix);
     
-    if (mGraphicsManager->GetDirect3DManager()->IsDXRSupported() && mGraphicsManager->GetRayTraceManager()->GetIsReady())
+    if (mGraphicsManager->GetDirect3DManager()->IsDXRSupported() && mRayTraceManager->GetIsReady() && mShowRayTrace)
     {
-        mPostProcessManager->RenderPostProcessing(mGraphicsManager->GetRayTraceManager()->GetRenderTarget(), 0.0167f);
+        mPostProcessManager->RenderPostProcessing(mRayTraceManager->GetRenderTarget(), 0.0167f);
     }
     else
     {

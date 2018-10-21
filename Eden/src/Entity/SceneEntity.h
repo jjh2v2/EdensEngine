@@ -23,6 +23,7 @@ public:
 	void Update();
 	void Render(RenderPassContext *renderPassContext);
     void RenderShadows(RenderPassContext *renderPassContext, const D3DXMATRIX &lightViewProjMatrix);
+    D3DXMATRIX CalculateTransform();
 
 private:
     D3DXMATRIX GetWorldMatrix(const Vector3 &position, const Vector3 &rotation, const Vector3 &scale);

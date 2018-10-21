@@ -20,7 +20,8 @@ enum KeyboardKey
 	KeyboardKey_Z,
 	KeyboardKey_PageUp,
 	KeyboardKey_PageDown,
-	KeyboardKey_LeftShift
+	KeyboardKey_LeftShift,
+    KeyboardKey_Tab
 };
 
 class InputManager

@@ -3,27 +3,29 @@
 #include "Render/Shader/Definitions/ConstantBufferDefinitions.h"
 #include "Camera/Camera.h"
 
-//TDA: Implement update support
 RayTraceManager::RayTraceManager(Direct3DManager *direct3DManager, RootSignatureManager *rootSignatureManager)
 {
     mDirect3DManager = direct3DManager;
-
-    mAccelerationStructure = new RayTraceAccelerationStructure(mDirect3DManager, false);
-    mRayShaderManager = new RayTraceShaderManager(direct3DManager, rootSignatureManager);
-
-    mShouldBuildAccelerationStructure = false;
-    mAccelerationStructureFence = 0;
-    mRayTracingState = RayTracingState_Uninitialized;
     mRayTraceHeap = NULL;
+
+    for (uint32 i = 0; i < RayTraceAccelerationStructureType_Num_Types; i++)
+    {
+        mRayTraceAccelerationStructures[i] = new RayTraceStructureGroup();
+    }
+
+    mRayShaderManager = new RayTraceShaderManager(direct3DManager, rootSignatureManager);
 
     Vector2 screenSize = mDirect3DManager->GetScreenSize();
     mRayTraceRenderTarget = mDirect3DManager->GetContextManager()->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R8G8B8A8_UNORM, true, 1, 1, 0);
+    mRayTraceHeap = new DescriptorHeap(mDirect3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, RAY_TRACE_DESCRIPTOR_HEAP_SIZE, true);
 
     for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
     {
         mCameraBuffers[i] = mDirect3DManager->GetContextManager()->CreateConstantBuffer(sizeof(CameraRayTraceBuffer));
     }
     
+    mRayTraceFence = 0;
+
     LoadRayTracePipelines();
 }
 
@@ -45,18 +47,35 @@ RayTraceManager::~RayTraceManager()
         mCameraBuffers[i] = NULL;
     }
 
-    if (mAccelerationStructure)
+    for (uint32 i = 0; i < RayTraceAccelerationStructureType_Num_Types; i++)
     {
-        delete mAccelerationStructure;
+        if (mRayTraceAccelerationStructures[i])
+        {
+            delete mRayTraceAccelerationStructures[i]->AccelerationStructure;
+            delete mRayTraceAccelerationStructures[i];
+        }
+    }
+
+    for (uint32 i = 0; i < mTransformBufferCache.CurrentSize(); i++)
+    {
+        mDirect3DManager->GetContextManager()->FreeRayTraceBuffer(mTransformBufferCache[i]);
     }
 
     delete mRayShaderManager;
 }
 
-void RayTraceManager::QueueRayTraceAccelerationStructureCreation(Mesh *mesh)
+void RayTraceManager::AddMeshToAccelerationStructure(Mesh *mesh, const D3DXMATRIX &transform, RayTraceAccelerationStructureType structureType)
 {
-    mShouldBuildAccelerationStructure = true;
-    mMesh = mesh;
+    RayMesh newRayMesh;
+    newRayMesh.Mesh = mesh;
+    newRayMesh.TransformBuffer = mDirect3DManager->GetContextManager()->CreateRayTraceBuffer(RAY_TRACE_TRANFORM_BUFFER_SIZE,
+        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, RayTraceBuffer::RayTraceBufferType_Transform);
+    newRayMesh.TransformBuffer->MapTransform(transform, RAY_TRACE_TRANFORM_BUFFER_SIZE);
+
+    mRayTraceAccelerationStructures[structureType]->Meshes.Add(newRayMesh);
+    mRayTraceAccelerationStructures[structureType]->NeedsRebuild = true;
+
+    mTransformBufferCache.Add(newRayMesh.TransformBuffer);
 }
 
 void RayTraceManager::UpdateCameraBuffer(Camera *camera)
@@ -77,80 +96,77 @@ void RayTraceManager::UpdateCameraBuffer(Camera *camera)
     mCameraBuffers[mDirect3DManager->GetFrameIndex()]->SetConstantBufferData(&cameraBuffer, sizeof(CameraRayTraceBuffer));
 }
 
-void RayTraceManager::Update(Camera *camera)
+void RayTraceManager::RenderRayTrace(Camera *camera)
 {
-    switch (mRayTracingState)
+    for (uint32 i = 0; i < RayTraceAccelerationStructureType_Num_Types; i++)
     {
-    case RayTracingState_Uninitialized:
-        if (mShouldBuildAccelerationStructure)
+        if (mRayTraceAccelerationStructures[i]->NeedsRebuild)
         {
-            bool readyForCreation = true;
-            readyForCreation &= mMesh->IsReady();
+            if (!mRayTraceAccelerationStructures[i]->AccelerationStructure)
+            {
+                switch (i)
+                {
+                case RayTraceAccelerationStructureType_Fastest_Build:
+                    mRayTraceAccelerationStructures[i]->AccelerationStructure = new RayTraceAccelerationStructure(mDirect3DManager, RayTraceAccelerationStructureFlags(RayTraceAccelerationStructureFlags::FAST_BUILD | RayTraceAccelerationStructureFlags::IS_OPAQUE));
+                    break;
+                case RayTraceAccelerationStructureType_Fast_Build_With_Update:
+                    mRayTraceAccelerationStructures[i]->AccelerationStructure = new RayTraceAccelerationStructure(mDirect3DManager, RayTraceAccelerationStructureFlags(RayTraceAccelerationStructureFlags::FAST_BUILD | RayTraceAccelerationStructureFlags::IS_OPAQUE | RayTraceAccelerationStructureFlags::CAN_UPDATE));
+                    break;
+                case RayTraceAccelerationStructureType_Fastest_Trace:
+                    mRayTraceAccelerationStructures[i]->AccelerationStructure = new RayTraceAccelerationStructure(mDirect3DManager, RayTraceAccelerationStructureFlags(RayTraceAccelerationStructureFlags::FAST_TRACE | RayTraceAccelerationStructureFlags::IS_OPAQUE));
+                    break;
+                case RayTraceAccelerationStructureType_Fast_Trace_With_Update:
+                    mRayTraceAccelerationStructures[i]->AccelerationStructure = new RayTraceAccelerationStructure(mDirect3DManager, RayTraceAccelerationStructureFlags(RayTraceAccelerationStructureFlags::FAST_TRACE | RayTraceAccelerationStructureFlags::IS_OPAQUE | RayTraceAccelerationStructureFlags::CAN_UPDATE));
+                    break;
+                default:
+                    Application::Assert(false);
+                    break;
+                }
+            }
+            
+            CreateAccelerationStructure((RayTraceAccelerationStructureType)i);
+            mRayTraceAccelerationStructures[i]->NeedsRebuild = false;
+        }
+    }
 
-            if (readyForCreation)
-            {
-                mAccelerationStructureFence = CreateAccelerationStructures();
-                mRayTracingState = RayTracingState_Acceleration_Structure_Creation;
-            }
-        }
-        break;
-    case RayTracingState_Acceleration_Structure_Creation:
-        {
-            uint64 currentFence = mDirect3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->PollCurrentFenceValue();
-            if (mAccelerationStructureFence <= currentFence)
-            {
-                BuildHeap();
-                mRayTracingState = RayTracingState_Ready_For_Dispatch;
-            }
-        }
-        break;
-    case RayTracingState_Ready_For_Dispatch:
-        {
-            UpdateCameraBuffer(camera);
-            DispatchRayTrace();
-        }
-        break;
-    default:
-        Application::Assert(false);
-        break;
+    if(!mRayTraceAccelerationStructures[RayTraceAccelerationStructureType_Fastest_Trace]->NeedsRebuild && mRayTraceAccelerationStructures[RayTraceAccelerationStructureType_Fastest_Trace]->Meshes.CurrentSize() > 0)
+    {
+        UpdateCameraBuffer(camera);
+        DispatchRayTrace();
     }
 }
 
 void RayTraceManager::LoadRayTracePipelines()
 {
-    //TDA: clean up memory use of everything in this file
     mBarycentricRayTracePSO = mRayShaderManager->GetRayTracePipeline("Barycentric");
 }
 
-uint64 RayTraceManager::CreateAccelerationStructures()
+void RayTraceManager::CreateAccelerationStructure(RayTraceAccelerationStructureType structureType)
 {
     D3DXMATRIX structureMatrix;
     D3DXMatrixIdentity(&structureMatrix);
 
-    mAccelerationStructure->ClearDescs();
-    mAccelerationStructure->AddMesh(mMesh->GetVertexBuffer(), NULL, mMesh->GetVertexCount(), 0);
-    mAccelerationStructure->BuildBottomLevelStructure(false);
-    mAccelerationStructure->AddBottomLevelInstance(structureMatrix, 0, 0);
-    mAccelerationStructure->BuildTopLevelStructure(false);
+    mRayTraceAccelerationStructures[structureType]->AccelerationStructure->ClearDescs();
 
-    return mDirect3DManager->GetContextManager()->GetRayTraceContext()->Flush(mDirect3DManager->GetContextManager()->GetQueueManager());
-}
+    uint32 numMeshes = mRayTraceAccelerationStructures[structureType]->Meshes.CurrentSize();
+    for (uint32 i = 0; i < numMeshes; i++)
+    {
+        RayMesh &meshToAdd = mRayTraceAccelerationStructures[structureType]->Meshes[i];
+        mRayTraceAccelerationStructures[structureType]->AccelerationStructure->AddMesh(meshToAdd.Mesh->GetVertexBuffer(), NULL, meshToAdd.TransformBuffer, meshToAdd.Mesh->GetVertexCount(), 0);
+    }
 
-void RayTraceManager::BuildHeap()
-{
-    mRayTraceHeap = new DescriptorHeap(mDirect3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, RAY_TRACE_DESCRIPTOR_HEAP_SIZE, true);
-    D3D12_CPU_DESCRIPTOR_HANDLE uavSrvHandle = mRayTraceHeap->GetHeapCPUStart();
-
-    mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mRayTraceRenderTarget->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    uavSrvHandle.ptr += mRayTraceHeap->GetDescriptorSize();
-
-    mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mAccelerationStructure->GetTopLevelResultBuffer()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    mRayTraceAccelerationStructures[structureType]->AccelerationStructure->BuildBottomLevelStructure(false);
+    mRayTraceAccelerationStructures[structureType]->AccelerationStructure->AddBottomLevelInstance(structureMatrix, 0, 0);
+    mRayTraceAccelerationStructures[structureType]->AccelerationStructure->BuildTopLevelStructure(false);
 }
 
 void RayTraceManager::DispatchRayTrace()
 {
     D3D12_CPU_DESCRIPTOR_HANDLE uavSrvHandle = mRayTraceHeap->GetHeapCPUStart();
-    uavSrvHandle.ptr += mRayTraceHeap->GetDescriptorSize() * 2; //TDA: clean this up
+    mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mRayTraceRenderTarget->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    uavSrvHandle.ptr += mRayTraceHeap->GetDescriptorSize();
+    mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mRayTraceAccelerationStructures[RayTraceAccelerationStructureType_Fastest_Trace]->AccelerationStructure->GetTopLevelResultBuffer()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    uavSrvHandle.ptr += mRayTraceHeap->GetDescriptorSize(); //TDA: clean this up
     mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mCameraBuffers[mDirect3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     RayTraceContext *rayTraceContext = mDirect3DManager->GetContextManager()->GetRayTraceContext();
@@ -174,5 +190,7 @@ void RayTraceManager::DispatchRayTrace()
     dispatchDesc.Depth = 1;
 
     rayTraceContext->DispatchRays(dispatchDesc);
-    rayTraceContext->Flush(mDirect3DManager->GetContextManager()->GetQueueManager()); //TDA fence this later?
+
+    //we shouldn't actually need to sync on this because command list execution (when submitted not together in a single flush) are completed in sequence
+    mRayTraceFence = rayTraceContext->Flush(mDirect3DManager->GetContextManager()->GetQueueManager());
 }

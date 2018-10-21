@@ -21,7 +21,6 @@ public:
 	SamplerManager *GetSamplerManager() { return mSamplerManager; }
 	ShaderManager *GetShaderManager() { return mShaderManager; }
 	MeshManager *GetMeshManager() { return mMeshManager; }
-    RayTraceManager *GetRayTraceManager() { return mRayTraceManager; }
 
 private:
     class UploadUpdateBackgroundJob : public Job
@@ -39,7 +38,6 @@ private:
 	SamplerManager *mSamplerManager;
 	ShaderManager *mShaderManager;
 	MeshManager *mMeshManager;
-    RayTraceManager *mRayTraceManager;
 
     UploadUpdateBackgroundJob *mBackgroundJob;
     JobBatch *mBackgroundUpdateJobBatch;

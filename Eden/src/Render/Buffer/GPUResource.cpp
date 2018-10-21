@@ -264,3 +264,13 @@ void RayTraceBuffer::MapInstanceDescData(const void *instanceDescData, uint32 nu
     memcpy(mappedData, instanceDescData, numInstanceDescs * sizeof(D3D12_RAYTRACING_INSTANCE_DESC));
     mResource->Unmap(0, NULL);
 }
+
+void RayTraceBuffer::MapTransform(const void *transform, uint32 sizeOfTransform)
+{
+    Application::Assert(mBufferType == RayTraceBufferType_Transform);
+
+    void *mappedData;
+    mResource->Map(0, NULL, reinterpret_cast<void**>(&mappedData));
+    memcpy(mappedData, transform, sizeOfTransform);
+    mResource->Unmap(0, NULL);
+}

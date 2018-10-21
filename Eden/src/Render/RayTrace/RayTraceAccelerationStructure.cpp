@@ -1,15 +1,18 @@
 #include "Render/RayTrace/RayTraceAccelerationStructure.h"
 #include "Render/Mesh/Mesh.h"
 
-RayTraceAccelerationStructure::RayTraceAccelerationStructure(Direct3DManager *direct3DManager, bool canUpdate)
+RayTraceAccelerationStructure::RayTraceAccelerationStructure(Direct3DManager *direct3DManager, RayTraceAccelerationStructureFlags flags)
 {
     mDirect3DManager = direct3DManager;
-    mCanUpdate = canUpdate;
+    mFlags = flags;
     mTopLevelResultBuffer = NULL;
     mTopLevelScratchBuffer = NULL;
     mInstanceBuffer = NULL;
     mBottomLevelResultBuffer = NULL;
     mBottomLevelScratchBuffer = NULL;
+
+    //can't have both
+    Application::Assert(((mFlags & RayTraceAccelerationStructureFlags::FAST_BUILD) && (mFlags & RayTraceAccelerationStructureFlags::FAST_TRACE)) == 0);
 }
 
 RayTraceAccelerationStructure::~RayTraceAccelerationStructure()
@@ -48,26 +51,42 @@ void RayTraceAccelerationStructure::ClearDescs()
     mInstanceDescs.ClearFast();
 }
 
-void RayTraceAccelerationStructure::AddMesh(VertexBuffer *vertexBuffer, IndexBuffer *indexBuffer, uint32 numVertices, uint32 numIndices)
+void RayTraceAccelerationStructure::AddMesh(VertexBuffer *vertexBuffer, IndexBuffer *indexBuffer, RayTraceBuffer *transformBuffer, uint32 numVertices, uint32 numIndices)
 {
+    /*
+    If Transform is NULL the vertices will not be transformed. Using Transform may result in increased computation and/or memory requirements
+    for the acceleration structure build. The memory pointed to must be in state D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE.  
+    The address must be aligned to 16 bytes (D3D12_RAYTRACING_TRANSFORM3X4_BYTE_ALIGNMENT).
+    */
+
     D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc = {};
     geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
     geometryDesc.Triangles.VertexBuffer.StartAddress = vertexBuffer->GetGpuAddress();
     geometryDesc.Triangles.VertexBuffer.StrideInBytes = sizeof(MeshVertex);
     geometryDesc.Triangles.VertexCount = numVertices;
     geometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-    geometryDesc.Triangles.Transform3x4 = NULL;
+    geometryDesc.Triangles.Transform3x4 = transformBuffer->GetGpuAddress();
     geometryDesc.Triangles.IndexBuffer = indexBuffer ? indexBuffer->GetGpuAddress() : 0;
     geometryDesc.Triangles.IndexFormat = indexBuffer ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_UNKNOWN;
     geometryDesc.Triangles.IndexCount = indexBuffer ? numIndices : 0;
-    geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+    geometryDesc.Flags = (mFlags & RayTraceAccelerationStructureFlags::IS_OPAQUE) ? D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE : D3D12_RAYTRACING_GEOMETRY_FLAG_NONE;
 
     mRayTraceGeometryDescs.Add(geometryDesc);
 }
 
 void RayTraceAccelerationStructure::BuildBottomLevelStructure(bool isUpdate)
 {
+    if (isUpdate)
+    {
+        Application::Assert(mFlags & RayTraceAccelerationStructureFlags::CAN_UPDATE);
+    }
+
     const D3D12_RAYTRACING_GEOMETRY_DESC *geometryDescs = mRayTraceGeometryDescs.GetInnerArray();
+
+    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+    buildFlags |= (mFlags & RayTraceAccelerationStructureFlags::CAN_UPDATE) ? D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE : D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+    buildFlags |= (mFlags & RayTraceAccelerationStructureFlags::FAST_BUILD) ? D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD : D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+    buildFlags |= (mFlags & RayTraceAccelerationStructureFlags::FAST_TRACE) ? D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE : D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
 
     //TDA: review the flags here to see what should really be used
     D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS structurePrebuildInfoDesc = {};
@@ -75,7 +94,7 @@ void RayTraceAccelerationStructure::BuildBottomLevelStructure(bool isUpdate)
     structurePrebuildInfoDesc.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
     structurePrebuildInfoDesc.NumDescs = mRayTraceGeometryDescs.CurrentSize();
     structurePrebuildInfoDesc.pGeometryDescs = geometryDescs;
-    structurePrebuildInfoDesc.Flags = mCanUpdate ? D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE : D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+    structurePrebuildInfoDesc.Flags = buildFlags;
 
     D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo = {};
     mDirect3DManager->GetRayTraceDevice()->GetRaytracingAccelerationStructurePrebuildInfo(&structurePrebuildInfoDesc, &prebuildInfo);
@@ -90,10 +109,10 @@ void RayTraceAccelerationStructure::BuildBottomLevelStructure(bool isUpdate)
     bottomLevelAccelerationDesc.Inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
     bottomLevelAccelerationDesc.Inputs.NumDescs = mRayTraceGeometryDescs.CurrentSize();
     bottomLevelAccelerationDesc.Inputs.pGeometryDescs = geometryDescs;
-    bottomLevelAccelerationDesc.Inputs.Flags = mCanUpdate && isUpdate ? D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE : D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+    bottomLevelAccelerationDesc.Inputs.Flags = isUpdate ? (buildFlags | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE) : buildFlags;
     bottomLevelAccelerationDesc.ScratchAccelerationStructureData = mBottomLevelScratchBuffer->GetGpuAddress();
     bottomLevelAccelerationDesc.DestAccelerationStructureData = mBottomLevelResultBuffer->GetGpuAddress();
-    bottomLevelAccelerationDesc.SourceAccelerationStructureData = mCanUpdate && isUpdate ? mBottomLevelResultBuffer->GetGpuAddress() : 0;
+    bottomLevelAccelerationDesc.SourceAccelerationStructureData = isUpdate ? mBottomLevelResultBuffer->GetGpuAddress() : 0;
 
     RayTraceContext *rayTraceContext = mDirect3DManager->GetContextManager()->GetRayTraceContext();
     rayTraceContext->BuildAccelerationStructure(bottomLevelAccelerationDesc);
@@ -118,12 +137,22 @@ void RayTraceAccelerationStructure::AddBottomLevelInstance(D3DXMATRIX transform,
 
 void RayTraceAccelerationStructure::BuildTopLevelStructure(bool isUpdate)
 {
+    if (isUpdate)
+    {
+        Application::Assert(mFlags & RayTraceAccelerationStructureFlags::CAN_UPDATE);
+    }
+
+    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS buildFlags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+    buildFlags |= (mFlags & RayTraceAccelerationStructureFlags::CAN_UPDATE) ? D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE : D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+    buildFlags |= (mFlags & RayTraceAccelerationStructureFlags::FAST_BUILD) ? D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD : D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+    buildFlags |= (mFlags & RayTraceAccelerationStructureFlags::FAST_TRACE) ? D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE : D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+
     D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS structurePrebuildInfoDesc = {};
     structurePrebuildInfoDesc.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
     structurePrebuildInfoDesc.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
     structurePrebuildInfoDesc.NumDescs = mInstanceDescs.CurrentSize();
     structurePrebuildInfoDesc.pGeometryDescs = NULL;
-    structurePrebuildInfoDesc.Flags = mCanUpdate ? D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE : D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+    structurePrebuildInfoDesc.Flags = buildFlags;
 
     D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo = {};
     mDirect3DManager->GetRayTraceDevice()->GetRaytracingAccelerationStructurePrebuildInfo(&structurePrebuildInfoDesc, &prebuildInfo);
@@ -145,10 +174,10 @@ void RayTraceAccelerationStructure::BuildTopLevelStructure(bool isUpdate)
     topLevelAccelerationDesc.Inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
     topLevelAccelerationDesc.Inputs.NumDescs = mInstanceDescs.CurrentSize();
     topLevelAccelerationDesc.Inputs.InstanceDescs = mInstanceBuffer->GetGpuAddress();
-    topLevelAccelerationDesc.Inputs.Flags = mCanUpdate && isUpdate ? D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE : D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+    topLevelAccelerationDesc.Inputs.Flags = isUpdate ? (buildFlags | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE) : buildFlags;
     topLevelAccelerationDesc.ScratchAccelerationStructureData = mTopLevelScratchBuffer->GetGpuAddress();
     topLevelAccelerationDesc.DestAccelerationStructureData = mTopLevelResultBuffer->GetGpuAddress();
-    topLevelAccelerationDesc.SourceAccelerationStructureData = mCanUpdate && isUpdate ? mTopLevelResultBuffer->GetGpuAddress() : 0;
+    topLevelAccelerationDesc.SourceAccelerationStructureData = isUpdate ? mTopLevelResultBuffer->GetGpuAddress() : 0;
 
     RayTraceContext *rayTraceContext = mDirect3DManager->GetContextManager()->GetRayTraceContext();
     rayTraceContext->BuildAccelerationStructure(topLevelAccelerationDesc);

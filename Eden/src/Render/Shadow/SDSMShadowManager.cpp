@@ -106,7 +106,7 @@ SDSMShadowManager::~SDSMShadowManager()
     mGraphicsManager = NULL;
 }
 
-void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjectionMatrix, DepthStencilTarget *depthStencil, uint64 gbufferPassFence)
+void SDSMShadowManager::ComputeShadowPartitions(Camera *camera, D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjectionMatrix, DepthStencilTarget *depthStencil)
 {
     Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
 

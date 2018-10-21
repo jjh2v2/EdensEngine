@@ -22,6 +22,14 @@ void SceneEntity::Update()
 	
 }
 
+D3DXMATRIX SceneEntity::CalculateTransform()
+{
+    D3DXMATRIX modelMatrix = GetWorldMatrix(mPosition, mRotation, mScale);
+    D3DXMatrixTranspose(&modelMatrix, &modelMatrix);
+
+    return modelMatrix;
+}
+
 D3DXMATRIX SceneEntity::GetWorldMatrix(const Vector3 &position, const Vector3 &rotation, const Vector3 &scale)
 {
     D3DXMATRIX modelMatrix;

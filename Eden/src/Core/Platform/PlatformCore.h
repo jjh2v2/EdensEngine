@@ -18,6 +18,7 @@
 #define RAY_TRACE_DESCRIPTOR_HEAP_SIZE          16
 #define RENDER_PASS_DESCRIPTOR_HEAP_MULTIPLE    256
 #define MAX_TEXTURE_SUBRESOURCE_COUNT		    512
+#define RAY_TRACE_TRANFORM_BUFFER_SIZE          48
 
 #define UPLOAD_BUFFER_SIZE					                2048 * 2048 * 32
 #define MAX_GPU_UPLOADS						                16

@@ -99,6 +99,15 @@ bool EdenEngine::Update(float delta)
 
     mSceneManager->UpdateInput(delta);
 
+    if (mInputManager->IsKeyboardKeyPressed(KeyboardKey_Tab))
+    {
+        mDeferredRenderer->ToggleRayTraceOutput(true);
+    }
+    else
+    {
+        mDeferredRenderer->ToggleRayTraceOutput(false);
+    }
+
     mGraphicsManager->Update(delta, mSceneManager->GetActiveScene()->GetMainCamera());
 	
 	mSceneManager->Update(delta);
