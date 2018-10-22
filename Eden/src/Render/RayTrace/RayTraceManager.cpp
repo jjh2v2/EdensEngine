@@ -22,11 +22,11 @@ RayTraceManager::RayTraceManager(Direct3DManager *direct3DManager, RootSignature
     for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
     {
         mCameraBuffers[i] = mDirect3DManager->GetContextManager()->CreateConstantBuffer(sizeof(CameraRayTraceBuffer));
+        mCameraShadowBuffers[i] = mDirect3DManager->GetContextManager()->CreateConstantBuffer(sizeof(CameraRayTraceShadowBuffer));
     }
-    
-    mRayTraceFence = 0;
 
     LoadRayTracePipelines();
+    mReadyToRender = false;
 }
 
 RayTraceManager::~RayTraceManager()
@@ -44,7 +44,9 @@ RayTraceManager::~RayTraceManager()
     for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
     {
         mDirect3DManager->GetContextManager()->FreeConstantBuffer(mCameraBuffers[i]);
+        mDirect3DManager->GetContextManager()->FreeConstantBuffer(mCameraShadowBuffers[i]);
         mCameraBuffers[i] = NULL;
+        mCameraShadowBuffers[i] = NULL;
     }
 
     for (uint32 i = 0; i < RayTraceAccelerationStructureType_Num_Types; i++)
@@ -78,7 +80,7 @@ void RayTraceManager::AddMeshToAccelerationStructure(Mesh *mesh, const D3DXMATRI
     mTransformBufferCache.Add(newRayMesh.TransformBuffer);
 }
 
-void RayTraceManager::UpdateCameraBuffer(Camera *camera)
+void RayTraceManager::UpdateCameraBuffers(Camera *camera, Vector3 lightDirection)
 {
     D3DXMATRIX cameraView = camera->GetViewMatrix();
     D3DXMATRIX cameraViewInv;
@@ -89,14 +91,26 @@ void RayTraceManager::UpdateCameraBuffer(Camera *camera)
     D3DXMatrixInverse(&cameraProjInv, NULL, &cameraProj);
 
     CameraRayTraceBuffer cameraBuffer;
-    cameraBuffer.viewMatrix = cameraView;
     cameraBuffer.viewInvMatrix = cameraViewInv;
-    cameraBuffer.projectionMatrix = camera->GetProjectionMatrix();
     cameraBuffer.projectionInvMatrix = cameraProjInv;
+
+    D3DXMatrixTranspose(&cameraBuffer.viewInvMatrix, &cameraBuffer.viewInvMatrix);
+    D3DXMatrixTranspose(&cameraBuffer.projectionInvMatrix, &cameraBuffer.projectionInvMatrix);
+
     mCameraBuffers[mDirect3DManager->GetFrameIndex()]->SetConstantBufferData(&cameraBuffer, sizeof(CameraRayTraceBuffer));
+
+    CameraRayTraceShadowBuffer cameraShadowBuffer;
+    cameraShadowBuffer.viewInvMatrix = cameraViewInv;
+    cameraShadowBuffer.projectionMatrix = camera->GetReverseProjectionMatrix();
+    cameraShadowBuffer.lightDirection = Vector4(lightDirection.X, lightDirection.Y, lightDirection.Z, 1.0f);
+
+    D3DXMatrixTranspose(&cameraShadowBuffer.viewInvMatrix, &cameraShadowBuffer.viewInvMatrix);
+    D3DXMatrixTranspose(&cameraShadowBuffer.projectionMatrix, &cameraShadowBuffer.projectionMatrix);
+
+    mCameraShadowBuffers[mDirect3DManager->GetFrameIndex()]->SetConstantBufferData(&cameraShadowBuffer, sizeof(CameraRayTraceShadowBuffer));
 }
 
-void RayTraceManager::RenderRayTrace(Camera *camera)
+void RayTraceManager::Update(Camera *camera, Vector3 lightDirection)
 {
     for (uint32 i = 0; i < RayTraceAccelerationStructureType_Num_Types; i++)
     {
@@ -129,16 +143,19 @@ void RayTraceManager::RenderRayTrace(Camera *camera)
         }
     }
 
+    UpdateCameraBuffers(camera, lightDirection);
+
+    mReadyToRender = false;
     if(!mRayTraceAccelerationStructures[RayTraceAccelerationStructureType_Fastest_Trace]->NeedsRebuild && mRayTraceAccelerationStructures[RayTraceAccelerationStructureType_Fastest_Trace]->Meshes.CurrentSize() > 0)
     {
-        UpdateCameraBuffer(camera);
-        DispatchRayTrace();
+        mReadyToRender = true;
     }
 }
 
 void RayTraceManager::LoadRayTracePipelines()
 {
     mBarycentricRayTracePSO = mRayShaderManager->GetRayTracePipeline("Barycentric");
+    mShadowRayTracePSO = mRayShaderManager->GetRayTracePipeline("Shadow");
 }
 
 void RayTraceManager::CreateAccelerationStructure(RayTraceAccelerationStructureType structureType)
@@ -160,13 +177,18 @@ void RayTraceManager::CreateAccelerationStructure(RayTraceAccelerationStructureT
     mRayTraceAccelerationStructures[structureType]->AccelerationStructure->BuildTopLevelStructure(false);
 }
 
-void RayTraceManager::DispatchRayTrace()
+void RayTraceManager::RenderBarycentricRayTrace()
 {
+    if (!mReadyToRender)
+    {
+        return;
+    }
+
     D3D12_CPU_DESCRIPTOR_HANDLE uavSrvHandle = mRayTraceHeap->GetHeapCPUStart();
     mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mRayTraceRenderTarget->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     uavSrvHandle.ptr += mRayTraceHeap->GetDescriptorSize();
     mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mRayTraceAccelerationStructures[RayTraceAccelerationStructureType_Fastest_Trace]->AccelerationStructure->GetTopLevelResultBuffer()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    uavSrvHandle.ptr += mRayTraceHeap->GetDescriptorSize(); //TDA: clean this up
+    uavSrvHandle.ptr += mRayTraceHeap->GetDescriptorSize();
     mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mCameraBuffers[mDirect3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     RayTraceContext *rayTraceContext = mDirect3DManager->GetContextManager()->GetRayTraceContext();
@@ -190,7 +212,43 @@ void RayTraceManager::DispatchRayTrace()
     dispatchDesc.Depth = 1;
 
     rayTraceContext->DispatchRays(dispatchDesc);
+}
 
-    //we shouldn't actually need to sync on this because command list execution (when submitted not together in a single flush) are completed in sequence
-    mRayTraceFence = rayTraceContext->Flush(mDirect3DManager->GetContextManager()->GetQueueManager());
+void RayTraceManager::RenderShadowRayTrace(DepthStencilTarget *depthStencilTarget)
+{
+    if (!mReadyToRender)
+    {
+        return;
+    }
+
+    D3D12_CPU_DESCRIPTOR_HANDLE uavSrvHandle = mRayTraceHeap->GetHeapCPUStart();
+    mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mRayTraceRenderTarget->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    uavSrvHandle.ptr += mRayTraceHeap->GetDescriptorSize();
+    mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mRayTraceAccelerationStructures[RayTraceAccelerationStructureType_Fastest_Trace]->AccelerationStructure->GetTopLevelResultBuffer()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    uavSrvHandle.ptr += mRayTraceHeap->GetDescriptorSize();
+    mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, depthStencilTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    uavSrvHandle.ptr += mRayTraceHeap->GetDescriptorSize();
+    mDirect3DManager->GetDevice()->CopyDescriptorsSimple(1, uavSrvHandle, mCameraShadowBuffers[mDirect3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    RayTraceContext *rayTraceContext = mDirect3DManager->GetContextManager()->GetRayTraceContext();
+    rayTraceContext->TransitionResource(mRayTraceRenderTarget, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
+    rayTraceContext->SetComputeRootSignature(mShadowRayTracePSO->GlobalRootSignature);
+    rayTraceContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, mRayTraceHeap->GetHeap());
+    rayTraceContext->SetComputeDescriptorTable(0, mRayTraceHeap->GetHeapGPUStart());
+    rayTraceContext->SetRayPipelineState(mShadowRayTracePSO->RayTraceStateObject);
+
+    D3D12_DISPATCH_RAYS_DESC dispatchDesc = {};
+    dispatchDesc.RayGenerationShaderRecord.StartAddress = mShadowRayTracePSO->GenShaderTable->GetGpuAddress();
+    dispatchDesc.RayGenerationShaderRecord.SizeInBytes = mShadowRayTracePSO->GenShaderTable->GetResource()->GetDesc().Width;
+    dispatchDesc.MissShaderTable.StartAddress = mShadowRayTracePSO->MissShaderTable->GetGpuAddress();
+    dispatchDesc.MissShaderTable.SizeInBytes = mShadowRayTracePSO->MissShaderTable->GetResource()->GetDesc().Width;
+    dispatchDesc.MissShaderTable.StrideInBytes = dispatchDesc.MissShaderTable.SizeInBytes;
+    dispatchDesc.HitGroupTable.StartAddress = mShadowRayTracePSO->HitGroupShaderTable->GetGpuAddress();
+    dispatchDesc.HitGroupTable.SizeInBytes = mShadowRayTracePSO->HitGroupShaderTable->GetResource()->GetDesc().Width;
+    dispatchDesc.HitGroupTable.StrideInBytes = dispatchDesc.HitGroupTable.SizeInBytes;
+    dispatchDesc.Width = mRayTraceRenderTarget->GetWidth();
+    dispatchDesc.Height = mRayTraceRenderTarget->GetHeight();
+    dispatchDesc.Depth = 1;
+
+    rayTraceContext->DispatchRays(dispatchDesc);
 }

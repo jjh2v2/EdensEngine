@@ -1,6 +1,6 @@
 struct HitInfo
 {
-    float4 colorAndDistance;
+    float shadowFactor;
 };
 
 struct Attributes

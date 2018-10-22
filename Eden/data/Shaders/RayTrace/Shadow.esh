@@ -1,0 +1,16 @@
+GenShader
+[Shadow/ShadowGen.hlsl]
+[ShadowGen]
+[22]
+MissShader
+[Shadow/ShadowMiss.hlsl]
+[ShadowMiss]
+[22]
+ClosestHitShader
+[Shadow/ShadowClosestHit.hlsl]
+[ShadowClosestHit]
+[22]
+GlobalRootSignature
+[24]
+Payload
+[1]

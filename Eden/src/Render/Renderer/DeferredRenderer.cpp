@@ -139,6 +139,7 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
     mShadowManager = new SDSMShadowManager(mGraphicsManager);
     mPostProcessManager = new PostProcessManager(mGraphicsManager);
 
+    mRayTraceManager = NULL;
     if (direct3DManager->IsDXRSupported())
     {
         mRayTraceManager = new RayTraceManager(direct3DManager, mGraphicsManager->GetShaderManager()->GetRootSignatureManager());
@@ -260,7 +261,8 @@ void DeferredRenderer::RenderRayTracing()
             mRayTraceManager->AddMeshToAccelerationStructure(mGraphicsManager->GetMeshManager()->GetMesh("Cube"), transform4, RayTraceAccelerationStructureType_Fastest_Trace);
         }
 
-        mRayTraceManager->RenderRayTrace(mActiveScene->GetMainCamera());
+        mRayTraceManager->Update(mActiveScene->GetMainCamera(), mActiveScene->GetSunLight()->GetDirection() * -1.0f);
+        mRayTraceManager->RenderShadowRayTrace(mGBufferDepth);
     }
 }
 
@@ -288,7 +290,7 @@ void DeferredRenderer::OnScreenChanged(Vector2 screenSize)
 
 void DeferredRenderer::ClearFrameBuffers()
 {
-	GraphicsContext *graphicsContext = mGraphicsManager->GetDirect3DManager()->GetContextManager()->GetGraphicsContext();
+	GraphicsContext *graphicsContext = mGraphicsManager->GetDirect3DManager()->GetContextManager()->GetGraphicsContext(1);
 	float blackColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
     graphicsContext->InsertPixBeginEvent(0xFFFFFFFF, "Clear Buffers");
@@ -311,7 +313,7 @@ void DeferredRenderer::ClearFrameBuffers()
 void DeferredRenderer::RenderGBuffer()
 {
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
-	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
+	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext(1);
     Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
 	Vector2 screenSize = direct3DManager->GetScreenSize();
 
@@ -572,7 +574,6 @@ void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3
 void DeferredRenderer::Render()
 {
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
-	GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
     Camera *mainCamera = mActiveScene->GetMainCamera();
 
     //set up the camera buffer
@@ -625,7 +626,7 @@ void DeferredRenderer::Render()
     RenderShadows(lightView, lightProj);
     RenderLightingMain(cameraBuffer.viewMatrix, cameraBuffer.projectionMatrix, cameraBuffer.viewToLightProjMatrix, cameraBuffer.viewInvMatrix);
     
-    if (mGraphicsManager->GetDirect3DManager()->IsDXRSupported() && mRayTraceManager->GetIsReady() && mShowRayTrace)
+    if (mRayTraceManager && mShowRayTrace)
     {
         mPostProcessManager->RenderPostProcessing(mRayTraceManager->GetRenderTarget(), 0.0167f);
     }
@@ -636,5 +637,12 @@ void DeferredRenderer::Render()
 
     direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->WaitForFenceCPUBlocking(mPreviousFrameFence);
 
-    mPreviousFrameFence = graphicsContext->Flush(direct3DManager->GetContextManager()->GetQueueManager());
+    direct3DManager->GetContextManager()->GetGraphicsContext(1)->Flush(direct3DManager->GetContextManager()->GetQueueManager());
+
+    if (mRayTraceManager)
+    {
+        direct3DManager->GetContextManager()->GetRayTraceContext()->Flush(direct3DManager->GetContextManager()->GetQueueManager());
+    }
+
+    mPreviousFrameFence = direct3DManager->GetContextManager()->GetGraphicsContext()->Flush(direct3DManager->GetContextManager()->GetQueueManager());
 }

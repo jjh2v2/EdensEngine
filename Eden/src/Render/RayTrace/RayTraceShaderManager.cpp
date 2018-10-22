@@ -96,6 +96,8 @@ RayTraceShaderManager::RayTracePSO *RayTraceShaderManager::LoadPipeline(const ch
     RootSignatureType hitGroupShaderLocalRootSignature = RootSignatureType_Ray_Empty_Local;
     RootSignatureType globalRootSignature = RootSignatureType_Ray_Barycentric_Global;
 
+    uint32 payLoadFloatCount = 0;
+
     if (file.is_open())
     {
         std::getline(file, line);
@@ -160,6 +162,15 @@ RayTraceShaderManager::RayTracePSO *RayTraceShaderManager::LoadPipeline(const ch
             StringConverter::RemoveCharsFromString(line, removeChars);
             uint32 rootSignatureID = StringConverter::StringToUint(line);
             globalRootSignature = (RootSignatureType)rootSignatureID;
+
+            std::getline(file, line);
+        }
+
+        if (strcmp(line.c_str(), "Payload") == 0)
+        {
+            std::getline(file, line);
+            StringConverter::RemoveCharsFromString(line, removeChars);
+            payLoadFloatCount = StringConverter::StringToUint(line);
         }
     }
 
@@ -194,7 +205,7 @@ RayTraceShaderManager::RayTracePSO *RayTraceShaderManager::LoadPipeline(const ch
     hitGroupSubObject->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
 
     CD3D12_RAYTRACING_SHADER_CONFIG_SUBOBJECT *shaderConfig = raytracingPipelineDesc.CreateSubobject<CD3D12_RAYTRACING_SHADER_CONFIG_SUBOBJECT>();
-    UINT payloadSize = 4 * sizeof(float);   // float4 color
+    UINT payloadSize = payLoadFloatCount * sizeof(float);   // float4 payload
     UINT attributeSize = 2 * sizeof(float); // float2 barycentrics
     shaderConfig->Config(payloadSize, attributeSize);
 

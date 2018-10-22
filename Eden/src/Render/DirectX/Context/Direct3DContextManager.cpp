@@ -7,8 +7,8 @@ Direct3DContextManager::Direct3DContextManager(ID3D12Device* device, bool isRayT
 	mQueueManager = new Direct3DQueueManager(mDevice);
 	mUploadContext = new UploadContext(mDevice);
     mComputeContext = new ComputeContext(mDevice);
-	mGraphicsContext = new GraphicsContext(mDevice);
-
+	mGraphicsContexts.Add(new GraphicsContext(mDevice));
+    mGraphicsContexts.Add(new GraphicsContext(mDevice));
     mRayTraceContext = NULL;
 
     if (isRayTracingSupported)
@@ -28,7 +28,12 @@ Direct3DContextManager::~Direct3DContextManager()
 
 	delete mUploadContext;
     delete mComputeContext;
-	delete mGraphicsContext;
+
+    for (uint32 i = 0; i < mGraphicsContexts.CurrentSize(); i++)
+    {
+        delete mGraphicsContexts[i];
+    }
+
 	delete mQueueManager;
 	delete mHeapManager;
 
@@ -46,7 +51,12 @@ void Direct3DContextManager::FinishContextsAndWaitForIdle()
     }
     
     mComputeContext->Flush(mQueueManager, true, true);
-    mGraphicsContext->Flush(mQueueManager, true, true);
+
+    for (uint32 i = 0; i < mGraphicsContexts.CurrentSize(); i++)
+    {
+        mGraphicsContexts[i]->Flush(mQueueManager, true, true);
+    }
+
     mUploadContext->Flush(mQueueManager, true, true);
 
     if (mRayTraceContext)
@@ -56,7 +66,11 @@ void Direct3DContextManager::FinishContextsAndWaitForIdle()
     
     mUploadContext->WaitForCommandIdle(mQueueManager);
     mComputeContext->WaitForCommandIdle(mQueueManager);
-    mGraphicsContext->WaitForCommandIdle(mQueueManager);
+
+    for (uint32 i = 0; i < mGraphicsContexts.CurrentSize(); i++)
+    {
+        mGraphicsContexts[i]->WaitForCommandIdle(mQueueManager);
+    }
 }
 
 Direct3DContextManager::VertexBufferBackgroundUpload::VertexBufferBackgroundUpload(Direct3DContextManager *contextManager, VertexBuffer *vertexBuffer, void *vertexData)

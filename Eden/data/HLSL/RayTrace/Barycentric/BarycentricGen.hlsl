@@ -5,8 +5,6 @@ RaytracingAccelerationStructure SceneBVH : register(t0);
 
 cbuffer RayTracePerFrameCameraBuffer : register(b0)
 {
-    matrix pfViewMatrix;
-    matrix pfProjectionMatrix;
     matrix pfViewInvMatrix;
     matrix pfProjectionInvMatrix;
 };
@@ -23,9 +21,9 @@ void BarycentricGen()
     float aspectRatio = dims.x / dims.y;
     
     RayDesc ray;
-    ray.Origin = mul(pfViewInvMatrix, float4(0, 0, 0, 1));
-    float4 target = mul(pfProjectionInvMatrix, float4(d.x, -d.y, 1, 1));
-    ray.Direction = mul(pfViewInvMatrix, float4(target.xyz, 0));
+    ray.Origin = mul(float4(0, 0, 0, 1), pfViewInvMatrix);
+    float4 target = mul(float4(d.x, -d.y, 1, 1), pfProjectionInvMatrix);
+    ray.Direction = mul(float4(target.xyz, 0), pfViewInvMatrix);
     ray.TMin = 0.001;
     ray.TMax = 100000;
     

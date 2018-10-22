@@ -482,6 +482,25 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 
         mRootSignatures.Add(rayGenSignature);
     }
+
+    {
+        //RootSignatureType_Ray_Shadow_Global
+        CD3DX12_DESCRIPTOR_RANGE ranges[3];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); //1 uav, output of ray trace
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0); //2 srvs, acceleration structure and depth buffer
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv, camera matrices
+
+        CD3DX12_ROOT_PARAMETER rootParameters[1];
+        rootParameters[0].InitAsDescriptorTable(3, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
+
+        RootSignatureInfo rayGenSignature;
+        rayGenSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_NONE);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&rayGenSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &rayGenSignature.RootSignatureBlob, &rayGenSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, rayGenSignature.RootSignatureBlob->GetBufferPointer(), rayGenSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&rayGenSignature.RootSignature)));
+
+        mRootSignatures.Add(rayGenSignature);
+    }
 }
 
 RootSignatureManager::~RootSignatureManager()

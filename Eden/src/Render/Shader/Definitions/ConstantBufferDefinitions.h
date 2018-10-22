@@ -15,10 +15,15 @@ struct CameraBuffer	//per frame
 
 struct CameraRayTraceBuffer	//per frame 
 {
-    D3DXMATRIX viewMatrix;
-    D3DXMATRIX projectionMatrix;
     D3DXMATRIX viewInvMatrix;
     D3DXMATRIX projectionInvMatrix;
+};
+
+struct CameraRayTraceShadowBuffer	//per frame 
+{
+    D3DXMATRIX projectionMatrix;
+    D3DXMATRIX viewInvMatrix;
+    Vector4 lightDirection;
 };
 
 struct SDSMBuffer //per frame

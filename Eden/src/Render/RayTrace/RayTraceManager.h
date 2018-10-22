@@ -11,9 +11,11 @@ public:
     ~RayTraceManager();
 
     void AddMeshToAccelerationStructure(Mesh *mesh, const D3DXMATRIX &transform, RayTraceAccelerationStructureType structureType);
-    void RenderRayTrace(Camera *camera);
-    bool GetIsReady() { return true; }
     RenderTarget *GetRenderTarget() { return mRayTraceRenderTarget; }
+
+    void Update(Camera *camera, Vector3 lightDirection);
+    void RenderBarycentricRayTrace();
+    void RenderShadowRayTrace(DepthStencilTarget *depthStencilTarget);
 
 private:
     enum RayTracingState
@@ -44,9 +46,8 @@ private:
         bool NeedsRebuild;
     };
 
-    void UpdateCameraBuffer(Camera *camera);
+    void UpdateCameraBuffers(Camera *camera, Vector3 lightDirection);
     void LoadRayTracePipelines();
-    void DispatchRayTrace();
     void CreateAccelerationStructure(RayTraceAccelerationStructureType structureType);
 
     Direct3DManager *mDirect3DManager;
@@ -57,8 +58,11 @@ private:
     RenderTarget *mRayTraceRenderTarget;
     DescriptorHeap *mRayTraceHeap;
     ConstantBuffer *mCameraBuffers[FRAME_BUFFER_COUNT];
+    ConstantBuffer *mCameraShadowBuffers[FRAME_BUFFER_COUNT];
 
     uint64 mRayTraceFence;
+    bool mReadyToRender;
     RayTraceShaderManager::RayTracePSO *mBarycentricRayTracePSO;
+    RayTraceShaderManager::RayTracePSO *mShadowRayTracePSO;
     DynamicArray<RayTraceBuffer*> mTransformBufferCache;
 };

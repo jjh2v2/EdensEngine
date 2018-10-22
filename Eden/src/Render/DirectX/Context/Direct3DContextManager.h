@@ -14,7 +14,7 @@ public:
 	Direct3DHeapManager *GetHeapManager() { return mHeapManager; }
 
 	Direct3DQueueManager *GetQueueManager() { return mQueueManager; }
-	GraphicsContext *GetGraphicsContext() { return mGraphicsContext; }
+	GraphicsContext *GetGraphicsContext(uint32 index = 0) { return mGraphicsContexts[index]; }
     ComputeContext *GetComputeContext() { return mComputeContext; }
 	UploadContext *GetUploadContext() { return mUploadContext; }
     RayTraceContext *GetRayTraceContext() { return mRayTraceContext; }
@@ -77,7 +77,7 @@ private:
 	ID3D12Device *mDevice;
 	Direct3DHeapManager *mHeapManager;
 	Direct3DQueueManager *mQueueManager;
-	GraphicsContext *mGraphicsContext;
+	DynamicArray<GraphicsContext*> mGraphicsContexts;
     ComputeContext *mComputeContext;
 	UploadContext *mUploadContext;
     RayTraceContext *mRayTraceContext;
