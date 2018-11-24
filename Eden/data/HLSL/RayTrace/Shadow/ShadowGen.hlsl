@@ -21,7 +21,7 @@ void ShadowGen()
     float4 positionWorld = mul(float4(GetViewPosition(launchIndex, dims, zDepth, pfProjectionMatrix), 1.0f), pfViewInvMatrix);
     
     HitInfo payload;
-    payload.shadowFactor = 1.0;
+    payload.shadowDistance = 0.0;
     
     RayDesc ray;
     ray.Origin = positionWorld;
@@ -31,5 +31,5 @@ void ShadowGen()
     
     TraceRay(SceneBVH, RAY_FLAG_NONE, 0xFF, 0, 0, 0, ray, payload);
     
-    ShadowTarget[launchIndex] = payload.shadowFactor;
+    ShadowTarget[launchIndex] = payload.shadowDistance;
 }

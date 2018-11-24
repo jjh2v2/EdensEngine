@@ -56,6 +56,7 @@ private:
     RayTraceStructureGroup* mRayTraceAccelerationStructures[RayTraceAccelerationStructureType_Num_Types];
     
     RenderTarget *mRayTraceRenderTarget;
+
     DescriptorHeap *mRayTraceHeap;
     ConstantBuffer *mCameraBuffers[FRAME_BUFFER_COUNT];
     ConstantBuffer *mCameraShadowBuffers[FRAME_BUFFER_COUNT];
@@ -64,5 +65,6 @@ private:
     bool mReadyToRender;
     RayTraceShaderManager::RayTracePSO *mBarycentricRayTracePSO;
     RayTraceShaderManager::RayTracePSO *mShadowRayTracePSO;
+    RayTraceShaderManager::RayTracePSO *mPrepassPSO;
     DynamicArray<RayTraceBuffer*> mTransformBufferCache;
 };

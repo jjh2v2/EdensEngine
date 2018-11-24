@@ -98,6 +98,12 @@ struct ToneMapBuffer
     uint32 toneMapMode;
 };
 
+struct RayShadowBlurBuffer
+{
+    Vector2 oneOverScreenSize;
+    float blurAmount;
+};
+
 struct MaterialConstants
 {
 	MaterialConstants()

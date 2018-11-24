@@ -23,6 +23,7 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
         mCameraConstantBuffer[i] = contextManager->CreateConstantBuffer(sizeof(CameraBuffer));
         mLightBuffer[i] = contextManager->CreateConstantBuffer(sizeof(LightingMainBuffer));
         mSkyBuffer[i] = contextManager->CreateConstantBuffer(sizeof(SkyBuffer));
+        mRayShadowBlurBuffer[i] = contextManager->CreateConstantBuffer(sizeof(RayShadowBlurBuffer));
     }
 
 	{
@@ -169,6 +170,9 @@ DeferredRenderer::~DeferredRenderer()
 
         contextManager->FreeConstantBuffer(mSkyBuffer[i]);
         mSkyBuffer[i] = NULL;
+
+        contextManager->FreeConstantBuffer(mRayShadowBlurBuffer[i]);
+        mRayShadowBlurBuffer[i] = NULL;
     }
 	
 	{
@@ -239,6 +243,7 @@ void DeferredRenderer::FreeTargets()
 	}
 
     contextManager->FreeRenderTarget(mHDRTarget);
+    contextManager->FreeRenderTarget(mRayShadowBlurTarget);
 }
 
 void DeferredRenderer::RenderRayTracing()
@@ -266,6 +271,63 @@ void DeferredRenderer::RenderRayTracing()
     }
 }
 
+void DeferredRenderer::ProcessRayShadows()
+{
+    if (mRayTraceManager)
+    {
+        Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
+        GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
+        Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
+        Vector2 screenSize = direct3DManager->GetScreenSize();
+
+        graphicsContext->InsertPixBeginEvent(0xFFFF0000, "Ray Shadow Blur");
+
+        graphicsContext->TransitionResource(mRayTraceManager->GetRenderTarget(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
+        graphicsContext->TransitionResource(mRayShadowBlurTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
+
+        const uint32 testNumSRVsNeeded = 10;
+        const uint32 testNumSamplersNeeded = 1;
+        RenderPassDescriptorHeap *shadowSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_RayShadow, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), testNumSRVsNeeded);
+        RenderPassDescriptorHeap *shadowSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_RayShadow, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), testNumSamplersNeeded);
+
+        graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, shadowSRVDescHeap->GetHeap());
+        graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, shadowSamplerDescHeap->GetHeap());
+
+        graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
+        graphicsContext->SetScissorRect(0, 0, (uint32)screenSize.X, (uint32)screenSize.Y);
+
+        RayShadowBlurBuffer shadowBlurBuffer;
+        shadowBlurBuffer.oneOverScreenSize = Vector2(1.0f / screenSize.X, 1.0f / screenSize.Y);
+        shadowBlurBuffer.blurAmount = 3.0f;
+        mRayShadowBlurBuffer[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&shadowBlurBuffer, sizeof(RayShadowBlurBuffer));
+
+        Sampler *linearSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_CLAMP);
+
+        DescriptorHeapHandle shadowBlurSRVHandle = shadowSRVDescHeap->GetHeapHandleBlock(1);
+        DescriptorHeapHandle shadowBlurSampleHandle = shadowSamplerDescHeap->GetHeapHandleBlock(1);
+        DescriptorHeapHandle shadowBlurCBVHandle = shadowSRVDescHeap->GetHeapHandleBlock(1);
+
+        direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowBlurSRVHandle.GetCPUHandle(), mRayTraceManager->GetRenderTarget()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowBlurSampleHandle.GetCPUHandle(), linearSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+        direct3DManager->GetDevice()->CopyDescriptorsSimple(1, shadowBlurCBVHandle.GetCPUHandle(), mRayShadowBlurBuffer[direct3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+        graphicsContext->SetRenderTarget(mRayShadowBlurTarget->GetRenderTargetViewHandle().GetCPUHandle());
+
+        ShaderPipelinePermutation rayShadowShaderPermutation(Render_Standard_NoDepth, Target_Single_R32_NoDepth, InputLayout_Standard);
+        ShaderPSO *shadowBlurShader = mGraphicsManager->GetShaderManager()->GetShader("RayShadowBlur", rayShadowShaderPermutation);
+        graphicsContext->SetPipelineState(shadowBlurShader);
+        graphicsContext->SetRootSignature(shadowBlurShader->GetRootSignature(), NULL);
+
+        graphicsContext->SetGraphicsDescriptorTable(0, shadowBlurSRVHandle.GetGPUHandle());
+        graphicsContext->SetGraphicsDescriptorTable(1, shadowBlurSampleHandle.GetGPUHandle());
+        graphicsContext->SetGraphicsDescriptorTable(2, shadowBlurCBVHandle.GetGPUHandle());
+
+        graphicsContext->DrawFullScreenTriangle();
+
+        graphicsContext->InsertPixEndEvent();
+    }
+}
+
 void DeferredRenderer::CreateTargets(Vector2 screenSize)
 {
 	Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
@@ -280,6 +342,7 @@ void DeferredRenderer::CreateTargets(Vector2 screenSize)
 	mGBufferDepth = contextManager->CreateDepthStencilTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_D32_FLOAT_S8X24_UINT, 1, 1, 0);
 
     mHDRTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
+    mRayShadowBlurTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R32_FLOAT, false, 1, 1, 0);
 }
 
 void DeferredRenderer::OnScreenChanged(Vector2 screenSize)
@@ -475,8 +538,8 @@ void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3
 
     graphicsContext->InsertPixBeginEvent(0xFFFFFF00, "Lighting Pass");
 
-    const uint32 numSRVsNeeded = 11;
-    const uint32 numSamplersNeeded = 2; 
+    const uint32 numSRVsNeeded = 12;
+    const uint32 numSamplersNeeded = 3; 
     RenderPassDescriptorHeap *lightingSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_Lighting, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numSRVsNeeded);
     RenderPassDescriptorHeap *lightingSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_Lighting, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), numSamplersNeeded);
 
@@ -486,7 +549,7 @@ void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3
     graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
     graphicsContext->SetScissorRect(0, 0, (uint32)screenSize.X, (uint32)screenSize.Y);
 
-    DescriptorHeapHandle lightingSRVsHandle = lightingSRVDescHeap->GetHeapHandleBlock(11 + 1);
+    DescriptorHeapHandle lightingSRVsHandle = lightingSRVDescHeap->GetHeapHandleBlock(numSRVsNeeded + 1);
     D3D12_CPU_DESCRIPTOR_HANDLE lightingSRVHandleOffset = lightingSRVsHandle.GetCPUHandle();
     uint32 lightingSRVHandleOffsetIncrement = lightingSRVDescHeap->GetDescriptorSize();
 
@@ -516,14 +579,21 @@ void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3
     lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
 
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mShadowManager->GetShadowPartitionBuffer()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-        
+    lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
+
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mRayShadowBlurTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
     Sampler *lightingSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_ANISO_16_CLAMP);
+    Sampler *shadowSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_CLAMP);
 
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSamplersHandleOffset, lightingSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
     lightingSamplersHandleOffset.ptr += lightingSamplersHandleOffsetIncrement;
         
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSamplersHandleOffset, lightingSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-        
+    lightingSamplersHandleOffset.ptr += lightingSamplersHandleOffsetIncrement;
+
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSamplersHandleOffset, shadowSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
     Camera *mainCamera = mActiveScene->GetMainCamera();
     Vector3 lightDir = mActiveScene->GetSunLight()->GetDirection();
 
@@ -624,11 +694,13 @@ void DeferredRenderer::Render()
 	RenderGBuffer();
     RenderSky();
     RenderShadows(lightView, lightProj);
+    ProcessRayShadows();
     RenderLightingMain(cameraBuffer.viewMatrix, cameraBuffer.projectionMatrix, cameraBuffer.viewToLightProjMatrix, cameraBuffer.viewInvMatrix);
     
+
     if (mRayTraceManager && mShowRayTrace)
     {
-        mPostProcessManager->RenderPostProcessing(mRayTraceManager->GetRenderTarget(), 0.0167f);
+        mPostProcessManager->RenderPostProcessing(mRayShadowBlurTarget, 0.0167f);
     }
     else
     {

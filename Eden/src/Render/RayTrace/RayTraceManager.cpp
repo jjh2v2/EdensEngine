@@ -16,7 +16,7 @@ RayTraceManager::RayTraceManager(Direct3DManager *direct3DManager, RootSignature
     mRayShaderManager = new RayTraceShaderManager(direct3DManager, rootSignatureManager);
 
     Vector2 screenSize = mDirect3DManager->GetScreenSize();
-    mRayTraceRenderTarget = mDirect3DManager->GetContextManager()->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R8G8B8A8_UNORM, true, 1, 1, 0);
+    mRayTraceRenderTarget = mDirect3DManager->GetContextManager()->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R32_FLOAT, true, 1, 1, 0);
     mRayTraceHeap = new DescriptorHeap(mDirect3DManager->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, RAY_TRACE_DESCRIPTOR_HEAP_SIZE, true);
 
     for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
@@ -156,6 +156,7 @@ void RayTraceManager::LoadRayTracePipelines()
 {
     mBarycentricRayTracePSO = mRayShaderManager->GetRayTracePipeline("Barycentric");
     mShadowRayTracePSO = mRayShaderManager->GetRayTracePipeline("Shadow");
+    mPrepassPSO = mRayShaderManager->GetRayTracePipeline("Prepass");
 }
 
 void RayTraceManager::CreateAccelerationStructure(RayTraceAccelerationStructureType structureType)

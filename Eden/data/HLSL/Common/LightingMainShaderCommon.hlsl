@@ -41,8 +41,10 @@ Texture2DArray ShadowTextures[4] : register(t4);
 TextureCube EnvironmentMap : register(t8);
 Texture2D<float2> EnvBRDFLookupTexture : register(t9);
 StructuredBuffer<ShadowPartition> ShadowPartitions : register(t10);
+Texture2D<float> ShadowTexture : register(t11);
 SamplerState ShadowSampler : register(s0);
 SamplerState EnvironmentSampler : register(s1);
+SamplerState ShadowLinearSampler : register(s2);
 
 LightingSurface GetLightingSurfaceFromGBuffer(uint2 coords)
 {

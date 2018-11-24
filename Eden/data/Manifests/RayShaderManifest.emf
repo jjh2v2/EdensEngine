@@ -1,3 +1,4 @@
 ../Eden/data/Shaders/RayTrace/
 Barycentric.esh
 Shadow.esh
+Prepass.esh

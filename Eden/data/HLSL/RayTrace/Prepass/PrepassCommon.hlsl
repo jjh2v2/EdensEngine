@@ -1,6 +1,6 @@
 struct HitInfo
 {
-    float shadowDistance;
+    float3 worldPosition;
 };
 
 struct Attributes

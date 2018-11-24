@@ -43,7 +43,8 @@ enum ShaderTargetStateType
 	Target_Single_16 = 4,
 	Target_Single_16_NoDepth = 5,
     Target_Single_32_NoDepth = 6,
-    Target_Depth_Stencil_Only_32_Sample_4 = 7
+    Target_Depth_Stencil_Only_32_Sample_4 = 7,
+    Target_Single_R32_NoDepth = 8
 };
 
 enum ShaderRenderStateType

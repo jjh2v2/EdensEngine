@@ -1,7 +1,7 @@
 #include "../Common/ToneMapShaderCommon.hlsl"
 
 #define LUMINANCE_THREADS_PER_DIMENSION 16
-#define LUMINANCE_THREAD_BLOCK_SIZE LUMINANCE_THREADS_PER_DIMENSION * LUMINANCE_THREADS_PER_DIMENSION
+static const uint LUMINANCE_THREAD_BLOCK_SIZE = LUMINANCE_THREADS_PER_DIMENSION * LUMINANCE_THREADS_PER_DIMENSION;
 
 Texture2D<float4> HDRTexture : register(t0);
 RWTexture2D<float> LuminanceInput : register(u0);
@@ -40,7 +40,7 @@ void InitialLuminance(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_Group
     
     if(groupIndex == 0)
     {
-        LuminanceOutput[groupId.xy] = LuminanceShared[0] / LUMINANCE_THREAD_BLOCK_SIZE;
+        LuminanceOutput[groupId.xy] = (LuminanceShared[0] / LUMINANCE_THREAD_BLOCK_SIZE);
     }
 }
 

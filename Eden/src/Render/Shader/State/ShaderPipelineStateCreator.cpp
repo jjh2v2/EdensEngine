@@ -214,6 +214,13 @@ void ShaderPipelineStateCreator::BuildPipelineStates()
 
     mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_Depth_Stencil_Only_32_Sample_4, depthStencilOnly32Target));
 
+    ShaderPipelineTargetState singleR32NoDepthTarget;
+    singleR32NoDepthTarget.NumRenderTargets = 1;
+    singleR32NoDepthTarget.RenderTargetFormats[0] = DXGI_FORMAT_R32_FLOAT;
+    singleR32NoDepthTarget.DepthStencilFormat = DXGI_FORMAT_UNKNOWN;
+
+    mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_Single_R32_NoDepth, singleR32NoDepthTarget));
+
     ShaderPipelineInputLayout standardInputLayout;
     standardInputLayout.InputElementDescs = new D3D12_INPUT_ELEMENT_DESC[6];
     standardInputLayout.InputElementDescs[0].SemanticName = "POSITION";

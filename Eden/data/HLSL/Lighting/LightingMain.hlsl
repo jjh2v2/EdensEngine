@@ -98,6 +98,7 @@ float4 LightingMainPixelShader(LightingMainVertexOutput input) : SV_Target
 		
 		if(shadowMultiplier < 1.0)
 		{
+            //shadowMultiplier = ShadowTexture.Sample(ShadowLinearSampler, input.texCoord0);
 			shadowMultiplier = GetShadowContribution(shadowTexCoord, shadowTexCoordDX, shadowTexCoordDY, saturate(shadowTexCoord.z), partition, shadowOccluder);
 		}
 		

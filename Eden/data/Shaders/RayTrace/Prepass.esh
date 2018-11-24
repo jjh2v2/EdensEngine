@@ -1,0 +1,16 @@
+GenShader
+[Prepass/PrepassGen.hlsl]
+[PrepassGen]
+[22]
+MissShader
+[Prepass/PrepassMiss.hlsl]
+[PrepassMiss]
+[22]
+ClosestHitShader
+[Prepass/PrepassClosestHit.hlsl]
+[PrepassClosestHit]
+[22]
+GlobalRootSignature
+[23]
+Payload
+[3]

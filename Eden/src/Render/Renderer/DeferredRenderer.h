@@ -24,6 +24,7 @@ private:
 	void CreateTargets(Vector2 screenSize);
 
     void RenderRayTracing();
+    void ProcessRayShadows();
 	void ClearFrameBuffers();
 	void RenderGBuffer();
     void RenderSky();
@@ -41,10 +42,12 @@ private:
 	DynamicArray<RenderTarget*> mGBufferTargets;
 	DepthStencilTarget *mGBufferDepth;
     RenderTarget *mHDRTarget;
+    RenderTarget *mRayShadowBlurTarget;
 
 	ConstantBuffer *mCameraConstantBuffer[FRAME_BUFFER_COUNT];
     ConstantBuffer *mSkyBuffer[FRAME_BUFFER_COUNT];
     ConstantBuffer *mLightBuffer[FRAME_BUFFER_COUNT];
+    ConstantBuffer *mRayShadowBlurBuffer[FRAME_BUFFER_COUNT];
 
 	SceneEntity *mSceneEntity;
 	SceneEntity *mSceneEntity2;

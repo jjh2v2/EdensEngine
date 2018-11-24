@@ -1,0 +1,8 @@
+VertexShader
+[Shadow/RayShadowBlur.hlsl]
+[RayShadowBlurVertexShader]
+PixelShader
+[Shadow/RayShadowBlur.hlsl]
+[RayShadowBlurPixelShader]
+RootSignature
+[25]

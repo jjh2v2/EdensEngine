@@ -28,8 +28,9 @@ enum RootSignatureType
     RootSignatureType_Simple_Blur = 20,
     RootSignatureType_ToneMap_Composite = 21,
     RootSignatureType_Ray_Empty_Local = 22,
-    RootSignatureType_Ray_Barycentric_Global = 23,
+    RootSignatureType_Ray_Barycentric_Prepass_Global = 23,
     RootSignatureType_Ray_Shadow_Global = 24,
+    RootSignatureType_Ray_Shadow_Blur = 25,
 	NumRootSignatures
 };
 

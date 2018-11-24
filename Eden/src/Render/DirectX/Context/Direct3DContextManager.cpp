@@ -8,7 +8,7 @@ Direct3DContextManager::Direct3DContextManager(ID3D12Device* device, bool isRayT
 	mUploadContext = new UploadContext(mDevice);
     mComputeContext = new ComputeContext(mDevice);
 	mGraphicsContexts.Add(new GraphicsContext(mDevice));
-    mGraphicsContexts.Add(new GraphicsContext(mDevice));
+    mGraphicsContexts.Add(new GraphicsContext(mDevice)); //TDA: drive this intelligently
     mRayTraceContext = NULL;
 
     if (isRayTracingSupported)

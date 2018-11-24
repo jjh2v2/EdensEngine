@@ -19,7 +19,7 @@ PostProcessManager::PostProcessManager(GraphicsManager *graphicsManager)
 
     Vector2 screenSize = mGraphicsManager->GetDirect3DManager()->GetScreenSize();
     Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
-    mBloomThresholdTarget = contextManager->CreateRenderTarget((uint32)(screenSize.X / 2.0f), (uint32)(screenSize.Y / 2.0f), DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
+    mBloomThresholdTarget = contextManager->CreateRenderTarget((uint32)(screenSize.X), (uint32)(screenSize.Y), DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
     mHalfScaleTarget = contextManager->CreateRenderTarget((uint32)(screenSize.X / 2.0f), (uint32)(screenSize.Y / 2.0f), DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
     mQuarterScaleTarget = contextManager->CreateRenderTarget((uint32)(screenSize.X / 4.0f), (uint32)(screenSize.Y / 4.0f), DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
     mEighthScaleTarget = contextManager->CreateRenderTarget((uint32)(screenSize.X / 8.0f), (uint32)(screenSize.Y / 8.0f), DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
@@ -74,7 +74,7 @@ PostProcessManager::PostProcessManager(GraphicsManager *graphicsManager)
     mCurrentToneMapBuffer.bloomMagnitude = 1.0f;
     mCurrentToneMapBuffer.toneMapMode = 0;
 
-    mToneMapAndBloomEnabled = false;
+    mToneMapAndBloomEnabled = true;
 }
 
 PostProcessManager::~PostProcessManager()
@@ -135,6 +135,7 @@ void PostProcessManager::CalculateLuminance(RenderTarget *hdrTarget, float delta
 
     uint32 numSRVsNeeded = 20; //TDA: make this accurate
     RenderPassDescriptorHeap *luminanceSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numSRVsNeeded);
+    RenderPassDescriptorHeap *luminanceSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), 1);
 
     graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, luminanceSRVDescHeap->GetHeap());
 
@@ -196,8 +197,8 @@ void PostProcessManager::ApplyToneMappingAndBloom(RenderTarget *hdrTarget)
 
     uint32 numSRVsNeeded = 30; //TDA: make this accurate
     uint32 numSamplersNeeded = 10;
-    RenderPassDescriptorHeap *bloomToneMapSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numSRVsNeeded);
-    RenderPassDescriptorHeap *bloomToneMapSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), numSamplersNeeded);
+    RenderPassDescriptorHeap *bloomToneMapSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numSRVsNeeded, false);
+    RenderPassDescriptorHeap *bloomToneMapSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), numSamplersNeeded, false);
 
     graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, bloomToneMapSRVDescHeap->GetHeap());
     graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, bloomToneMapSamplerDescHeap->GetHeap());
@@ -217,6 +218,8 @@ void PostProcessManager::ApplyToneMappingAndBloom(RenderTarget *hdrTarget)
     
     graphicsContext->SetViewport(fullViewPort);
     graphicsContext->SetScissorRect(0, 0, (uint32)fullViewPort.Width, (uint32)fullViewPort.Height);
+    graphicsContext->SetRenderTarget(mBloomThresholdTarget->GetRenderTargetViewHandle().GetCPUHandle());
+
     graphicsContext->SetPipelineState(mBloomThresholdShader);
     graphicsContext->SetRootSignature(mBloomThresholdShader->GetRootSignature(), NULL);
     graphicsContext->SetGraphicsDescriptorTable(0, bloomThresholdSRVHandle.GetGPUHandle());
@@ -323,7 +326,7 @@ void PostProcessManager::ApplyToneMappingAndBloom(RenderTarget *hdrTarget)
 
         graphicsContext->SetViewport(eighthViewPort);
         graphicsContext->SetScissorRect(0, 0, (uint32)eighthViewPort.Width, (uint32)eighthViewPort.Height);
-        graphicsContext->SetRenderTarget(mBlurTempTarget->GetRenderTargetViewHandle().GetCPUHandle());
+        graphicsContext->SetRenderTarget(mEighthScaleTarget->GetRenderTargetViewHandle().GetCPUHandle());
 
         graphicsContext->SetPipelineState(mBlurVShader);
         graphicsContext->SetRootSignature(mBlurVShader->GetRootSignature(), NULL);
@@ -423,8 +426,8 @@ void PostProcessManager::CopyToBackBuffer(RenderTarget *renderTargetToCopy)
 
     BackBufferTarget *backBuffer = direct3DManager->GetBackBufferTarget();
 
-    RenderPassDescriptorHeap *postProcessSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), 1, !mToneMapAndBloomEnabled);
-    RenderPassDescriptorHeap *postProcessSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), 1, !mToneMapAndBloomEnabled);
+    RenderPassDescriptorHeap *postProcessSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), 1, false);
+    RenderPassDescriptorHeap *postProcessSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), 1, false);
     graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, postProcessSRVDescHeap->GetHeap());
     graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, postProcessSamplerDescHeap->GetHeap());
 

@@ -10,7 +10,8 @@ enum RenderPassDescriptorHeapType
     RenderPassDescriptorHeapType_ShadowRender,
     RenderPassDescriptorHeapType_Lighting,
     RenderPassDescriptorHeapType_PostProcess,
-    RenderPassDescriptorHeapType_TextureProcessing
+    RenderPassDescriptorHeapType_TextureProcessing,
+    RenderPassDescriptorHeapType_RayShadow
 };
 
 class Direct3DHeapManager

@@ -94,7 +94,7 @@ RayTraceShaderManager::RayTracePSO *RayTraceShaderManager::LoadPipeline(const ch
     RootSignatureType genShaderLocalRootSignature = RootSignatureType_Ray_Empty_Local;
     RootSignatureType missShaderLocalRootSignature = RootSignatureType_Ray_Empty_Local;
     RootSignatureType hitGroupShaderLocalRootSignature = RootSignatureType_Ray_Empty_Local;
-    RootSignatureType globalRootSignature = RootSignatureType_Ray_Barycentric_Global;
+    RootSignatureType globalRootSignature = RootSignatureType_Ray_Barycentric_Prepass_Global;
 
     uint32 payLoadFloatCount = 0;
 
