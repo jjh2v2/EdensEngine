@@ -24,12 +24,36 @@ void ShadowGen()
     payload.shadowDistance = 0.0;
     
     RayDesc ray;
-    ray.Origin = positionWorld;
-    ray.Direction = pfLightDirection;
+    ray.Origin = positionWorld.xyz;
+    ray.Direction = pfLightDirection.xyz;
     ray.TMin = 0.001;
     ray.TMax = 100000;
     
-    TraceRay(SceneBVH, RAY_FLAG_NONE, 0xFF, 0, 0, 0, ray, payload);
+    float shadowAccum = 0;
+    float3 lightDirection = pfLightDirection.xyz;
     
-    ShadowTarget[launchIndex] = payload.shadowDistance;
+    TraceRay(SceneBVH, RAY_FLAG_NONE, 0xFF, 0, 0, 0, ray, payload);
+    shadowAccum += payload.shadowDistance > EPSILON ? 0.0 : 1;
+    lightDirection = normalize(lightDirection + float3(0, 0.015, 0));
+    ray.Direction = lightDirection;
+    
+    TraceRay(SceneBVH, RAY_FLAG_NONE, 0xFF, 0, 0, 0, ray, payload);
+    shadowAccum += payload.shadowDistance > EPSILON ? 0.0 : 1;
+    lightDirection = normalize(lightDirection + float3(0, 0.015, 0));
+    ray.Direction = lightDirection;
+    
+    TraceRay(SceneBVH, RAY_FLAG_NONE, 0xFF, 0, 0, 0, ray, payload);
+    shadowAccum += payload.shadowDistance > EPSILON ? 0.0 : 1;
+    lightDirection = normalize(lightDirection + float3(0, 0.015, 0));
+    ray.Direction = lightDirection;
+    
+    TraceRay(SceneBVH, RAY_FLAG_NONE, 0xFF, 0, 0, 0, ray, payload);
+    shadowAccum += payload.shadowDistance > EPSILON ? 0.0 : 1;
+    lightDirection = normalize(lightDirection + float3(0, 0.015, 0));
+    ray.Direction = lightDirection;
+    
+    TraceRay(SceneBVH, RAY_FLAG_NONE, 0xFF, 0, 0, 0, ray, payload);
+    shadowAccum += payload.shadowDistance > EPSILON ? 0.0 : 1;
+    
+    ShadowTarget[launchIndex] = shadowAccum/5.0;
 }

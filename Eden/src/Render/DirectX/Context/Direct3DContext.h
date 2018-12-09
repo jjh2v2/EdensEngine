@@ -104,6 +104,7 @@ public:
 
 	void ClearRenderTarget(D3D12_CPU_DESCRIPTOR_HANDLE target, float color[4]);
 	void ClearDepthStencilTarget(D3D12_CPU_DESCRIPTOR_HANDLE target, float depth, uint8 stencil);
+    void ClearUnorderedAccessView(D3D12_GPU_DESCRIPTOR_HANDLE gpuHandleInHeap, D3D12_CPU_DESCRIPTOR_HANDLE target, ID3D12Resource *targetResource, uint32 values[4]);
 
 	void DrawFullScreenTriangle();
 	void Draw(uint32 vertexCount, uint32 vertexStartOffset = 0);

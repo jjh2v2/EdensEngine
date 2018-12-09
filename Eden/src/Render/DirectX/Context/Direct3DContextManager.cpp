@@ -237,12 +237,17 @@ ConstantBuffer *Direct3DContextManager::CreateConstantBuffer(uint32 bufferSize)
 
 StructuredBuffer *Direct3DContextManager::CreateStructuredBuffer(uint32 elementSize, uint32 numElements, StructuredBufferAccess accessType, bool isRaw)
 {
-    Application::Assert(elementSize % 16 == 0); //ensure elements are 16 byte aligned so that they don't span cache lines
+    if (!isRaw)
+    {
+        Application::Assert(elementSize % 16 == 0); //ensure elements are 16 byte aligned so that they don't span cache lines
+    }
+
+    uint32 bufferSize = elementSize * numElements;
 
     D3D12_RESOURCE_DESC structuredBufferDesc;
     structuredBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
     structuredBufferDesc.Alignment = 0;
-    structuredBufferDesc.Width = elementSize * numElements;
+    structuredBufferDesc.Width = bufferSize;
     structuredBufferDesc.Height = 1;
     structuredBufferDesc.DepthOrArraySize = 1;
     structuredBufferDesc.MipLevels = 1;
@@ -306,28 +311,29 @@ StructuredBuffer *Direct3DContextManager::CreateStructuredBuffer(uint32 elementS
     }
 
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    srvDesc.Format = DXGI_FORMAT_UNKNOWN;
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDesc.Format = isRaw ? DXGI_FORMAT_R32_TYPELESS : DXGI_FORMAT_UNKNOWN;
     srvDesc.Buffer.FirstElement = 0;
-    srvDesc.Buffer.NumElements = numElements;
-    srvDesc.Buffer.StructureByteStride = elementSize;
+    srvDesc.Buffer.NumElements = isRaw ? (bufferSize / 4) : numElements;
+    srvDesc.Buffer.StructureByteStride = isRaw ? 0 : elementSize;
     srvDesc.Buffer.Flags = isRaw ? D3D12_BUFFER_SRV_FLAG_RAW : D3D12_BUFFER_SRV_FLAG_NONE;
-    
+
     DescriptorHeapHandle srvHandle = mHeapManager->GetNewSRVDescriptorHeapHandle();
     mDevice->CreateShaderResourceView(structuredBufferResource, &srvDesc, srvHandle.GetCPUHandle());
 
     D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
     uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-    uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+    uavDesc.Format = isRaw ? DXGI_FORMAT_R32_TYPELESS : DXGI_FORMAT_UNKNOWN;
     uavDesc.Buffer.CounterOffsetInBytes = 0;
     uavDesc.Buffer.FirstElement = 0;
-    uavDesc.Buffer.NumElements = numElements;
-    uavDesc.Buffer.StructureByteStride = elementSize;
+    uavDesc.Buffer.NumElements = isRaw ? (bufferSize / 4) : numElements;
+    uavDesc.Buffer.StructureByteStride = isRaw ? 0 : elementSize;
     uavDesc.Buffer.Flags = isRaw ? D3D12_BUFFER_UAV_FLAG_RAW : D3D12_BUFFER_UAV_FLAG_NONE;
 
     DescriptorHeapHandle uavHandle = mHeapManager->GetNewSRVDescriptorHeapHandle();
     mDevice->CreateUnorderedAccessView(structuredBufferResource, NULL, &uavDesc, uavHandle.GetCPUHandle());
+    
 
     StructuredBuffer *structuredBuffer = new StructuredBuffer(structuredBufferResource, structuredBufferUploadResource, bufferResourceState, isRaw, accessType, uavDesc, uavHandle, srvHandle);
     structuredBuffer->SetIsReady(true);

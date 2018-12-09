@@ -36,24 +36,27 @@ public:
     ~SDSMShadowManager();
 
     void ComputeShadowPartitions(Camera *camera, D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjectionMatrix, DepthStencilTarget *depthStencil);
-    void RenderShadowMapPartitions(const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities);
+    void RenderShadowMapPartitions(const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities, DepthStencilTarget *gbufferDepth, RenderTarget *gbufferNormals);
 
     RenderTarget *GetShadowEVSMTexture(uint32 index) { return mShadowEVSMTextures[index]; }
     StructuredBuffer *GetShadowPartitionBuffer() { return mShadowPartitionBuffer; }
+    RenderTarget *GetShadowAccumulationTexture() { return mShadowAccumulationTexture; }
 
 private:
     void RenderShadowDepth(uint32 partitionIndex, RenderPassContext *renderPassContext, const D3DXMATRIX &lightViewProjMatrix, DynamicArray<SceneEntity*> &shadowEntities);
     void ConvertToEVSM(uint32 partitionIndex);
     void ApplyBlur();
     void GenerateMipsForShadowMap(uint32 partitionIndex, RenderPassContext *renderPassContext);
+    void RenderAccumulatedShadowMap(RenderPassContext *renderPassContext, DepthStencilTarget *gbufferDepth, RenderTarget *gbufferNormals);
 
     GraphicsManager *mGraphicsManager;
     ConstantBuffer *mSDSMBuffers[FRAME_BUFFER_COUNT];
+    ConstantBuffer *mSDSMAccumulationBuffers[FRAME_BUFFER_COUNT];
     StructuredBuffer *mShadowPartitionBuffer;
     StructuredBuffer *mShadowPartitionBoundsBuffer;
     DepthStencilTarget *mShadowDepthTarget;
     RenderTarget *mShadowEVSMTextures[SDSM_SHADOW_PARTITION_COUNT];
-    RenderTarget *mShadowEVSMBlurTexture;
+    RenderTarget *mShadowAccumulationTexture;
 
     DynamicArray<ConstantBuffer*> mPartitionIndexBuffers; //these get set once at construction and never again, so we don't need them per frame buffer
 
@@ -63,14 +66,15 @@ private:
     ShaderPSO *mClearShadowPartitionBoundsShader;
     ShaderPSO *mCalculatePartitionBoundsShader;
     ShaderPSO *mFinalizePartitionsShader;
-
     ShaderPSO *mShadowMapShader;
     ShaderPSO *mShadowMapEVSMShader;
     ShaderPSO *mGenerateMipShader;
+    ShaderPSO *mSDSMAccumulationShader;
 
     Vector2 mBlurSizeInLightSpace;
     SDSMShadowPreferences mShadowPreferences;
     SDSMBuffer mCurrentSDSMBuffer;
+    SDSMAccumulationBuffer mCurrentAccumulationBuffer;
 
     D3D12_VIEWPORT mShadowMapViewport;
 };

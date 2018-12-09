@@ -1,4 +1,59 @@
-#include "../Common/LightingMainShaderCommon.hlsl"
+#include "../Common/LightingShaderCommon.hlsl"
+#include "../Common/ShadowShaderCommon.hlsl"
+
+struct LightingMainVertexOutput
+{
+    float4 position  : SV_POSITION;
+    float2 texCoord0 : TEXCOORD0;
+};
+
+struct LightingSurface
+{
+    float4 albedo;
+    float4 material;
+	float3 normal;
+    float3 positionView;
+    float  zDepth;
+};
+
+cbuffer LightingPassBuffer : register(b0)
+{
+	matrix pfViewMatrix;
+    matrix pfProjectionMatrix;
+	matrix pfViewInvMatrix;
+    float4 pfSkyColor;
+    float4 pfGroundColor;
+	float4 pfLightDir;
+	float4 pfLightColor;
+    float2 pfBufferDimensions;
+	float  pfLightIntensity;
+	float  pfAmbientIntensity;
+	float  pfBRDFspecular;
+    uint   pfSpecularIBLMipLevels;
+};
+
+Texture2D GBufferTextures[4] : register(t0);
+TextureCube EnvironmentMap : register(t4);
+Texture2D<float2> EnvBRDFLookupTexture : register(t5);
+Texture2D<float> ShadowTexture : register(t6);
+SamplerState EnvironmentSampler : register(s0);
+SamplerState ShadowLinearSampler : register(s1);
+
+LightingSurface GetLightingSurface(uint2 coords)
+{
+    float2 screenPixelOffset = float2(2.0f, -2.0f) / pfBufferDimensions;
+    float2 positionScreen = (float2(coords.xy) + 0.5f) * screenPixelOffset.xy + float2(-1.0f, 1.0f);
+    
+    LightingSurface surface;
+	float4 normal    = GBufferTextures[1][coords];
+	surface.albedo   = GBufferTextures[0][coords];
+	surface.material = GBufferTextures[2][coords];
+	surface.zDepth   = GBufferTextures[3][coords].r;
+    surface.normal   = DecodeSphereMap(normal.xy);
+    surface.positionView = GetViewPosition(coords, pfBufferDimensions, surface.zDepth, pfProjectionMatrix);
+    
+    return surface;
+}
 
 LightingMainVertexOutput LightingMainVertexShader(uint vertexID : SV_VertexID)
 {
@@ -11,71 +66,22 @@ LightingMainVertexOutput LightingMainVertexShader(uint vertexID : SV_VertexID)
 
 float4 LightingMainPixelShader(LightingMainVertexOutput input) : SV_Target
 {
-	LightingSurface surface = GetLightingSurfaceFromGBuffer(uint2(input.position.xy));
+	LightingSurface surface = GetLightingSurface(uint2(input.position.xy));
     
     if(surface.zDepth < 0.00001)
     {
-        discard;
+        discard; //skybox
     }
     
-	float3 shadowTexCoord = float3(0,0,0);
-	float3 shadowTexCoordDX = float3(0,0,0);
-	float3 shadowTexCoordDY = float3(0,0,0);
-	float4 shadowOccluder = float4(0,0,0,0);
-	float  shadowMultiplier = 0.0;
-	
-	ShadowPartition partition;
-    partition.scale = float3(0,0,0); 
-    partition.bias = float3(0,0,0);
-    partition.intervalBegin = 0;
-    partition.intervalEnd = 0;
-	
-	if(surface.positionView.z >= ShadowPartitions[0].intervalBegin && surface.positionView.z < ShadowPartitions[0].intervalEnd)
-	{
-		partition = ShadowPartitions[0];
-		shadowTexCoord = surface.lightTexCoord.xyz * partition.scale.xyz + partition.bias.xyz;
-	    shadowTexCoordDX = surface.lightTexCoordDX.xyz * partition.scale.xyz;
-	    shadowTexCoordDY = surface.lightTexCoordDY.xyz * partition.scale.xyz;
-		shadowOccluder = ShadowTextures[0].SampleGrad(ShadowSampler, float3(shadowTexCoord.xy, 0), shadowTexCoordDX.xy, shadowTexCoordDY.xy);
-	}
-	else if(surface.positionView.z >= ShadowPartitions[1].intervalBegin && surface.positionView.z < ShadowPartitions[1].intervalEnd)
-	{
-		partition = ShadowPartitions[1];
-		shadowTexCoord = surface.lightTexCoord.xyz * partition.scale.xyz + partition.bias.xyz;
-	    shadowTexCoordDX = surface.lightTexCoordDX.xyz * partition.scale.xyz;
-	    shadowTexCoordDY = surface.lightTexCoordDY.xyz * partition.scale.xyz;
-		shadowOccluder = ShadowTextures[1].SampleGrad(ShadowSampler, float3(shadowTexCoord.xy, 0), shadowTexCoordDX.xy, shadowTexCoordDY.xy);
-	}
-	else if(surface.positionView.z >= ShadowPartitions[2].intervalBegin && surface.positionView.z < ShadowPartitions[2].intervalEnd)
-	{
-		partition = ShadowPartitions[2];
-		shadowTexCoord = surface.lightTexCoord.xyz * partition.scale.xyz + partition.bias.xyz;
-	    shadowTexCoordDX = surface.lightTexCoordDX.xyz * partition.scale.xyz;
-	    shadowTexCoordDY = surface.lightTexCoordDY.xyz * partition.scale.xyz;
-		shadowOccluder = ShadowTextures[2].SampleGrad(ShadowSampler, float3(shadowTexCoord.xy, 0), shadowTexCoordDX.xy, shadowTexCoordDY.xy);
-	}
-	else if(surface.positionView.z >= ShadowPartitions[3].intervalBegin && surface.positionView.z < ShadowPartitions[3].intervalEnd)
-	{
-		partition = ShadowPartitions[3];
-		shadowTexCoord = surface.lightTexCoord.xyz * partition.scale.xyz + partition.bias.xyz;
-	    shadowTexCoordDX = surface.lightTexCoordDX.xyz * partition.scale.xyz;
-	    shadowTexCoordDY = surface.lightTexCoordDY.xyz * partition.scale.xyz;
-		shadowOccluder = ShadowTextures[3].SampleGrad(ShadowSampler, float3(shadowTexCoord.xy, 0), shadowTexCoordDX.xy, shadowTexCoordDY.xy);
-	}
-	else
-	{
-		shadowMultiplier = 1.0;
-	}
-	
 	float3 viewDir = normalize(surface.positionView);
-	float3 reflection = reflect(-viewDir, surface.normal);
+	float3 reflection = reflect(viewDir, surface.normal);
 	reflection = mul(reflection, (float3x3)pfViewInvMatrix);
 	
 	float nDotL = saturate(dot(-pfLightDir.xyz, surface.normal));
     float nDotSky = (dot(surface.normal, float3(0.0f, 1.0f, 0.0f)) * 0.5f ) + 0.5f;
     float3 ambientLight = pfAmbientIntensity * lerp(pow(abs(pfGroundColor.rgb),2.2), pow(abs(pfSkyColor.rgb),2.2), nDotSky);
 	
-	float roughness = surface.material.r; //* surface.material.r; //TDA: need to square this?
+	float roughness = surface.material.r;
 	float metallic = surface.material.g;
 	float3 lightingOutput = float3(0.0f, 0.0f, 0.0f);
     lightingOutput += ambientLight.rgb * lerp(surface.albedo.rgb, float3(0.05, 0.05, 0.05), metallic);
@@ -85,8 +91,7 @@ float4 LightingMainPixelShader(LightingMainVertexOutput input) : SV_Target
 	{
 		float3 half = normalize(viewDir + pfLightDir.xyz);
 		float3 surfaceSpec = lerp(float3(1.0, 1.0, 1.0), surface.albedo.rgb, metallic);
-		float  specMetallic = max(metallic, 0.03);
-		
+		float specMetallic = max(metallic, 0.03);
         float nDotV = saturate(dot(surface.normal, viewDir));
 		
         float3 specularFactor = CalculateSchlickFresnelReflectance(viewDir, half, float3(specMetallic, specMetallic, specMetallic) * surfaceSpec) *
@@ -95,12 +100,7 @@ float4 LightingMainPixelShader(LightingMainVertexOutput input) : SV_Target
 			  nDotL * lerp(1.0f, pfBRDFspecular, metallic);
         
 		float3 diffuseFactor = surface.albedo.rgb * nDotL * (1.0 - metallic);
-		
-		if(shadowMultiplier < 1.0)
-		{
-            //shadowMultiplier = ShadowTexture.Sample(ShadowLinearSampler, input.texCoord0);
-			shadowMultiplier = GetShadowContribution(shadowTexCoord, shadowTexCoordDX, shadowTexCoordDY, saturate(shadowTexCoord.z), partition, shadowOccluder);
-		}
+		float shadowMultiplier = ShadowTexture.Sample(ShadowLinearSampler, input.texCoord0);
 		
 		lightingOutput.rgb += (diffuseFactor + specularFactor) * pfLightIntensity * pfLightColor.rgb * shadowMultiplier;
 	}

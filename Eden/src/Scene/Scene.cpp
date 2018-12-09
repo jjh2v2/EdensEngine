@@ -66,6 +66,11 @@ void Scene::ApplyInput(InputManager *inputManager, float delta)
         inputManager->GetMouseChange(mouseMoveX, mouseMoveY);
         mCameraManager->GetMainCamera()->MouseMove(mouseMoveX, mouseMoveY, cameraDelta);
     }
+
+    if (inputManager->IsKeyDown(DIK_L))
+    {
+        mLightManager->GetSunLight()->FadeDayNight(20.0f * delta);
+    }
 }
 
 void Scene::Update(float delta)

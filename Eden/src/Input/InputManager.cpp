@@ -16,6 +16,11 @@ InputManager::InputManager(HINSTANCE hinstance, HWND hwnd, int32 screenWidth, in
 	mMouseButtons[2] = false;
 	mMouseButtons[3] = false;
 
+    memset(mKeyboardStateCurrent, 0, sizeof(unsigned char) * 256);
+    memset(mKeyboardStatePrevious, 0, sizeof(unsigned char) * 256);
+    memset(mOnKeyDown, 0, sizeof(bool) * 256);
+    memset(mOnKeyUp, 0, sizeof(bool) * 256);
+
 	Direct3DUtils::ThrowIfHRESULTFailed(DirectInput8Create(hinstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&mDirectInput, NULL));
 	Direct3DUtils::ThrowIfHRESULTFailed(mDirectInput->CreateDevice(GUID_SysKeyboard, &mKeyboard, NULL));
 	Direct3DUtils::ThrowIfHRESULTFailed(mKeyboard->SetDataFormat(&c_dfDIKeyboard));
@@ -115,7 +120,8 @@ bool InputManager::ReadKeyboard()
 {
 	HRESULT result;
 
-	result = mKeyboard->GetDeviceState(sizeof(mKeyboardState), (LPVOID)&mKeyboardState);
+    memcpy(mKeyboardStatePrevious, mKeyboardStateCurrent, sizeof(unsigned char) * 256);
+	result = mKeyboard->GetDeviceState(sizeof(mKeyboardStateCurrent), (LPVOID)&mKeyboardStateCurrent);
 	if(FAILED(result))
 	{
 		if((result == DIERR_INPUTLOST) || (result == DIERR_NOTACQUIRED))
@@ -128,13 +134,19 @@ bool InputManager::ReadKeyboard()
 		}
 	}
 
+    for (uint32 i = 0; i < 256; i++)
+    {
+        mOnKeyDown[i] = ((mKeyboardStatePrevious[i] & 0x80) == 0) && ((mKeyboardStateCurrent[i] & 0x80) != 0);
+        mOnKeyUp[i] = ((mKeyboardStatePrevious[i] & 0x80) != 0) && ((mKeyboardStateCurrent[i] & 0x80) == 0);
+    }
+
 	return true;
 }
 
 
 bool InputManager::ReadMouse()
 {
-	HRESULT result = mMouse->GetDeviceState(sizeof(DIMOUSESTATE), (LPVOID)&mMouseState);
+	HRESULT result = mMouse->GetDeviceState(sizeof(mMouseState), (LPVOID)&mMouseState);
 	if(FAILED(result))
 	{
 		if((result == DIERR_INPUTLOST) || (result == DIERR_NOTACQUIRED))
@@ -218,34 +230,37 @@ bool InputManager::IsKeyboardKeyPressed(KeyboardKey key)
 	switch (key)
 	{
 	case KeyboardKey_Escape:
-		isKeyDown = (mKeyboardState[DIK_ESCAPE] & 0x80) != 0;
+		isKeyDown = IsKeyDown(DIK_ESCAPE);
 		break;
 	case KeyboardKey_A:
-		isKeyDown = (mKeyboardState[DIK_A] & 0x80) != 0;
+		isKeyDown = IsKeyDown(DIK_A);
 		break;
 	case KeyboardKey_D:
-		isKeyDown = (mKeyboardState[DIK_D] & 0x80) != 0;
+		isKeyDown = IsKeyDown(DIK_D);
 		break;
 	case KeyboardKey_W:
-		isKeyDown = (mKeyboardState[DIK_W] & 0x80) != 0;
+		isKeyDown = IsKeyDown(DIK_W);
 		break;
 	case KeyboardKey_S:
-		isKeyDown = (mKeyboardState[DIK_S] & 0x80) != 0;
+		isKeyDown = IsKeyDown(DIK_S);
 		break;
 	case KeyboardKey_Z:
-		isKeyDown = (mKeyboardState[DIK_Z] & 0x80) != 0;
+		isKeyDown = IsKeyDown(DIK_Z);
 		break;
+    case KeyboardKey_T:
+        isKeyDown = IsKeyDown(DIK_T);
+        break;
 	case KeyboardKey_PageUp:
-		isKeyDown = (mKeyboardState[DIK_PGUP] & 0x80) != 0;
+		isKeyDown = IsKeyDown(DIK_PGUP);
 		break;
 	case KeyboardKey_PageDown:
-		isKeyDown = (mKeyboardState[DIK_PGDN] & 0x80) != 0;
+		isKeyDown = IsKeyDown(DIK_PGDN);
 		break;
 	case KeyboardKey_LeftShift:
-		isKeyDown = (mKeyboardState[DIK_LSHIFT] & 0x80) != 0;
+		isKeyDown = IsKeyDown(DIK_LSHIFT);
 		break;
     case KeyboardKey_Tab:
-        isKeyDown = (mKeyboardState[DIK_TAB] & 0x80) != 0;
+        isKeyDown = IsKeyDown(DIK_TAB);
         break;
 	default:
 		break;
@@ -256,5 +271,10 @@ bool InputManager::IsKeyboardKeyPressed(KeyboardKey key)
 
 bool InputManager::IsKeyDown(int32 key)
 {
-	return (mKeyboardState[key] & 0x80) != 0;
+	return (mKeyboardStateCurrent[key] & 0x80) != 0;
+}
+
+bool InputManager::GetOnKeyDown(int32 key)
+{
+    return mOnKeyDown[key];
 }

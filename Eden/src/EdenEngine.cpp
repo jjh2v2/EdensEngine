@@ -63,13 +63,15 @@ void EdenEngine::Run()
 		}
 
         cpuTimer += mGameTimer->GetTimeMilliseconds();
+        float delta = cpuTimer / 1000.0f;
+
         if (cpuTimer > CPU_FRAME_UPDATE_TIME)
         {
-            shouldExit = !Update(cpuTimer / 1000.0f);
+            shouldExit = !Update(delta);
             cpuTimer = 0;
         }
 
-		shouldExit |= mEngineWindow->ShouldQuit() || !Render() || mInputManager->IsKeyboardKeyPressed(KeyboardKey_Escape);
+		shouldExit |= mEngineWindow->ShouldQuit() || !Render(delta) || mInputManager->IsKeyboardKeyPressed(KeyboardKey_Escape);
 	}
 }
 
@@ -108,15 +110,25 @@ bool EdenEngine::Update(float delta)
         mDeferredRenderer->ToggleRayTraceOutput(false);
     }
 
+    if (mInputManager->GetOnKeyDown(DIK_T))
+    {
+        mDeferredRenderer->ToggleTonemapper();
+    }
+
+    if (mInputManager->GetOnKeyDown(DIK_R))
+    {
+        mDeferredRenderer->ToggleRayShadows();
+    }
+
     mGraphicsManager->Update(delta, mSceneManager->GetActiveScene()->GetMainCamera());
 	
 	mSceneManager->Update(delta);
 	return true;
 }
 
-bool EdenEngine::Render()
+bool EdenEngine::Render(float delta)
 {
-	mDeferredRenderer->Render();
+	mDeferredRenderer->Render(delta);
 	mGraphicsManager->GetDirect3DManager()->Present();
 	return true;
 }

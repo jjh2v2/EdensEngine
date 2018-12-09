@@ -451,6 +451,11 @@ void GraphicsContext::ClearDepthStencilTarget(D3D12_CPU_DESCRIPTOR_HANDLE target
 	mCommandList->ClearDepthStencilView(target, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, depth, stencil, 0, NULL);
 }
 
+void GraphicsContext::ClearUnorderedAccessView(D3D12_GPU_DESCRIPTOR_HANDLE gpuHandleInHeap, D3D12_CPU_DESCRIPTOR_HANDLE target, ID3D12Resource *targetResource, uint32 values[4])
+{
+    mCommandList->ClearUnorderedAccessViewUint(gpuHandleInHeap, target, targetResource, values, 0, NULL);
+}
+
 void GraphicsContext::DrawFullScreenTriangle()
 {
 	SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);

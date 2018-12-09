@@ -15,7 +15,7 @@ public:
 
 private:
 	bool Update(float delta);
-	bool Render();
+	bool Render(float delta);
 	void OnScreenChanged();
 
 	GraphicsManager *mGraphicsManager;

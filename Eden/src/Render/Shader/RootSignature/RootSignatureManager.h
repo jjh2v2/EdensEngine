@@ -31,6 +31,9 @@ enum RootSignatureType
     RootSignatureType_Ray_Barycentric_Prepass_Global = 23,
     RootSignatureType_Ray_Shadow_Global = 24,
     RootSignatureType_Ray_Shadow_Blur = 25,
+    RootSignatureType_Luminance_Histogram = 26,
+    RootSignatureType_Luminance_Histogram_Average = 27,
+    RootSignatureType_SDSM_Accumulation = 28,
 	NumRootSignatures
 };
 

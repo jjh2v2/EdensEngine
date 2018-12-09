@@ -18,6 +18,7 @@ enum KeyboardKey
 	KeyboardKey_W,
 	KeyboardKey_S,
 	KeyboardKey_Z,
+    KeyboardKey_T,
 	KeyboardKey_PageUp,
 	KeyboardKey_PageDown,
 	KeyboardKey_LeftShift,
@@ -54,6 +55,7 @@ public:
 	bool IsLeftMouseDown();
 	bool IsRightMouseDown();
 	bool IsKeyDown(int32 key);
+    bool GetOnKeyDown(int32 key);
 	
 	bool GetLeftClickDown();
 	bool GetLeftClickUp();
@@ -68,12 +70,15 @@ private:
 	bool ReadMouse();
 	void ProcessInput();
 
-	IDirectInput8* mDirectInput;
-	IDirectInputDevice8* mKeyboard;
-	IDirectInputDevice8* mMouse;
+	IDirectInput8 *mDirectInput;
+	IDirectInputDevice8 *mKeyboard;
+	IDirectInputDevice8 *mMouse;
 	HWND mWindow;
 
-	unsigned char mKeyboardState[256];
+    unsigned char mKeyboardStateCurrent[256];
+	unsigned char mKeyboardStatePrevious[256];
+    bool mOnKeyDown[256];
+    bool mOnKeyUp[256];
 	bool mMouseButtons[4];
 	DIMOUSESTATE mMouseState;
 

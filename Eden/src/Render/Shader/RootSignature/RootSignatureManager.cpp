@@ -272,8 +272,8 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
     {
         //RootSignatureType_LightingMain
         CD3DX12_DESCRIPTOR_RANGE ranges[3];
-        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 12, 0); //12 srvs at t0-t11
-        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 3, 0); //3 samplers at s0-s2
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 7, 0); //7 srvs at t0-t6
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 2, 0); //2 samplers at s0-s2
         ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv at b0, lighting buffer
 
         CD3DX12_ROOT_PARAMETER rootParameters[3];
@@ -521,6 +521,67 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
         Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, blurSignature.RootSignatureBlob->GetBufferPointer(), blurSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&blurSignature.RootSignature)));
 
         mRootSignatures.Add(blurSignature);
+    }
+
+    {
+        //RootSignatureType_Luminance_Histogram
+        CD3DX12_DESCRIPTOR_RANGE ranges[3];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv at b0, histogram info
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0); //1 srv, hdr input, at t0
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); //1 uav, histogram target, at u0
+
+        CD3DX12_ROOT_PARAMETER rootParameters[3];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[2].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_ALL);
+
+        RootSignatureInfo luminanceSignature;
+        luminanceSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&luminanceSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &luminanceSignature.RootSignatureBlob, &luminanceSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, luminanceSignature.RootSignatureBlob->GetBufferPointer(), luminanceSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&luminanceSignature.RootSignature)));
+
+        mRootSignatures.Add(luminanceSignature);
+    }
+
+    {
+        //RootSignatureType_Luminance_Histogram_Average
+        CD3DX12_DESCRIPTOR_RANGE ranges[2];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv at b0, histogram info
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 2, 0); //2 uav, histogram and average target, at u0-1
+
+        CD3DX12_ROOT_PARAMETER rootParameters[2];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);
+
+        RootSignatureInfo luminanceSignature;
+        luminanceSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&luminanceSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &luminanceSignature.RootSignatureBlob, &luminanceSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, luminanceSignature.RootSignatureBlob->GetBufferPointer(), luminanceSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&luminanceSignature.RootSignature)));
+
+        mRootSignatures.Add(luminanceSignature);
+    }
+
+    {
+        //RootSignatureType_SDSM_Accumulation
+        CD3DX12_DESCRIPTOR_RANGE ranges[3];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 7, 0); //7 srvs at t0-t6
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0); //1 sampler at s0
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv at b0, shadow buffer
+
+        CD3DX12_ROOT_PARAMETER rootParameters[3];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
+        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_PIXEL);
+        rootParameters[2].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_PIXEL);
+
+        RootSignatureInfo sdsmSignature;
+        sdsmSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&sdsmSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &sdsmSignature.RootSignatureBlob, &sdsmSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, sdsmSignature.RootSignatureBlob->GetBufferPointer(), sdsmSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&sdsmSignature.RootSignature)));
+
+        mRootSignatures.Add(sdsmSignature);
     }
 }
 

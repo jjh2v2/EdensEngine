@@ -1,0 +1,5 @@
+ComputeShader
+[Lighting/LuminanceHistogramAverage.hlsl]
+[LuminanceHistogramAverage]
+RootSignature
+[27]

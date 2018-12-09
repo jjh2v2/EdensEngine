@@ -9,7 +9,7 @@ RWTexture2D<float> LuminanceOutput : register(u1);
 
 cbuffer LuminanceBuffer : register(b0)
 {
-    float tau;          // = 1.25
+    float tau;
     float timeDelta;
 };
 
@@ -28,11 +28,11 @@ void InitialLuminance(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_Group
 	GroupMemoryBarrierWithGroupSync();
     
     [unroll]
-	for(uint sampleIndex = (LUMINANCE_THREAD_BLOCK_SIZE >> 1); sampleIndex > 0; sampleIndex >>= 1)
+	for(uint lumIndex = (LUMINANCE_THREAD_BLOCK_SIZE >> 1); lumIndex > 0; lumIndex >>= 1)
     {
-		if(groupIndex < sampleIndex)
+		if(groupIndex < lumIndex)
         {
-			LuminanceShared[groupIndex] += LuminanceShared[groupIndex + sampleIndex];
+			LuminanceShared[groupIndex] += LuminanceShared[groupIndex + lumIndex];
         }
 
 		GroupMemoryBarrierWithGroupSync();
@@ -56,11 +56,11 @@ void LuminanceDownsample(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_Gr
     GroupMemoryBarrierWithGroupSync();
 
     [unroll]
-	for(uint sampleIndex = (LUMINANCE_THREAD_BLOCK_SIZE >> 1); sampleIndex > 0; sampleIndex >>= 1)
+	for(uint lumIndex = (LUMINANCE_THREAD_BLOCK_SIZE >> 1); lumIndex > 0; lumIndex >>= 1)
     {
-		if(groupIndex < sampleIndex)
+		if(groupIndex < lumIndex)
         {
-			LuminanceShared[groupIndex] += LuminanceShared[groupIndex + sampleIndex];
+			LuminanceShared[groupIndex] += LuminanceShared[groupIndex + lumIndex];
         }
 
 		GroupMemoryBarrierWithGroupSync();

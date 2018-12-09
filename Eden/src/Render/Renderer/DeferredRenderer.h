@@ -16,8 +16,10 @@ public:
 
 	void OnScreenChanged(Vector2 screenSize);
 	void SetActiveScene(Scene *scene) { mActiveScene = scene; }
-	void Render();
+	void Render(float deltaTime);
     void ToggleRayTraceOutput(bool showRayTrace) { mShowRayTrace = showRayTrace; }
+    void ToggleTonemapper();
+    void ToggleRayShadows();
 
 private:
 	void FreeTargets();
@@ -63,4 +65,5 @@ private:
     uint64 mPreviousFrameFence;
     bool mMeshesAddedToRayTrace;
     bool mShowRayTrace;
+    bool mUseRayTraceShadows;
 };

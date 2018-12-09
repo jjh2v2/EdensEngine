@@ -1,0 +1,5 @@
+ComputeShader
+[Lighting/LuminanceBuildHistogram.hlsl]
+[LuminanceBuildHistogram]
+RootSignature
+[26]

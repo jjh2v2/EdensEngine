@@ -11,6 +11,7 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
     mPreviousFrameFence = 0;
     mMeshesAddedToRayTrace = false;
     mShowRayTrace = false;
+    mUseRayTraceShadows = false;
 
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
 	Direct3DContextManager *contextManager = direct3DManager->GetContextManager();
@@ -520,7 +521,7 @@ void DeferredRenderer::RenderShadows(D3DXMATRIX &lightViewMatrix, D3DXMATRIX &li
     sceneEntities.Add(mSceneEntity3);
     sceneEntities.Add(mSceneEntity4);
 
-    mShadowManager->RenderShadowMapPartitions(lightViewProjMatrix, sceneEntities);
+    mShadowManager->RenderShadowMapPartitions(lightViewProjMatrix, sceneEntities, mGBufferDepth, mGBufferTargets[1]);
 }
 
 void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3DXMATRIX &projectionMatrix, const D3DXMATRIX &viewToLightProjMatrix, const D3DXMATRIX &viewInvMatrix)
@@ -535,6 +536,9 @@ void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3
     GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
     Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
     Vector2 screenSize = direct3DManager->GetScreenSize();
+
+    RenderTarget *shadowResultTarget = mUseRayTraceShadows ? mRayShadowBlurTarget : mShadowManager->GetShadowAccumulationTexture();
+    graphicsContext->TransitionResource(shadowResultTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, true);
 
     graphicsContext->InsertPixBeginEvent(0xFFFFFF00, "Lighting Pass");
 
@@ -566,28 +570,16 @@ void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mGBufferDepth->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
 
-    for (uint32 i = 0; i < SDSM_SHADOW_PARTITION_COUNT; i++)
-    {
-        direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mShadowManager->GetShadowEVSMTexture(i)->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-        lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
-    }
-
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mFilteredCubeMap->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
 
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mEnvironmentMapLookup->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
 
-    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mShadowManager->GetShadowPartitionBuffer()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    lightingSRVHandleOffset.ptr += lightingSRVHandleOffsetIncrement;
-
-    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, mRayShadowBlurTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSRVHandleOffset, shadowResultTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     Sampler *lightingSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_ANISO_16_CLAMP);
     Sampler *shadowSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_CLAMP);
-
-    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSamplersHandleOffset, lightingSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-    lightingSamplersHandleOffset.ptr += lightingSamplersHandleOffsetIncrement;
         
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lightingSamplersHandleOffset, lightingSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
     lightingSamplersHandleOffset.ptr += lightingSamplersHandleOffsetIncrement;
@@ -607,7 +599,6 @@ void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3
     LightingMainBuffer lightBuffer;
     lightBuffer.viewMatrix = viewMatrix;            //all pre-transposed
     lightBuffer.projectionMatrix = projectionMatrix;
-    lightBuffer.viewToLightProjMatrix = viewToLightProjMatrix;
     lightBuffer.viewInvMatrix = viewInvMatrix;
     lightBuffer.groundColor = Vector4(0.705f, 0.809f, 0.839f, 1.0f);
     lightBuffer.skyColor = Vector4(0.0f, 0.588f, 1.0f, 1.0f);
@@ -640,8 +631,17 @@ void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3
     graphicsContext->InsertPixEndEvent();
 }
 
+void DeferredRenderer::ToggleTonemapper()
+{
+    mPostProcessManager->ToggleTonemapper();
+}
 
-void DeferredRenderer::Render()
+void DeferredRenderer::ToggleRayShadows()
+{
+    mUseRayTraceShadows = !mUseRayTraceShadows && mRayTraceManager;
+}
+
+void DeferredRenderer::Render(float deltaTime)
 {
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
     Camera *mainCamera = mActiveScene->GetMainCamera();
@@ -689,22 +689,33 @@ void DeferredRenderer::Render()
 
     mCameraConstantBuffer[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&cameraBuffer, sizeof(CameraBuffer));
     
-    RenderRayTracing();
+    if (mUseRayTraceShadows)
+    {
+        RenderRayTracing();
+    }
+    
 	ClearFrameBuffers();
 	RenderGBuffer();
     RenderSky();
-    RenderShadows(lightView, lightProj);
-    ProcessRayShadows();
-    RenderLightingMain(cameraBuffer.viewMatrix, cameraBuffer.projectionMatrix, cameraBuffer.viewToLightProjMatrix, cameraBuffer.viewInvMatrix);
-    
 
-    if (mRayTraceManager && mShowRayTrace)
+    if (mUseRayTraceShadows)
     {
-        mPostProcessManager->RenderPostProcessing(mRayShadowBlurTarget, 0.0167f);
+        ProcessRayShadows();
     }
     else
     {
-        mPostProcessManager->RenderPostProcessing(mHDRTarget, 0.0167f); //TDA FIX
+        RenderShadows(lightView, lightProj);
+    }
+    
+    RenderLightingMain(cameraBuffer.viewMatrix, cameraBuffer.projectionMatrix, cameraBuffer.viewToLightProjMatrix, cameraBuffer.viewInvMatrix);
+    
+    if (mRayTraceManager && mShowRayTrace)
+    {
+        mPostProcessManager->RenderPostProcessing(mRayShadowBlurTarget, deltaTime);
+    }
+    else
+    {
+        mPostProcessManager->RenderPostProcessing(mHDRTarget, deltaTime);
     }
 
     direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->WaitForFenceCPUBlocking(mPreviousFrameFence);

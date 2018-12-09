@@ -24,3 +24,6 @@ SimpleBlurH.esh
 SimpleBlurV.esh
 ToneMapComposite.esh
 RayShadowBlur.esh
+Compute/LuminanceBuildHistogram.esh
+Compute/LuminanceHistogramAverage.esh
+SDSMShadowAccumulation.esh

@@ -16,6 +16,8 @@ PostProcessManager::PostProcessManager(GraphicsManager *graphicsManager)
     mBlurHShader = mGraphicsManager->GetShaderManager()->GetShader("SimpleBlurH", bloomShaderPermutation);
     mBlurVShader = mGraphicsManager->GetShaderManager()->GetShader("SimpleBlurV", bloomShaderPermutation);
     mToneMapShader = mGraphicsManager->GetShaderManager()->GetShader("ToneMapComposite", toneMapShaderPermutation);
+    mLuminanceHistogramShader = mGraphicsManager->GetShaderManager()->GetShader("LuminanceBuildHistogram", computeShaderEmptyPermutation);
+    mLuminanceHistogramAverageShader = mGraphicsManager->GetShaderManager()->GetShader("LuminanceHistogramAverage", computeShaderEmptyPermutation);
 
     Vector2 screenSize = mGraphicsManager->GetDirect3DManager()->GetScreenSize();
     Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
@@ -43,36 +45,45 @@ PostProcessManager::PostProcessManager(GraphicsManager *graphicsManager)
 
     } while (luminanceDownScaleSizeX > 1 || luminanceDownScaleSizeY > 1);
 
+    mLuminanceHistogram = contextManager->CreateStructuredBuffer(sizeof(uint32), 64, GPU_READ_WRITE, true);
+    mHistogramAverageTarget = contextManager->CreateRenderTarget(1, 1, DXGI_FORMAT_R32_FLOAT, true, 1, 1, 0);
+
     for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
     {
         mLuminanceBuffers[i] = contextManager->CreateConstantBuffer(sizeof(LuminanceBuffer));
-    }
-
-    for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
-    {
         mThresholdBuffers[i] = contextManager->CreateConstantBuffer(sizeof(ThresholdBuffer));
-    }
-
-    for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
-    {
         mBloomBlurBuffers[i] = contextManager->CreateConstantBuffer(sizeof(BlurBuffer));
-    }
-
-    for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
-    {
         mToneMapBuffers[i] = contextManager->CreateConstantBuffer(sizeof(ToneMapBuffer));
+        mLuminanceHistogramBuffers[i] = contextManager->CreateConstantBuffer(sizeof(LuminanceHistogramBuffer));
+        mLuminanceHistogramAverageBuffers[i] = contextManager->CreateConstantBuffer(sizeof(LuminanceHistogramAverageBuffer));
     }
 
     mCurrentLuminanceBuffer.tau = 1.25f;
     mCurrentLuminanceBuffer.timeDelta = 0.0167f;
 
-    mCurrentThresholdBuffer.bloomThreshold = 1.0f;
-    mCurrentThresholdBuffer.toneMapMode = 0;
+    mCurrentThresholdBuffer.bloomThreshold = 3.0f;
+    mCurrentThresholdBuffer.toneMapMode = 1;
 
     mCurrentBlurBuffer.blurSigma = 0.8f;
 
-    mCurrentToneMapBuffer.bloomMagnitude = 1.0f;
-    mCurrentToneMapBuffer.toneMapMode = 0;
+    mCurrentToneMapBuffer.bloomMagnitude = 2.0f;
+    mCurrentToneMapBuffer.toneMapMode = 1;
+
+    mCurrentLuminanceHistogramBuffer.inputWidth = (uint32)screenSize.X;
+    mCurrentLuminanceHistogramBuffer.inputHeight = (uint32)screenSize.Y;
+    mCurrentLuminanceHistogramBuffer.luminanceMin = 0.0f;
+    mCurrentLuminanceHistogramBuffer.luminanceMax = 1.0f;
+
+    mCurrentLuminanceHistogramAveragebuffer.luminanceMaxMinusMin = mCurrentLuminanceHistogramBuffer.luminanceMax - mCurrentLuminanceHistogramBuffer.luminanceMin;
+    mCurrentLuminanceHistogramAveragebuffer.darknessImportanceFactor = 0.5f;
+    mCurrentLuminanceHistogramAveragebuffer.darknessImportanceExponent = 1.5f;
+    mCurrentLuminanceHistogramAveragebuffer.brightnessImportanceFactor = 0.1f;
+    mCurrentLuminanceHistogramAveragebuffer.brightnessImportanceExponent = 2.4f;
+    mCurrentLuminanceHistogramAveragebuffer.darknessScalingMax = 8.0f;
+    mCurrentLuminanceHistogramAveragebuffer.brightnessScalingMin = 30.0f;
+    mCurrentLuminanceHistogramAveragebuffer.tau = 1.0f;
+    mCurrentLuminanceHistogramAveragebuffer.timeDelta = 0.0167f;
+    mCurrentLuminanceHistogramAveragebuffer.luminanceScalar = 0.9f;
 
     mToneMapAndBloomEnabled = true;
 }
@@ -87,6 +98,7 @@ PostProcessManager::~PostProcessManager()
     contextManager->FreeRenderTarget(mEighthScaleTarget);
     contextManager->FreeRenderTarget(mBlurTempTarget);
     contextManager->FreeRenderTarget(mTonemapCompositeTarget);
+    contextManager->FreeRenderTarget(mHistogramAverageTarget);
 
     for (uint32 i = 0; i < mLuminanceDownSampleTargets.CurrentSize(); i++)
     {
@@ -95,12 +107,28 @@ PostProcessManager::~PostProcessManager()
     
     mLuminanceDownSampleTargets.Clear();
 
+    contextManager->FreeStructuredBuffer(mLuminanceHistogram);
+
     for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
     {
         contextManager->FreeConstantBuffer(mLuminanceBuffers[i]);
         contextManager->FreeConstantBuffer(mThresholdBuffers[i]);
         contextManager->FreeConstantBuffer(mBloomBlurBuffers[i]);
         contextManager->FreeConstantBuffer(mToneMapBuffers[i]);
+        contextManager->FreeConstantBuffer(mLuminanceHistogramBuffers[i]);
+        contextManager->FreeConstantBuffer(mLuminanceHistogramAverageBuffers[i]);
+    }
+}
+
+void PostProcessManager::ToggleTonemapper()
+{
+    mCurrentThresholdBuffer.toneMapMode++;
+    mCurrentToneMapBuffer.toneMapMode++;
+
+    if (mCurrentThresholdBuffer.toneMapMode > 3)
+    {
+        mCurrentThresholdBuffer.toneMapMode = 0;
+        mCurrentToneMapBuffer.toneMapMode = 0;
     }
 }
 
@@ -109,6 +137,7 @@ void PostProcessManager::RenderPostProcessing(RenderTarget *hdrTarget, float del
     if (mToneMapAndBloomEnabled)
     {
         CalculateLuminance(hdrTarget, deltaTime);
+        CalculateLuminanceHistogram(hdrTarget, deltaTime);
         ApplyToneMappingAndBloom(hdrTarget);
         CopyToBackBuffer(mTonemapCompositeTarget);
     }
@@ -130,7 +159,7 @@ void PostProcessManager::CalculateLuminance(RenderTarget *hdrTarget, float delta
 
     graphicsContext->InsertPixBeginEvent(0xFF00FFFF, "Luminance Calculation");
 
-    graphicsContext->TransitionResource(hdrTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
+    graphicsContext->TransitionResource(hdrTarget, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, false);
     graphicsContext->TransitionResource(mLuminanceDownSampleTargets[0], D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
 
     uint32 numSRVsNeeded = 20; //TDA: make this accurate
@@ -176,6 +205,81 @@ void PostProcessManager::CalculateLuminance(RenderTarget *hdrTarget, float delta
     graphicsContext->InsertPixEndEvent();
 }
 
+void PostProcessManager::CalculateLuminanceHistogram(RenderTarget *hdrTarget, float deltaTime)
+{
+    Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
+    GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
+    Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
+    Vector2 screenSize = mGraphicsManager->GetDirect3DManager()->GetScreenSize();
+
+    mCurrentLuminanceHistogramAveragebuffer.timeDelta = deltaTime;
+
+    mLuminanceHistogramBuffers[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&mCurrentLuminanceHistogramBuffer, sizeof(LuminanceHistogramBuffer));
+    mLuminanceHistogramAverageBuffers[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&mCurrentLuminanceHistogramAveragebuffer, sizeof(LuminanceHistogramAverageBuffer));
+
+    graphicsContext->InsertPixBeginEvent(0xFF00FFFF, "Luminance Histogram");
+
+    graphicsContext->TransitionResource(hdrTarget, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, false);
+    graphicsContext->TransitionResource(mLuminanceHistogram, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
+
+    uint32 numSRVsNeeded = 30; //TDA: make this accurate
+    uint32 numSamplersNeeded = 10;
+    RenderPassDescriptorHeap *lumHistogramSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numSRVsNeeded, false);
+    RenderPassDescriptorHeap *lumHistogramSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_PostProcess, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), numSamplersNeeded, false);
+
+    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, lumHistogramSRVDescHeap->GetHeap());
+    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, lumHistogramSamplerDescHeap->GetHeap());
+
+    DescriptorHeapHandle clearUAVHandle = lumHistogramSRVDescHeap->GetHeapHandleBlock(1);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, clearUAVHandle.GetCPUHandle(), mLuminanceHistogram->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    uint32 clearValues[4] = { 0, 0, 0, 0 };
+    graphicsContext->ClearUnorderedAccessView(clearUAVHandle.GetGPUHandle(), mLuminanceHistogram->GetUnorderedAccessViewHandle().GetCPUHandle(), mLuminanceHistogram->GetResource(), clearValues);
+
+    graphicsContext->TransitionResource(mLuminanceHistogram, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
+
+    DescriptorHeapHandle lumHistogramCBVHandle = lumHistogramSRVDescHeap->GetHeapHandleBlock(1);
+    DescriptorHeapHandle lumHistogramSRVHandle = lumHistogramSRVDescHeap->GetHeapHandleBlock(1);
+    DescriptorHeapHandle lumHistogramUAVHandle = lumHistogramSRVDescHeap->GetHeapHandleBlock(1);
+
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lumHistogramCBVHandle.GetCPUHandle(), mLuminanceHistogramBuffers[direct3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lumHistogramSRVHandle.GetCPUHandle(), hdrTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lumHistogramUAVHandle.GetCPUHandle(), mLuminanceHistogram->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    graphicsContext->SetPipelineState(mLuminanceHistogramShader);
+    graphicsContext->SetRootSignature(NULL, mLuminanceHistogramShader->GetRootSignature());
+    graphicsContext->SetComputeDescriptorTable(0, lumHistogramCBVHandle.GetGPUHandle());
+    graphicsContext->SetComputeDescriptorTable(1, lumHistogramSRVHandle.GetGPUHandle());
+    graphicsContext->SetComputeDescriptorTable(2, lumHistogramUAVHandle.GetGPUHandle());
+
+    graphicsContext->Dispatch2D(hdrTarget->GetWidth(), hdrTarget->GetHeight(), 16, 16);
+
+    graphicsContext->InsertPixEndEvent();
+
+    graphicsContext->InsertPixBeginEvent(0xFF00FFFF, "Luminance Histogram Average");
+
+    graphicsContext->TransitionResource(mLuminanceHistogram, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, false);
+    graphicsContext->TransitionResource(mHistogramAverageTarget, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
+
+    DescriptorHeapHandle lumHistogramAverageCBVHandle = lumHistogramSRVDescHeap->GetHeapHandleBlock(1);
+    DescriptorHeapHandle lumHistogramAverageUAVHandle = lumHistogramSRVDescHeap->GetHeapHandleBlock(2);
+    D3D12_CPU_DESCRIPTOR_HANDLE currentHistogramUAVHandle = lumHistogramAverageUAVHandle.GetCPUHandle();
+
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, currentHistogramUAVHandle, mLuminanceHistogram->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    currentHistogramUAVHandle.ptr += lumHistogramSRVDescHeap->GetDescriptorSize();
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, currentHistogramUAVHandle, mHistogramAverageTarget->GetUnorderedAccessViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, lumHistogramAverageCBVHandle.GetCPUHandle(), mLuminanceHistogramAverageBuffers[direct3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    
+    graphicsContext->SetPipelineState(mLuminanceHistogramAverageShader);
+    graphicsContext->SetRootSignature(NULL, mLuminanceHistogramAverageShader->GetRootSignature());
+    graphicsContext->SetComputeDescriptorTable(0, lumHistogramAverageCBVHandle.GetGPUHandle());
+    graphicsContext->SetComputeDescriptorTable(1, lumHistogramAverageUAVHandle.GetGPUHandle());
+
+    graphicsContext->Dispatch(1, 1, 1);
+    
+    graphicsContext->InsertPixEndEvent();
+}
+
 void PostProcessManager::ApplyToneMappingAndBloom(RenderTarget *hdrTarget)
 {
     Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
@@ -192,7 +296,8 @@ void PostProcessManager::ApplyToneMappingAndBloom(RenderTarget *hdrTarget)
 
     graphicsContext->InsertPixBeginEvent(0xFF00FFFF, "Bloom Threshold");
 
-    graphicsContext->TransitionResource(mLuminanceDownSampleTargets[mLuminanceDownSampleTargets.CurrentSize() - 1], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
+    graphicsContext->TransitionResource(hdrTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
+    graphicsContext->TransitionResource(mHistogramAverageTarget, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, false);
     graphicsContext->TransitionResource(mBloomThresholdTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, true);
 
     uint32 numSRVsNeeded = 30; //TDA: make this accurate
@@ -210,7 +315,7 @@ void PostProcessManager::ApplyToneMappingAndBloom(RenderTarget *hdrTarget)
     D3D12_CPU_DESCRIPTOR_HANDLE currentBloomThresholdHandle = bloomThresholdSRVHandle.GetCPUHandle();
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, currentBloomThresholdHandle, hdrTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     currentBloomThresholdHandle.ptr += bloomToneMapSRVDescHeap->GetDescriptorSize();
-    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, currentBloomThresholdHandle, mLuminanceDownSampleTargets[mLuminanceDownSampleTargets.CurrentSize() - 1]->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, currentBloomThresholdHandle, mHistogramAverageTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     Sampler *linearSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_CLAMP);
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, linearSamplerHandle.GetCPUHandle(), linearSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
@@ -395,8 +500,8 @@ void PostProcessManager::ApplyToneMappingAndBloom(RenderTarget *hdrTarget)
     D3D12_CPU_DESCRIPTOR_HANDLE currentBloomCompositeSRVHandle = bloomCompositeSRVHandle.GetCPUHandle();
 
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, currentBloomCompositeSRVHandle, hdrTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    currentBloomCompositeSRVHandle.ptr += bloomToneMapSRVDescHeap->GetDescriptorSize();
-    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, currentBloomCompositeSRVHandle, mLuminanceDownSampleTargets[mLuminanceDownSampleTargets.CurrentSize() - 1]->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    currentBloomCompositeSRVHandle.ptr += bloomToneMapSRVDescHeap->GetDescriptorSize(); //TDA lum downsample target below for old method
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, currentBloomCompositeSRVHandle, mHistogramAverageTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     currentBloomCompositeSRVHandle.ptr += bloomToneMapSRVDescHeap->GetDescriptorSize();
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, currentBloomCompositeSRVHandle, mHalfScaleTarget->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 

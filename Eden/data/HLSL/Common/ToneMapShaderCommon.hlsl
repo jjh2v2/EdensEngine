@@ -46,11 +46,11 @@ float GetAverageLuminance(Texture2D luminanceTexure)
 
 float3 CalcExposedColor(float3 color, float avgLuminance, float threshold)
 {
-    float keyValue = 0.115;
+    float keyValue = 0.18;
     
     avgLuminance = max(avgLuminance, 0.001f);
     float linearExposure = (keyValue / avgLuminance);
-    float exposure = log2(max(linearExposure, 0.0001f));
+    float exposure = log2(max(linearExposure, 0.0001f)); //use static variable here for manual exposure
 
     exposure -= threshold;
     return max(exp2(exposure) * color, EPSILON);
@@ -65,14 +65,23 @@ float3 ToneMapFilmicALU(float3 color)
     return pow(color, 2.2f);
 }
 
+
+
 float3 CalculateHable(float3 color) 
 {
-    const float A = 4.0;        //shoulder strength
-    const float B = 5.0;        //linear strength
-    const float C = 0.12;       //linear angle
-    const float D = 13.0;       //toe strength
-    const float E = 0.01f;
-    const float F = 0.3f;
+    float A = 0.22;//ShoulderStrength;
+    float B = 0.3;//LinearStrength;
+    float C = 0.1;//LinearAngle;
+    float D = 0.2;//ToeStrength;
+    float E = 0.01;//ToeNumerator;
+    float F = 0.3;//ToeDenominator;
+    
+    //const float A = 4.0;        //shoulder strength
+    //const float B = 5.0;        //linear strength
+    //const float C = 0.12;       //linear angle
+    //const float D = 13.0;       //toe strength
+    //const float E = 0.01f;
+    //const float F = 0.3f;
 
     return ((color * (A * color + C * B)+ D * E) / (color * (A * color + B) + D * F)) - E / F;
 }
@@ -97,7 +106,8 @@ float3 ToneMap(float3 color, float avgLuminance, float threshold, uint toneMapMo
 
     if(toneMapMode == TONEMAP_ACES)
     {
-        finalColor = TonemapACES(color);
+        const float acesConstant = 1.8;
+        finalColor = TonemapACES(acesConstant * color);
     }
     else if(toneMapMode == TONEMAP_HEJ)
     {
@@ -110,6 +120,7 @@ float3 ToneMap(float3 color, float avgLuminance, float threshold, uint toneMapMo
     else if(toneMapMode == TONEMAP_HABLE)
     {
         finalColor = ToneMapHable(color);
+        finalColor = finalColor / ToneMapHable(0.9);
     }
 
     return finalColor;

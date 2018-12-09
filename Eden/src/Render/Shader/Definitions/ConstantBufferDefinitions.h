@@ -56,7 +56,6 @@ struct LightingMainBuffer
 {
     D3DXMATRIX viewMatrix;
     D3DXMATRIX projectionMatrix;
-    D3DXMATRIX viewToLightProjMatrix;
     D3DXMATRIX viewInvMatrix;
     Vector4 skyColor;
     Vector4 groundColor;
@@ -98,10 +97,39 @@ struct ToneMapBuffer
     uint32 toneMapMode;
 };
 
+struct LuminanceHistogramBuffer
+{
+    uint32 inputWidth;
+    uint32 inputHeight;
+    float  luminanceMin;
+    float  luminanceMax;
+};
+
+struct LuminanceHistogramAverageBuffer
+{
+    float luminanceMaxMinusMin;
+    float darknessImportanceFactor;
+    float darknessImportanceExponent;
+    float brightnessImportanceFactor;
+    float brightnessImportanceExponent;
+    float darknessScalingMax;
+    float brightnessScalingMin;
+    float tau;
+    float timeDelta;
+    float luminanceScalar;
+};
+
 struct RayShadowBlurBuffer
 {
     Vector2 oneOverScreenSize;
     float blurAmount;
+};
+
+struct SDSMAccumulationBuffer
+{
+    D3DXMATRIX projectionMatrix;
+    D3DXMATRIX viewToLightProjMatrix;
+    Vector2 bufferDimensions;
 };
 
 struct MaterialConstants

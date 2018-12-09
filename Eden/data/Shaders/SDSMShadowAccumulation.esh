@@ -1,0 +1,8 @@
+VertexShader
+[Shadow/SDSMShadowAccumulation.hlsl]
+[SDSMShadowAccumulationVertexShader]
+PixelShader
+[Shadow/SDSMShadowAccumulation.hlsl]
+[SDSMShadowAccumulationPixelShader]
+RootSignature
+[28]
