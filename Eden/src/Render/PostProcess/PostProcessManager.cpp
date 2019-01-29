@@ -45,7 +45,7 @@ PostProcessManager::PostProcessManager(GraphicsManager *graphicsManager)
 
     } while (luminanceDownScaleSizeX > 1 || luminanceDownScaleSizeY > 1);
 
-    mLuminanceHistogram = contextManager->CreateStructuredBuffer(sizeof(uint32), 64, GPU_READ_WRITE, true);
+    mLuminanceHistogram = contextManager->CreateStructuredBuffer(sizeof(uint32), 256, GPU_READ_WRITE, true);
     mHistogramAverageTarget = contextManager->CreateRenderTarget(1, 1, DXGI_FORMAT_R32_FLOAT, true, 1, 1, 0);
 
     for (uint32 i = 0; i < FRAME_BUFFER_COUNT; i++)
@@ -71,20 +71,15 @@ PostProcessManager::PostProcessManager(GraphicsManager *graphicsManager)
 
     mCurrentLuminanceHistogramBuffer.inputWidth = (uint32)screenSize.X;
     mCurrentLuminanceHistogramBuffer.inputHeight = (uint32)screenSize.Y;
-    mCurrentLuminanceHistogramBuffer.luminanceMin = 0.0f;
-    mCurrentLuminanceHistogramBuffer.luminanceMax = 1.0f;
+    mCurrentLuminanceHistogramBuffer.minLogLuminance = -10.0f;
+    mCurrentLuminanceHistogramBuffer.oneOverLogLuminanceRange = 1.0f / 12.0f;
 
-    mCurrentLuminanceHistogramAveragebuffer.luminanceMaxMinusMin = mCurrentLuminanceHistogramBuffer.luminanceMax - mCurrentLuminanceHistogramBuffer.luminanceMin;
-    mCurrentLuminanceHistogramAveragebuffer.darknessImportanceFactor = 0.5f;
-    mCurrentLuminanceHistogramAveragebuffer.darknessImportanceExponent = 1.5f;
-    mCurrentLuminanceHistogramAveragebuffer.brightnessImportanceFactor = 0.1f;
-    mCurrentLuminanceHistogramAveragebuffer.brightnessImportanceExponent = 2.4f;
-    mCurrentLuminanceHistogramAveragebuffer.darknessScalingMax = 8.0f;
-    mCurrentLuminanceHistogramAveragebuffer.brightnessScalingMin = 30.0f;
-    mCurrentLuminanceHistogramAveragebuffer.tau = 1.0f;
+    mCurrentLuminanceHistogramAveragebuffer.pixelCount = mCurrentLuminanceHistogramBuffer.inputWidth * mCurrentLuminanceHistogramBuffer.inputHeight;
+    mCurrentLuminanceHistogramAveragebuffer.minLogLuminance = -10.0f;
+    mCurrentLuminanceHistogramAveragebuffer.logLuminanceRange = 12.0f;
+    mCurrentLuminanceHistogramAveragebuffer.tau = 1.1f;
     mCurrentLuminanceHistogramAveragebuffer.timeDelta = 0.0167f;
-    mCurrentLuminanceHistogramAveragebuffer.luminanceScalar = 0.9f;
-
+    //TDA: use the depth buffer to mask out the sky from the luminance histogram
     mToneMapAndBloomEnabled = true;
 }
 
@@ -157,7 +152,7 @@ void PostProcessManager::CalculateLuminance(RenderTarget *hdrTarget, float delta
     mCurrentLuminanceBuffer.timeDelta = deltaTime;
     mLuminanceBuffers[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&mCurrentLuminanceBuffer, sizeof(LuminanceBuffer));
 
-    graphicsContext->InsertPixBeginEvent(0xFF00FFFF, "Luminance Calculation");
+    graphicsContext->InsertPixBeginEvent(0xFF00FFFF, "Initial Luminance Downsample");
 
     graphicsContext->TransitionResource(hdrTarget, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, false);
     graphicsContext->TransitionResource(mLuminanceDownSampleTargets[0], D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
@@ -179,6 +174,10 @@ void PostProcessManager::CalculateLuminance(RenderTarget *hdrTarget, float delta
     graphicsContext->SetComputeDescriptorTable(1, initialLuminanceUAVHandle.GetGPUHandle());
 
     graphicsContext->Dispatch(mLuminanceDownSampleTargets[0]->GetWidth(), mLuminanceDownSampleTargets[0]->GetHeight(), 1);
+
+    graphicsContext->InsertPixEndEvent();
+
+    graphicsContext->InsertPixBeginEvent(0xFF00FFFF, "Luminance Downsample");
 
     for (uint32 i = 1; i < mLuminanceDownSampleTargets.CurrentSize(); i++)
     {
@@ -277,7 +276,7 @@ void PostProcessManager::CalculateLuminanceHistogram(RenderTarget *hdrTarget, fl
 
     graphicsContext->Dispatch(1, 1, 1);
     
-    graphicsContext->InsertPixEndEvent();
+   // graphicsContext->InsertPixEndEvent();
 }
 
 void PostProcessManager::ApplyToneMappingAndBloom(RenderTarget *hdrTarget)

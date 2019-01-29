@@ -11,7 +11,7 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
     mPreviousFrameFence = 0;
     mMeshesAddedToRayTrace = false;
     mShowRayTrace = false;
-    mUseRayTraceShadows = false;
+    mUseRayTraceShadows = true;
 
 	Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
 	Direct3DContextManager *contextManager = direct3DManager->GetContextManager();
@@ -528,7 +528,7 @@ void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3
 {
     if (!mFilteredCubeMap || !mFilteredCubeMap->GetIsReady() || !mEnvironmentMapLookup || !mEnvironmentMapLookup->GetIsReady())
     {
-        //early out if our environment lighting isn't ready
+        //early out if environment lighting isn't ready
         return;
     }
 
@@ -718,8 +718,6 @@ void DeferredRenderer::Render(float deltaTime)
         mPostProcessManager->RenderPostProcessing(mHDRTarget, deltaTime);
     }
 
-    direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->WaitForFenceCPUBlocking(mPreviousFrameFence);
-
     direct3DManager->GetContextManager()->GetGraphicsContext(1)->Flush(direct3DManager->GetContextManager()->GetQueueManager());
 
     if (mRayTraceManager)
@@ -728,4 +726,6 @@ void DeferredRenderer::Render(float deltaTime)
     }
 
     mPreviousFrameFence = direct3DManager->GetContextManager()->GetGraphicsContext()->Flush(direct3DManager->GetContextManager()->GetQueueManager());
+
+    direct3DManager->GetContextManager()->GetQueueManager()->GetGraphicsQueue()->WaitForFenceCPUBlocking(mPreviousFrameFence);
 }

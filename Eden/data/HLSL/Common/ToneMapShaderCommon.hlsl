@@ -34,9 +34,9 @@ float3 TonemapACES(float3 color)
     return saturate(mul(ACESOutputMat, color));
 }
 
-float CalcLuminance(float3 color)
+float GetLuminance(float3 color)
 {
-    return dot(color, float3(0.2126f, 0.7152f, 0.0722f));
+    return dot(color, float3(0.2127f, 0.7152f, 0.0722f));
 }
 
 float GetAverageLuminance(Texture2D luminanceTexure)
@@ -46,12 +46,13 @@ float GetAverageLuminance(Texture2D luminanceTexure)
 
 float3 CalcExposedColor(float3 color, float avgLuminance, float threshold)
 {
-    float keyValue = 0.18;
+    float keyValue = 0.15;
     
     avgLuminance = max(avgLuminance, 0.001f);
     float linearExposure = (keyValue / avgLuminance);
-    float exposure = log2(max(linearExposure, 0.0001f)); //use static variable here for manual exposure
-
+    //linearExposure = clamp(linearExposure, 0.015, 1.0);
+    float exposure = log2(max(linearExposure, 0.0001f));
+    
     exposure -= threshold;
     return max(exp2(exposure) * color, EPSILON);
 }

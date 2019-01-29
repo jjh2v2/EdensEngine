@@ -23,7 +23,7 @@ void InitialLuminance(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_Group
     
     uint2 texturePos = min(groupId.xy * LUMINANCE_THREADS_PER_DIMENSION + groupThreadId.xy, textureDimensions - 1);
     float3 hdrColor = HDRTexture[texturePos].xyz;
-	LuminanceShared[groupIndex] = log(max(CalcLuminance(hdrColor), EPSILON));
+	LuminanceShared[groupIndex] = log(max(GetLuminance(hdrColor), EPSILON));
     
 	GroupMemoryBarrierWithGroupSync();
     

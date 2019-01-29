@@ -1,9 +1,7 @@
 #include "../Common/ToneMapShaderCommon.hlsl"
 
-#define LUMINANCE_THREADS_PER_DIMENSION 16
-#define NUM_HISTOGRAM_BINS 64
-
-static const uint LUMINANCE_THREAD_BLOCK_SIZE = LUMINANCE_THREADS_PER_DIMENSION * LUMINANCE_THREADS_PER_DIMENSION;
+#define HISTOGRAM_THREADS_PER_DIMENSION 16
+#define NUM_HISTOGRAM_BINS 256
 
 Texture2D<float4> HDRTexture : register(t0);
 RWByteAddressBuffer LuminanceHistogram : register(u0);
@@ -12,27 +10,29 @@ cbuffer LuminanceHistogramBuffer : register(b0)
 {
     uint inputWidth;
     uint inputHeight;
-    float luminanceMin;
-    float luminanceMax;
-    float luminanceMaxMinusMin;
+    float minLogLuminance;
+    float oneOverLogLuminanceRange;
 };
 
 groupshared uint HistogramShared[NUM_HISTOGRAM_BINS];
 
 uint HDRToHistogramBin(float3 hdrColor)
 {
-    float luminance = max(CalcLuminance(hdrColor), EPSILON);
-    float binFactor = saturate((luminance - luminanceMin) / (luminanceMax - luminanceMin));
-    return uint(float(NUM_HISTOGRAM_BINS - 1) * binFactor);
+    float luminance = GetLuminance(hdrColor);
+    
+    if(luminance < EPSILON)
+    {
+        return 0;
+    }
+    
+    float logLuminance = saturate((log2(luminance) - minLogLuminance) * oneOverLogLuminanceRange);
+    return (uint)(logLuminance * 254.0 + 1.0);
 }
 
-[numthreads(LUMINANCE_THREADS_PER_DIMENSION, LUMINANCE_THREADS_PER_DIMENSION, 1)]
-void LuminanceBuildHistogram(uint3 groupId : SV_GroupID, uint groupIndex : SV_GroupIndex, uint3 threadId : SV_DispatchThreadID)
+[numthreads(HISTOGRAM_THREADS_PER_DIMENSION, HISTOGRAM_THREADS_PER_DIMENSION, 1)]
+void LuminanceBuildHistogram(uint groupIndex : SV_GroupIndex, uint3 threadId : SV_DispatchThreadID)
 {
-    if(groupIndex < NUM_HISTOGRAM_BINS)
-    {
-        HistogramShared[groupIndex] = 0;
-    }
+    HistogramShared[groupIndex] = 0;
     
     GroupMemoryBarrierWithGroupSync();
     
@@ -45,8 +45,5 @@ void LuminanceBuildHistogram(uint3 groupId : SV_GroupID, uint groupIndex : SV_Gr
     
     GroupMemoryBarrierWithGroupSync();
     
-    if(groupIndex < NUM_HISTOGRAM_BINS)
-    {
-        LuminanceHistogram.InterlockedAdd(groupIndex * 4, HistogramShared[groupIndex]);
-    }
+    LuminanceHistogram.InterlockedAdd(groupIndex * 4, HistogramShared[groupIndex]);
 }

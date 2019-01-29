@@ -2,8 +2,6 @@
 
 #include "Render/DirectX/Queue/Direct3DQueue.h"
 
-class GPUResource;
-
 class Direct3DQueueManager
 {
 public:

@@ -101,22 +101,17 @@ struct LuminanceHistogramBuffer
 {
     uint32 inputWidth;
     uint32 inputHeight;
-    float  luminanceMin;
-    float  luminanceMax;
+    float  minLogLuminance;
+    float  oneOverLogLuminanceRange;
 };
 
 struct LuminanceHistogramAverageBuffer
 {
-    float luminanceMaxMinusMin;
-    float darknessImportanceFactor;
-    float darknessImportanceExponent;
-    float brightnessImportanceFactor;
-    float brightnessImportanceExponent;
-    float darknessScalingMax;
-    float brightnessScalingMin;
-    float tau;
-    float timeDelta;
-    float luminanceScalar;
+    uint32 pixelCount;
+    float  minLogLuminance;
+    float  logLuminanceRange;
+    float  timeDelta;
+    float  tau;
 };
 
 struct RayShadowBlurBuffer

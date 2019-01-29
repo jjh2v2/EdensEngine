@@ -3,44 +3,34 @@
 
 Direct3DQueue::Direct3DQueue(ID3D12Device* device, D3D12_COMMAND_LIST_TYPE commandType)
 {
-	mQueueType = commandType;
-	mCommandQueue = NULL;
-	mFence = NULL;
-	mNextFenceValue = ((uint64_t)commandType << 56 | 1);
-	mLastCompletedFenceValue = ((uint64_t)commandType << 56);
+    mQueueType = commandType;
+    mCommandQueue = NULL;
+    mFence = NULL;
+    mNextFenceValue = ((uint64_t)mQueueType << 56) + 1;
+    mLastCompletedFenceValue = ((uint64_t)mQueueType << 56);
 
-	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-	queueDesc.Type = mQueueType;
-	queueDesc.NodeMask = 0;
-	device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue));
-	mCommandQueue->SetName(L"Direct3DQueue::mCommandQueue");
+    D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+    queueDesc.Type = mQueueType;
+    queueDesc.NodeMask = 0;
+    device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue));
 
-	Direct3DUtils::ThrowIfHRESULTFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
+    Direct3DUtils::ThrowIfHRESULTFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
 
-	mFence->SetName(L"Direct3DQueue::mFence");
-	mFence->Signal((uint64_t)mQueueType << 56);
+    mFence->Signal(mLastCompletedFenceValue);
 
-	mFenceEventHandle = CreateEventEx(NULL, false, false, EVENT_ALL_ACCESS);
-
-	Application::Assert(mFenceEventHandle != INVALID_HANDLE_VALUE);
+    mFenceEventHandle = CreateEventEx(NULL, false, false, EVENT_ALL_ACCESS);
+    Application::Assert(mFenceEventHandle != INVALID_HANDLE_VALUE);
 }
 
 Direct3DQueue::~Direct3DQueue()
 {
-	CloseHandle(mFenceEventHandle);
+    CloseHandle(mFenceEventHandle);
 
-	mFence->Release();
-	mFence = NULL;
+    mFence->Release();
+    mFence = NULL;
 
-	mCommandQueue->Release();
-	mCommandQueue = NULL;
-}
-
-uint64 Direct3DQueue::IncrementFence()
-{
-	std::lock_guard<std::mutex> lockGuard(mFenceMutex);
-	mCommandQueue->Signal(mFence, mNextFenceValue);
-	return mNextFenceValue++;
+    mCommandQueue->Release();
+    mCommandQueue = NULL;
 }
 
 uint64 Direct3DQueue::PollCurrentFenceValue()
@@ -51,12 +41,12 @@ uint64 Direct3DQueue::PollCurrentFenceValue()
 
 bool Direct3DQueue::IsFenceComplete(uint64 fenceValue)
 {
-	if (fenceValue > mLastCompletedFenceValue)
-	{
-		mLastCompletedFenceValue = MathHelper::Max(mLastCompletedFenceValue, mFence->GetCompletedValue());
-	}
+    if (fenceValue > mLastCompletedFenceValue)
+    {
+        PollCurrentFenceValue();
+    }
 
-	return fenceValue <= mLastCompletedFenceValue;
+    return fenceValue <= mLastCompletedFenceValue;
 }
 
 void Direct3DQueue::InsertWait(uint64 fenceValue)
@@ -66,42 +56,38 @@ void Direct3DQueue::InsertWait(uint64 fenceValue)
 
 void Direct3DQueue::InsertWaitForQueueFence(Direct3DQueue* otherQueue, uint64 fenceValue)
 {
-	mCommandQueue->Wait(otherQueue->GetFence(), fenceValue);
+    mCommandQueue->Wait(otherQueue->GetFence(), fenceValue);
 }
 
 void Direct3DQueue::InsertWaitForQueue(Direct3DQueue* otherQueue)
 {
-	mCommandQueue->Wait(otherQueue->GetFence(), otherQueue->GetNextFenceValue() - 1);
+    mCommandQueue->Wait(otherQueue->GetFence(), otherQueue->GetNextFenceValue() - 1);
 }
 
 void Direct3DQueue::WaitForFenceCPUBlocking(uint64 fenceValue)
 {
-	if (IsFenceComplete(fenceValue))
-	{
-		return;
-	}
+    if (IsFenceComplete(fenceValue))
+    {
+        return;
+    }
 
-	// TDA: Address the below, probably make some event map based on order of fence values
-	// TODO:  Think about how this might affect a multi-threaded situation.  Suppose thread A
-	// wants to wait for fence 100, then thread B comes along and wants to wait for 99.  If
-	// the fence can only have one event set on completion, then thread B has to wait for 
-	// 100 before it knows 99 is ready.  Maybe insert sequential events?
-	{
-		std::lock_guard<std::mutex> lockGuard(mEventMutex);
+    {
+        std::lock_guard<std::mutex> lockGuard(mEventMutex);
 
-		mFence->SetEventOnCompletion(fenceValue, mFenceEventHandle);
-		WaitForSingleObjectEx(mFenceEventHandle, INFINITE, false);
-		mLastCompletedFenceValue = fenceValue;
-	}
+        mFence->SetEventOnCompletion(fenceValue, mFenceEventHandle);
+        WaitForSingleObjectEx(mFenceEventHandle, INFINITE, false);
+        mLastCompletedFenceValue = fenceValue;
+    }
 }
 
 uint64 Direct3DQueue::ExecuteCommandList(ID3D12CommandList* commandList)
 {
-	std::lock_guard<std::mutex> lockGuard(mFenceMutex);
+    Direct3DUtils::ThrowIfHRESULTFailed(((ID3D12GraphicsCommandList*)commandList)->Close());
+    mCommandQueue->ExecuteCommandLists(1, &commandList);
 
-	Direct3DUtils::ThrowIfHRESULTFailed(((ID3D12GraphicsCommandList*)commandList)->Close());
-	mCommandQueue->ExecuteCommandLists(1, &commandList);
-	mCommandQueue->Signal(mFence, mNextFenceValue);
+    std::lock_guard<std::mutex> lockGuard(mFenceMutex);
 
-	return mNextFenceValue++;
+    mCommandQueue->Signal(mFence, mNextFenceValue);
+
+    return mNextFenceValue++;
 }

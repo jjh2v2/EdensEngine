@@ -7,21 +7,21 @@
 class GPUResource
 {
 public:
-	GPUResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState);
-	virtual ~GPUResource();
+    GPUResource(ID3D12Resource *resource, D3D12_RESOURCE_STATES usageState);
+    virtual ~GPUResource();
 
-	ID3D12Resource* GetResource() { return mResource; }
-	D3D12_GPU_VIRTUAL_ADDRESS GetGpuAddress() { return mGPUAddress; }
-	D3D12_RESOURCE_STATES GetUsageState() { return mUsageState; }
-	void SetUsageState(D3D12_RESOURCE_STATES usageState) { mUsageState = usageState; }
+    ID3D12Resource *GetResource() { return mResource; }
+    D3D12_GPU_VIRTUAL_ADDRESS GetGpuAddress() { return mGPUAddress; }
+    D3D12_RESOURCE_STATES GetUsageState() { return mUsageState; }
+    void SetUsageState(D3D12_RESOURCE_STATES usageState) { mUsageState = usageState; }
 
     bool GetIsReady() { return mIsReady; }
     void SetIsReady(bool isReady) { mIsReady = isReady; }
 
 protected:
-	ID3D12Resource *mResource;
-	D3D12_GPU_VIRTUAL_ADDRESS mGPUAddress;
-	D3D12_RESOURCE_STATES mUsageState;
+    ID3D12Resource *mResource;
+    D3D12_GPU_VIRTUAL_ADDRESS mGPUAddress;
+    D3D12_RESOURCE_STATES mUsageState;
     bool mIsReady;
 };
 
@@ -29,131 +29,131 @@ protected:
 class TextureResource : public GPUResource
 {
 public:
-	TextureResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, DescriptorHeapHandle shaderResourceViewHandle);
-	virtual ~TextureResource();
+    TextureResource(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, DescriptorHeapHandle shaderResourceViewHandle);
+    ~TextureResource() override;
 
-	DescriptorHeapHandle GetShaderResourceViewHandle() { return mShaderResourceViewHandle; }
+    DescriptorHeapHandle GetShaderResourceViewHandle() { return mShaderResourceViewHandle; }
 
 private:
-	DescriptorHeapHandle mShaderResourceViewHandle;
+    DescriptorHeapHandle mShaderResourceViewHandle;
 };
 
 
 class BackBufferTarget : public GPUResource
 {
 public:
-	BackBufferTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, DescriptorHeapHandle renderTargetViewHandle);
-	virtual ~BackBufferTarget();
+    BackBufferTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, DescriptorHeapHandle renderTargetViewHandle);
+    ~BackBufferTarget() override;
 
-	DescriptorHeapHandle GetRenderTargetViewHandle() { return mRenderTargetViewHandle; }
+    DescriptorHeapHandle GetRenderTargetViewHandle() { return mRenderTargetViewHandle; }
 
 private:
-	DescriptorHeapHandle mRenderTargetViewHandle;
+    DescriptorHeapHandle mRenderTargetViewHandle;
 };
 
 class RenderTarget : public GPUResource
 {
 public:
-	struct UAVHandle
-	{
-		UAVHandle()
-		{
-			HasUAV = false;
-		}
+    struct UAVHandle
+    {
+        UAVHandle()
+        {
+            HasUAV = false;
+        }
 
-		bool HasUAV;
+        bool HasUAV;
         DescriptorHeapHandle BaseHandle;
-		DynamicArray<DescriptorHeapHandle> Handles;
-	};
+        DynamicArray<DescriptorHeapHandle> Handles;
+    };
 
-	RenderTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_RESOURCE_DESC renderTargetDesc, DescriptorHeapHandle renderTargetViewHandle, 
-		DynamicArray<DescriptorHeapHandle> &renderTargetViewArray, DescriptorHeapHandle shaderResourceViewHandle, const UAVHandle &unorderedAccessView);
-	virtual ~RenderTarget();
+    RenderTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_RESOURCE_DESC renderTargetDesc, DescriptorHeapHandle renderTargetViewHandle, 
+        DynamicArray<DescriptorHeapHandle> &renderTargetViewArray, DescriptorHeapHandle shaderResourceViewHandle, const UAVHandle &unorderedAccessView);
+    ~RenderTarget() override;
 
-	DescriptorHeapHandle GetRenderTargetViewHandle() { return mRenderTargetViewHandle; }
-	DescriptorHeapHandle GetRenderTargetViewHandle(uint32 index) { return mRenderTargetViewArray[index]; }
-	const DynamicArray<DescriptorHeapHandle> &GetRenderTargetViewArray() { return mRenderTargetViewArray; }
-	DescriptorHeapHandle GetShaderResourceViewHandle() { return mShaderResourceViewHandle; }
+    DescriptorHeapHandle GetRenderTargetViewHandle() { return mRenderTargetViewHandle; }
+    DescriptorHeapHandle GetRenderTargetViewHandle(uint32 index) { return mRenderTargetViewArray[index]; }
+    const DynamicArray<DescriptorHeapHandle> &GetRenderTargetViewArray() { return mRenderTargetViewArray; }
+    DescriptorHeapHandle GetShaderResourceViewHandle() { return mShaderResourceViewHandle; }
     DescriptorHeapHandle GetUnorderedAccessViewHandle(uint32 mipIndex, uint32 arrayIndex = 0);
     DescriptorHeapHandle GetUnorderedAccessViewHandle() { return mUnorderedAccessView.BaseHandle; }
 
     bool GetHasUAV() { return mUnorderedAccessView.HasUAV; }
-	uint16 GetArraySize() { return mRenderTargetDesc.DepthOrArraySize; }
+    uint16 GetArraySize() { return mRenderTargetDesc.DepthOrArraySize; }
     uint16 GetMipCount() { return mRenderTargetDesc.MipLevels; }
     uint32 GetWidth() { return (uint32)mRenderTargetDesc.Width; }
     uint32 GetHeight() { return (uint32)mRenderTargetDesc.Height; }
 
 private:
-	D3D12_RESOURCE_DESC	 mRenderTargetDesc;
-	DescriptorHeapHandle mRenderTargetViewHandle;
-	DescriptorHeapHandle mShaderResourceViewHandle;
-	UAVHandle mUnorderedAccessView;
-	DynamicArray<DescriptorHeapHandle> mRenderTargetViewArray;
+    D3D12_RESOURCE_DESC	 mRenderTargetDesc;
+    DescriptorHeapHandle mRenderTargetViewHandle;
+    DescriptorHeapHandle mShaderResourceViewHandle;
+    UAVHandle mUnorderedAccessView;
+    DynamicArray<DescriptorHeapHandle> mRenderTargetViewArray;
 };
 
 class DepthStencilTarget : public GPUResource
 {
 public:
-	DepthStencilTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_RESOURCE_DESC depthStencilDesc, DescriptorHeapHandle depthStencilViewHandle, DescriptorHeapHandle readOnlyDepthStencilViewHandle,
-		DynamicArray<DescriptorHeapHandle> &depthStencilViewArray, DynamicArray<DescriptorHeapHandle> &readOnlyDepthStencilViewArray, DescriptorHeapHandle shaderResourceViewHandle);
-	virtual ~DepthStencilTarget();
+    DepthStencilTarget(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_RESOURCE_DESC depthStencilDesc, DescriptorHeapHandle depthStencilViewHandle, DescriptorHeapHandle readOnlyDepthStencilViewHandle,
+        DynamicArray<DescriptorHeapHandle> &depthStencilViewArray, DynamicArray<DescriptorHeapHandle> &readOnlyDepthStencilViewArray, DescriptorHeapHandle shaderResourceViewHandle);
+    ~DepthStencilTarget() override;
 
-	DescriptorHeapHandle GetDepthStencilViewHandle() { return mDepthStencilViewHandle; }
-	DescriptorHeapHandle GetReadOnlyDepthStencilViewHandle() { return mReadOnlyDepthStencilViewHandle; }
-	DescriptorHeapHandle GetDepthStencilViewHandle(uint32 index) { return mDepthStencilViewArray[index]; }
-	DescriptorHeapHandle GetReadOnlyDepthStencilViewHandle(uint32 index) { return mReadOnlyDepthStencilViewArray[index]; }
-	const DynamicArray<DescriptorHeapHandle> &GetDepthStencilViewArray() { return mDepthStencilViewArray; }
-	DescriptorHeapHandle GetShaderResourceViewHandle() { return mShaderResourceViewHandle; }
-	uint16 GetArraySize() { return mDepthStencilDesc.DepthOrArraySize; }
+    DescriptorHeapHandle GetDepthStencilViewHandle() { return mDepthStencilViewHandle; }
+    DescriptorHeapHandle GetReadOnlyDepthStencilViewHandle() { return mReadOnlyDepthStencilViewHandle; }
+    DescriptorHeapHandle GetDepthStencilViewHandle(uint32 index) { return mDepthStencilViewArray[index]; }
+    DescriptorHeapHandle GetReadOnlyDepthStencilViewHandle(uint32 index) { return mReadOnlyDepthStencilViewArray[index]; }
+    const DynamicArray<DescriptorHeapHandle> &GetDepthStencilViewArray() { return mDepthStencilViewArray; }
+    DescriptorHeapHandle GetShaderResourceViewHandle() { return mShaderResourceViewHandle; }
+    uint16 GetArraySize() { return mDepthStencilDesc.DepthOrArraySize; }
 
 private:
-	D3D12_RESOURCE_DESC	 mDepthStencilDesc;
-	DescriptorHeapHandle mDepthStencilViewHandle;
-	DescriptorHeapHandle mReadOnlyDepthStencilViewHandle;
-	DescriptorHeapHandle mShaderResourceViewHandle;
-	DynamicArray<DescriptorHeapHandle> mDepthStencilViewArray;
-	DynamicArray<DescriptorHeapHandle> mReadOnlyDepthStencilViewArray;
+    D3D12_RESOURCE_DESC	 mDepthStencilDesc;
+    DescriptorHeapHandle mDepthStencilViewHandle;
+    DescriptorHeapHandle mReadOnlyDepthStencilViewHandle;
+    DescriptorHeapHandle mShaderResourceViewHandle;
+    DynamicArray<DescriptorHeapHandle> mDepthStencilViewArray;
+    DynamicArray<DescriptorHeapHandle> mReadOnlyDepthStencilViewArray;
 };
 
 class VertexBuffer : public GPUResource
 {
 public:
-	VertexBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, uint32 vertexStride, uint32 bufferSize);
-	virtual ~VertexBuffer();
+    VertexBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, uint32 vertexStride, uint32 bufferSize);
+    ~VertexBuffer() override;
 
-	D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView() { return mVertexBufferView; }
+    D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView() { return mVertexBufferView; }
 
-protected:
-	D3D12_VERTEX_BUFFER_VIEW mVertexBufferView;
+private:
+    D3D12_VERTEX_BUFFER_VIEW mVertexBufferView;
 };
 
 
 class IndexBuffer : public GPUResource
 {
 public:
-	IndexBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, uint32 bufferSize);
-	virtual ~IndexBuffer();
+    IndexBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, uint32 bufferSize);
+    ~IndexBuffer() override;
 
-	D3D12_INDEX_BUFFER_VIEW GetIndexBufferView() { return mIndexBufferView; }
+    D3D12_INDEX_BUFFER_VIEW GetIndexBufferView() { return mIndexBufferView; }
 
 private:
-	D3D12_INDEX_BUFFER_VIEW mIndexBufferView;
+    D3D12_INDEX_BUFFER_VIEW mIndexBufferView;
 };
 
 
 class ConstantBuffer : public GPUResource
 {
 public:
-	ConstantBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferDesc, DescriptorHeapHandle constantBufferViewHandle);
-	virtual ~ConstantBuffer();
+    ConstantBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferDesc, DescriptorHeapHandle constantBufferViewHandle);
+    ~ConstantBuffer() override;
 
-	void SetConstantBufferData(const void* bufferData, uint32 bufferSize);
-	DescriptorHeapHandle GetConstantBufferViewHandle() { return mConstantBufferViewHandle; }
+    void SetConstantBufferData(const void* bufferData, uint32 bufferSize);
+    DescriptorHeapHandle GetConstantBufferViewHandle() { return mConstantBufferViewHandle; }
 
 private:
-	void *mMappedBuffer;
-	D3D12_CONSTANT_BUFFER_VIEW_DESC mConstantBufferViewDesc;
-	DescriptorHeapHandle mConstantBufferViewHandle;
+    void *mMappedBuffer;
+    D3D12_CONSTANT_BUFFER_VIEW_DESC mConstantBufferViewDesc;
+    DescriptorHeapHandle mConstantBufferViewHandle;
 };
 
 
@@ -168,7 +168,7 @@ class StructuredBuffer : public GPUResource
 {
 public:
     StructuredBuffer(ID3D12Resource* resource, ID3D12Resource *uploadResource, D3D12_RESOURCE_STATES usageState, bool isRaw, StructuredBufferAccess accessType, D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, DescriptorHeapHandle uavHandle, DescriptorHeapHandle srvHandle);
-    virtual ~StructuredBuffer();
+    ~StructuredBuffer() override;
 
     bool CopyToBuffer(const void* bufferData, uint32 bufferSize); //returns true if a GPU copy needs to be scheduled
     DescriptorHeapHandle GetUnorderedAccessViewHandle() { return mUnorderedAccessViewHandle; }
@@ -189,7 +189,7 @@ class FilteredCubeMapRenderTexture : public GPUResource
 {
 public:
     FilteredCubeMapRenderTexture(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, uint32 numMipLevels, const DynamicArray<DescriptorHeapHandle> &uavHandles, DescriptorHeapHandle srvHandle);
-    virtual ~FilteredCubeMapRenderTexture();
+    ~FilteredCubeMapRenderTexture() override;
 
     DescriptorHeapHandle GetShaderResourceViewHandle() { return mSRVHandle; }
     DescriptorHeapHandle GetUnorderedAccessViewHandle(uint32 mipIndex, uint32 arrayIndex = 0);
@@ -217,7 +217,7 @@ public:
     };
 
     RayTraceBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, RayTraceBufferType bufferType, DescriptorHeapHandle srvHandle);
-    virtual ~RayTraceBuffer();
+    ~RayTraceBuffer() override;
     void MapInstanceDescData(const void *instanceDescData, uint32 numInstanceDescs);
     void MapTransform(const void *transform, uint32 sizeOfTransform);
     DescriptorHeapHandle GetShaderResourceViewHandle() { return mSRVHandle; }
