@@ -30,20 +30,20 @@ public:
 	void FreeDSVDescriptorHeapHandle(DescriptorHeapHandle handle) { mDSVDescriptorHeap->FreeHeapHandle(handle); }
 	void FreeSamplerDescriptorHeapHandle(DescriptorHeapHandle handle) { mSamplerDescriptorHeap->FreeHeapHandle(handle); }
 
-	DynamicDescriptorHeap *GetRTVDescriptorHeap() { return mRTVDescriptorHeap; }
-	DynamicDescriptorHeap *GetSRVDescriptorHeap() { return mSRVDescriptorHeap; }
-	DynamicDescriptorHeap *GetDSVDescriptorHeap() { return mDSVDescriptorHeap; }
-	DynamicDescriptorHeap *GetSamplerDescriptorHeap() { return mSamplerDescriptorHeap; }
+	StaticDescriptorHeap *GetRTVDescriptorHeap() { return mRTVDescriptorHeap; }
+	StaticDescriptorHeap *GetSRVDescriptorHeap() { return mSRVDescriptorHeap; }
+	StaticDescriptorHeap *GetDSVDescriptorHeap() { return mDSVDescriptorHeap; }
+	StaticDescriptorHeap *GetSamplerDescriptorHeap() { return mSamplerDescriptorHeap; }
 
     RenderPassDescriptorHeap *GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType passType, D3D12_DESCRIPTOR_HEAP_TYPE heapType, uint32 frameIndex, uint32 numDescriptors, bool reset = true);
 
 private:
     ID3D12Device* mDevice;
 
-	DynamicDescriptorHeap *mRTVDescriptorHeap;
-	DynamicDescriptorHeap *mSRVDescriptorHeap;
-	DynamicDescriptorHeap *mDSVDescriptorHeap;
-	DynamicDescriptorHeap *mSamplerDescriptorHeap;
+	StaticDescriptorHeap *mRTVDescriptorHeap;
+	StaticDescriptorHeap *mSRVDescriptorHeap;
+	StaticDescriptorHeap *mDSVDescriptorHeap;
+	StaticDescriptorHeap *mSamplerDescriptorHeap;
 
     struct RenderPassDescriptorHeapGroup
     {

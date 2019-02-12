@@ -288,14 +288,14 @@ void Direct3DContext::InsertAliasBarrier(GPUResource *before, GPUResource *after
 void Direct3DContext::InsertPixBeginEvent(uint64 color, const char* markerString)
 {
 #if ENABLE_PIX
-    PIXBeginEvent(mCommandList, color, markerString);
+    //PIXBeginEvent(mCommandList, color, markerString);
 #endif
 }
 
 void Direct3DContext::InsertPixEndEvent()
 {
 #if ENABLE_PIX
-    PIXEndEvent(mCommandList);
+    //PIXEndEvent(mCommandList);
 #endif
 }
 
@@ -476,13 +476,11 @@ void GraphicsContext::DrawIndexed(uint32 indexCount, uint32 startIndexLocation /
 
 void GraphicsContext::DrawInstanced(uint32 vertexCountPerInstance, uint32 instanceCount, uint32 startVertexLocation /* = 0 */, uint32 startInstanceLocation /* = 0 */)
 {
-	FlushResourceBarriers();
 	mCommandList->DrawInstanced(vertexCountPerInstance, instanceCount, startVertexLocation, startInstanceLocation);
 }
 
 void GraphicsContext::DrawIndexedInstanced(uint32 indexCountPerInstance, uint32 instanceCount, uint32 startIndexLocation, int32 baseVertexLocation, uint32 startInstanceLocation)
 {
-	FlushResourceBarriers();
 	mCommandList->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
@@ -513,7 +511,6 @@ void GraphicsContext::SetComputeDescriptorTable(uint32 index, D3D12_GPU_DESCRIPT
 
 void GraphicsContext::Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
 {
-    FlushResourceBarriers();
     mCommandList->Dispatch(groupCountX, groupCountY, groupCountZ);
 }
 
@@ -587,7 +584,6 @@ void ComputeContext::SetDescriptorTable(uint32 index, D3D12_GPU_DESCRIPTOR_HANDL
 
 void ComputeContext::Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
 {
-    FlushResourceBarriers();
     mCommandList->Dispatch(groupCountX, groupCountY, groupCountZ);
 }
 

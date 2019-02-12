@@ -4,19 +4,26 @@
 class DescriptorHeapHandle
 {
 public:
-	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle() { return mCPUHandle; }
-	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle() { return mGPUHandle; }
-	uint32 GetHeapIndex() { return mHeapIndex; }
+    DescriptorHeapHandle()
+    {
+        mCPUHandle.ptr = NULL;
+        mGPUHandle.ptr = NULL;
+        mHeapIndex = 0;
+    }
 
-	void SetCPUHandle(D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle) { mCPUHandle = cpuHandle; }
-	void SetGPUHandle(D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle) { mGPUHandle = gpuHandle; }
-	void SetHeapIndex(uint32 heapIndex) { mHeapIndex = heapIndex; }
+    D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle() { return mCPUHandle; }
+    D3D12_GPU_DESCRIPTOR_HANDLE GetGPUHandle() { return mGPUHandle; }
+    uint32 GetHeapIndex() { return mHeapIndex; }
 
-	bool IsValid() { return mCPUHandle.ptr != NULL; }
-	bool IsReferencedByShader() { return mGPUHandle.ptr != NULL; }
+    void SetCPUHandle(D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle) { mCPUHandle = cpuHandle; }
+    void SetGPUHandle(D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle) { mGPUHandle = gpuHandle; }
+    void SetHeapIndex(uint32 heapIndex) { mHeapIndex = heapIndex; }
+
+    bool IsValid() { return mCPUHandle.ptr != NULL; }
+    bool IsReferencedByShader() { return mGPUHandle.ptr != NULL; }
 
 private:
-	D3D12_CPU_DESCRIPTOR_HANDLE mCPUHandle;
-	D3D12_GPU_DESCRIPTOR_HANDLE mGPUHandle;
-	uint32						mHeapIndex;
+    D3D12_CPU_DESCRIPTOR_HANDLE mCPUHandle;
+    D3D12_GPU_DESCRIPTOR_HANDLE mGPUHandle;
+    uint32 mHeapIndex;
 };

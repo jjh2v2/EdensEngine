@@ -128,11 +128,11 @@ IndexBuffer::~IndexBuffer()
 
 }
 
-ConstantBuffer::ConstantBuffer(ID3D12Resource *resource, D3D12_RESOURCE_STATES usageState, D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferDesc, DescriptorHeapHandle constantBufferViewHandle)
+ConstantBuffer::ConstantBuffer(ID3D12Resource *resource, D3D12_RESOURCE_STATES usageState, uint32 bufferSize, DescriptorHeapHandle constantBufferViewHandle)
     :GPUResource(resource, usageState)
 {
-    mGPUAddress = constantBufferDesc.BufferLocation;
-    mConstantBufferViewDesc = constantBufferDesc;
+    mGPUAddress = resource->GetGPUVirtualAddress();
+    mBufferSize = bufferSize;
     mConstantBufferViewHandle = constantBufferViewHandle;
 
     mMappedBuffer = NULL;
@@ -144,9 +144,9 @@ ConstantBuffer::~ConstantBuffer()
     mResource->Unmap(0, NULL);
 }
 
-void ConstantBuffer::SetConstantBufferData(const void* bufferData, uint32 bufferSize)
+void ConstantBuffer::SetConstantBufferData(const void *bufferData, uint32 bufferSize)
 {
-    Application::Assert(bufferSize <= mConstantBufferViewDesc.SizeInBytes);
+    Application::Assert(bufferSize <= mBufferSize);
     memcpy(mMappedBuffer, bufferData, bufferSize);
 }
 

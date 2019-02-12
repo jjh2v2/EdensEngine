@@ -118,7 +118,7 @@ private:
 class VertexBuffer : public GPUResource
 {
 public:
-    VertexBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, uint32 vertexStride, uint32 bufferSize);
+    VertexBuffer(ID3D12Resource *resource, D3D12_RESOURCE_STATES usageState, uint32 vertexStride, uint32 bufferSize);
     ~VertexBuffer() override;
 
     D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView() { return mVertexBufferView; }
@@ -144,15 +144,15 @@ private:
 class ConstantBuffer : public GPUResource
 {
 public:
-    ConstantBuffer(ID3D12Resource* resource, D3D12_RESOURCE_STATES usageState, D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferDesc, DescriptorHeapHandle constantBufferViewHandle);
+    ConstantBuffer(ID3D12Resource *resource, D3D12_RESOURCE_STATES usageState, uint32 bufferSize, DescriptorHeapHandle constantBufferViewHandle);
     ~ConstantBuffer() override;
 
-    void SetConstantBufferData(const void* bufferData, uint32 bufferSize);
+    void SetConstantBufferData(const void *bufferData, uint32 bufferSize);
     DescriptorHeapHandle GetConstantBufferViewHandle() { return mConstantBufferViewHandle; }
 
 private:
     void *mMappedBuffer;
-    D3D12_CONSTANT_BUFFER_VIEW_DESC mConstantBufferViewDesc;
+    uint32 mBufferSize;
     DescriptorHeapHandle mConstantBufferViewHandle;
 };
 
