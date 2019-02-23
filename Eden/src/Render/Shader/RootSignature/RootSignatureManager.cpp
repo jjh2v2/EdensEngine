@@ -583,6 +583,27 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
 
         mRootSignatures.Add(sdsmSignature);
     }
+
+    {
+        //RootSignatureType_Water
+        CD3DX12_DESCRIPTOR_RANGE ranges[3];
+        ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv at b0
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0); //3 textures at t0-t2
+        ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0); //1 sampler at s0
+
+        CD3DX12_ROOT_PARAMETER rootParameters[3];
+        rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_ALL);
+        rootParameters[2].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_ALL);
+
+        RootSignatureInfo waterSignature;
+        waterSignature.Desc.Init(_countof(rootParameters), rootParameters, 0, NULL, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+        Direct3DUtils::ThrowIfHRESULTFailed(D3D12SerializeRootSignature(&waterSignature.Desc, D3D_ROOT_SIGNATURE_VERSION_1, &waterSignature.RootSignatureBlob, &waterSignature.Error));
+        Direct3DUtils::ThrowIfHRESULTFailed(device->CreateRootSignature(0, waterSignature.RootSignatureBlob->GetBufferPointer(), waterSignature.RootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&waterSignature.RootSignature)));
+
+        mRootSignatures.Add(waterSignature);
+    }
 }
 
 RootSignatureManager::~RootSignatureManager()

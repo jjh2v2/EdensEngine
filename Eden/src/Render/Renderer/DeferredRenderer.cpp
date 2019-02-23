@@ -25,6 +25,7 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
         mLightBuffer[i] = contextManager->CreateConstantBuffer(sizeof(LightingMainBuffer));
         mSkyBuffer[i] = contextManager->CreateConstantBuffer(sizeof(SkyBuffer));
         mRayShadowBlurBuffer[i] = contextManager->CreateConstantBuffer(sizeof(RayShadowBlurBuffer));
+        mWaterBuffer[i] = contextManager->CreateConstantBuffer(sizeof(WaterBuffer));
     }
 
 	{
@@ -130,6 +131,10 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
 
     mSkyTexture = mGraphicsManager->GetTextureManager()->GetTexture("SnowyMountains");
     mSkyMesh = mGraphicsManager->GetMeshManager()->GetMesh("Sphere");
+    mWaterMesh = mGraphicsManager->GetMeshManager()->GetMesh("WaterPlane");
+    mWaterHeightMap1 = mGraphicsManager->GetTextureManager()->GetTexture("waterHM1");
+    mWaterHeightMap2 = mGraphicsManager->GetTextureManager()->GetTexture("waterHM2");
+    mWaterNormalMap = mGraphicsManager->GetTextureManager()->GetTexture("waterNM");
 
     ShaderPipelinePermutation emptyComputePermutation;
     ShaderPSO *envFilterShader = mGraphicsManager->GetShaderManager()->GetShader("FilterEnvironmentMap", emptyComputePermutation);
@@ -174,6 +179,9 @@ DeferredRenderer::~DeferredRenderer()
 
         contextManager->FreeConstantBuffer(mRayShadowBlurBuffer[i]);
         mRayShadowBlurBuffer[i] = NULL;
+
+        contextManager->FreeConstantBuffer(mWaterBuffer[i]);
+        mWaterBuffer[i] = NULL;
     }
 	
 	{
@@ -631,6 +639,118 @@ void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3
     graphicsContext->InsertPixEndEvent();
 }
 
+void DeferredRenderer::RenderWater(float deltaTime)
+{
+    if (!mWaterMesh->IsReady() || !mWaterHeightMap1->GetIsReady() || !mWaterHeightMap2->GetIsReady() || !mWaterNormalMap->GetIsReady())
+    {
+        return;
+    }
+
+    Direct3DManager *direct3DManager = mGraphicsManager->GetDirect3DManager();
+    GraphicsContext *graphicsContext = direct3DManager->GetContextManager()->GetGraphicsContext();
+    Direct3DHeapManager *heapManager = direct3DManager->GetContextManager()->GetHeapManager();
+    Vector2 screenSize = direct3DManager->GetScreenSize();
+
+    graphicsContext->TransitionResource(mGBufferDepth, D3D12_RESOURCE_STATE_DEPTH_WRITE, true);
+
+    const uint32 numSRVsNeeded = 3;
+    const uint32 numSamplersNeeded = 1;
+    RenderPassDescriptorHeap *waterSRVDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_Water, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, direct3DManager->GetFrameIndex(), numSRVsNeeded);
+    RenderPassDescriptorHeap *waterSamplerDescHeap = heapManager->GetRenderPassDescriptorHeapFor(RenderPassDescriptorHeapType_Water, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, direct3DManager->GetFrameIndex(), numSamplersNeeded);
+
+    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, waterSRVDescHeap->GetHeap());
+    graphicsContext->SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, waterSamplerDescHeap->GetHeap());
+
+    graphicsContext->SetViewport(direct3DManager->GetScreenViewport());
+    graphicsContext->SetScissorRect(0, 0, (uint32)screenSize.X, (uint32)screenSize.Y);
+
+    Camera *mainCamera = mActiveScene->GetMainCamera();
+
+    D3DXMATRIX positionMatrix;
+    D3DXMATRIX rotationMatrix;
+    D3DXMATRIX scaleMatrix;
+    D3DXMATRIX waterMatrix;
+    D3DXMatrixIdentity(&waterMatrix);
+    D3DXMatrixTranslation(&positionMatrix, -5, 1, 15);
+    D3DXMatrixRotationYawPitchRoll(&rotationMatrix, 0, 0, 0);
+    D3DXMatrixScaling(&scaleMatrix, 1, 1, 1);
+    D3DXMatrixMultiply(&waterMatrix, &waterMatrix, &scaleMatrix);
+    D3DXMatrixMultiply(&waterMatrix, &waterMatrix, &rotationMatrix);
+    D3DXMatrixMultiply(&waterMatrix, &waterMatrix, &positionMatrix);
+
+    static float waterTime = 0;
+
+    WaterBuffer waterBuffer;
+    waterBuffer.modelMatrix = waterMatrix;
+    waterBuffer.viewMatrix = mainCamera->GetViewMatrix();
+    waterBuffer.projectionMatrix = mainCamera->GetReverseProjectionMatrix();
+    waterBuffer.tessellationFactor = 7;
+    waterBuffer.time = waterTime;
+
+    waterTime += deltaTime * 0.1f;
+
+    D3DXVECTOR3 lightDirectionView;
+    D3DXVec3TransformNormal(&lightDirectionView, &mActiveScene->GetSunLight()->GetDirection().AsD3DVector3(), &waterBuffer.viewMatrix);
+    Vector4 lightDirView = Vector4(lightDirectionView.x, lightDirectionView.y, lightDirectionView.z, 1.0f);
+    waterBuffer.lightDirection = lightDirView;
+
+    D3DXMatrixTranspose(&waterBuffer.modelMatrix, &waterBuffer.modelMatrix);
+    D3DXMatrixTranspose(&waterBuffer.viewMatrix, &waterBuffer.viewMatrix);
+    D3DXMatrixTranspose(&waterBuffer.projectionMatrix, &waterBuffer.projectionMatrix);
+
+    DescriptorHeapHandle waterCBVHandle = waterSRVDescHeap->GetHeapHandleBlock(1);
+    DescriptorHeapHandle waterSRVHandle = waterSRVDescHeap->GetHeapHandleBlock(3);
+    D3D12_CPU_DESCRIPTOR_HANDLE waterIncHandle = waterSRVHandle.GetCPUHandle();
+    DescriptorHeapHandle waterSamplerHandle = waterSamplerDescHeap->GetHeapHandleBlock(1);
+
+    mWaterBuffer[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&waterBuffer, sizeof(WaterBuffer));
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterCBVHandle.GetCPUHandle(), mWaterBuffer[direct3DManager->GetFrameIndex()]->GetConstantBufferViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterIncHandle, mWaterHeightMap1->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    waterIncHandle.ptr += waterSRVDescHeap->GetDescriptorSize();
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterIncHandle, mWaterHeightMap2->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    waterIncHandle.ptr += waterSRVDescHeap->GetDescriptorSize();
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterIncHandle, mWaterNormalMap->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    Sampler *waterSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_WRAP);
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterSamplerHandle.GetCPUHandle(), waterSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
+    ShaderPipelinePermutation waterShaderPermutation(Render_Water, Target_Single_16, InputLayout_Standard);
+    ShaderPipelinePermutation waterShaderDepthPermutation(Render_Water_Depth, Target_Depth_Only, InputLayout_Standard);
+    ShaderPSO *waterShader = mGraphicsManager->GetShaderManager()->GetShader("Water", waterShaderPermutation);
+    ShaderPSO *waterDepthShader = mGraphicsManager->GetShaderManager()->GetShader("WaterDepth", waterShaderDepthPermutation);
+
+    {
+        graphicsContext->SetDepthStencilTarget(mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle());
+        graphicsContext->SetPipelineState(waterDepthShader);
+        graphicsContext->SetRootSignature(waterDepthShader->GetRootSignature(), NULL);
+
+        graphicsContext->SetGraphicsDescriptorTable(0, waterCBVHandle.GetGPUHandle());
+        graphicsContext->SetGraphicsDescriptorTable(1, waterSRVHandle.GetGPUHandle());
+        graphicsContext->SetGraphicsDescriptorTable(2, waterSamplerHandle.GetGPUHandle());
+
+        graphicsContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
+        graphicsContext->SetVertexBuffer(0, mWaterMesh->GetVertexBuffer());
+        graphicsContext->SetIndexBuffer(mWaterMesh->GetIndexBuffer());
+        graphicsContext->Draw(mWaterMesh->GetVertexCount());
+    }
+
+    {
+        graphicsContext->SetRenderTarget(mHDRTarget->GetRenderTargetViewHandle().GetCPUHandle(), mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle());
+        graphicsContext->SetPipelineState(waterShader);
+        graphicsContext->SetRootSignature(waterShader->GetRootSignature(), NULL);
+
+        graphicsContext->SetGraphicsDescriptorTable(0, waterCBVHandle.GetGPUHandle());
+        graphicsContext->SetGraphicsDescriptorTable(1, waterSRVHandle.GetGPUHandle());
+        graphicsContext->SetGraphicsDescriptorTable(2, waterSamplerHandle.GetGPUHandle());
+
+        graphicsContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
+        graphicsContext->SetVertexBuffer(0, mWaterMesh->GetVertexBuffer());
+        graphicsContext->SetIndexBuffer(mWaterMesh->GetIndexBuffer());
+        graphicsContext->Draw(mWaterMesh->GetVertexCount());
+    }
+}
+
 void DeferredRenderer::ToggleTonemapper()
 {
     mPostProcessManager->ToggleTonemapper();
@@ -709,6 +829,8 @@ void DeferredRenderer::Render(float deltaTime)
     
     RenderLightingMain(cameraBuffer.viewMatrix, cameraBuffer.projectionMatrix, cameraBuffer.viewToLightProjMatrix, cameraBuffer.viewInvMatrix);
     
+    RenderWater(deltaTime);
+
     if (mRayTraceManager && mShowRayTrace)
     {
         mPostProcessManager->RenderPostProcessing(mRayShadowBlurTarget, deltaTime);

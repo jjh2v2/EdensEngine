@@ -34,6 +34,7 @@ enum RootSignatureType
     RootSignatureType_Luminance_Histogram = 26,
     RootSignatureType_Luminance_Histogram_Average = 27,
     RootSignatureType_SDSM_Accumulation = 28,
+    RootSignatureType_Water = 29,
 	NumRootSignatures
 };
 

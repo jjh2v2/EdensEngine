@@ -63,6 +63,12 @@ public:
 		return result;
 	}
 
+    Vector4 operator*(const Vector4 &rhs)
+    {
+        Vector4 result(X * rhs.X, Y * rhs.Y, Z * rhs.Z, W * rhs.W);
+        return result;
+    }
+
 	Vector4 operator+=(const Vector4 &rhs)
 	{
 		X += rhs.X;

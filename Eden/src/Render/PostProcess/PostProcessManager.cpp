@@ -71,12 +71,12 @@ PostProcessManager::PostProcessManager(GraphicsManager *graphicsManager)
 
     mCurrentLuminanceHistogramBuffer.inputWidth = (uint32)screenSize.X;
     mCurrentLuminanceHistogramBuffer.inputHeight = (uint32)screenSize.Y;
-    mCurrentLuminanceHistogramBuffer.minLogLuminance = -10.0f;
-    mCurrentLuminanceHistogramBuffer.oneOverLogLuminanceRange = 1.0f / 12.0f;
+    mCurrentLuminanceHistogramBuffer.minLogLuminance = -4.0f;
+    mCurrentLuminanceHistogramBuffer.oneOverLogLuminanceRange = 1.0f / 5.5f;
 
     mCurrentLuminanceHistogramAveragebuffer.pixelCount = mCurrentLuminanceHistogramBuffer.inputWidth * mCurrentLuminanceHistogramBuffer.inputHeight;
-    mCurrentLuminanceHistogramAveragebuffer.minLogLuminance = -10.0f;
-    mCurrentLuminanceHistogramAveragebuffer.logLuminanceRange = 12.0f;
+    mCurrentLuminanceHistogramAveragebuffer.minLogLuminance = -4.0f;
+    mCurrentLuminanceHistogramAveragebuffer.logLuminanceRange = 5.5f;
     mCurrentLuminanceHistogramAveragebuffer.tau = 1.1f;
     mCurrentLuminanceHistogramAveragebuffer.timeDelta = 0.0167f;
     //TDA: use the depth buffer to mask out the sky from the luminance histogram

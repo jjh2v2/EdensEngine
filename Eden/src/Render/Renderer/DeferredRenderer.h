@@ -32,6 +32,7 @@ private:
     void RenderSky();
     void RenderShadows(D3DXMATRIX &lightViewMatrix, D3DXMATRIX &lightProjMatrix);
     void RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3DXMATRIX &projectionMatrix, const D3DXMATRIX &viewToLightProjMatrix, const D3DXMATRIX &viewInvMatrix);
+    void RenderWater(float deltaTime);
 
 	GraphicsManager *mGraphicsManager;
 
@@ -55,6 +56,12 @@ private:
 	SceneEntity *mSceneEntity2;
 	SceneEntity *mSceneEntity3;
     SceneEntity *mSceneEntity4;
+
+    ConstantBuffer *mWaterBuffer[FRAME_BUFFER_COUNT];
+    Mesh *mWaterMesh;
+    Texture *mWaterHeightMap1;
+    Texture *mWaterHeightMap2;
+    Texture *mWaterNormalMap;
 
     Texture *mSkyTexture;
     Mesh *mSkyMesh;

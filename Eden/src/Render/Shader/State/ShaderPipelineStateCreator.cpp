@@ -153,6 +153,12 @@ void ShaderPipelineStateCreator::BuildPipelineStates()
 	mPipelineRenderStateMap.insert(std::pair<ShaderRenderStateType, ShaderPipelineRenderState>(Render_Standard,
 		ShaderPipelineRenderState(mDepthStencilDescs[DepthStencil_WriteGreaterEqual], mRasterDescs[Raster_BackFaceCull], mBlendDescs[Blend_Disabled], D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE)));
 
+    mPipelineRenderStateMap.insert(std::pair<ShaderRenderStateType, ShaderPipelineRenderState>(Render_Water,
+        ShaderPipelineRenderState(mDepthStencilDescs[DepthStencil_GreaterEqual], mRasterDescs[Raster_BackFaceCull], mBlendDescs[Blend_AlphaBlend], D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH)));
+
+    mPipelineRenderStateMap.insert(std::pair<ShaderRenderStateType, ShaderPipelineRenderState>(Render_Water_Depth,
+        ShaderPipelineRenderState(mDepthStencilDescs[DepthStencil_WriteGreaterEqual], mRasterDescs[Raster_BackFaceCull], mBlendDescs[Blend_Disabled], D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH)));
+
 	mPipelineRenderStateMap.insert(std::pair<ShaderRenderStateType, ShaderPipelineRenderState>(Render_Standard_NoDepth,
 		ShaderPipelineRenderState(mDepthStencilDescs[DepthStencil_Disabled], mRasterDescs[Raster_BackFaceCull], mBlendDescs[Blend_Disabled], D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE)));
 
@@ -191,6 +197,12 @@ void ShaderPipelineStateCreator::BuildPipelineStates()
 	single16Target.DepthStencilFormat = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 
 	mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_Single_16, single16Target));
+
+    ShaderPipelineTargetState singleDepthOnly;
+    singleDepthOnly.NumRenderTargets = 0;
+    singleDepthOnly.DepthStencilFormat = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+
+    mPipelineTargetStateMap.insert(std::pair<ShaderTargetStateType, ShaderPipelineTargetState>(Target_Depth_Only, singleDepthOnly));
 
 	ShaderPipelineTargetState single16NoDepthTarget;
 	single16NoDepthTarget.NumRenderTargets = 1;

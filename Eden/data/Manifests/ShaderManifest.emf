@@ -27,3 +27,5 @@ RayShadowBlur.esh
 Compute/LuminanceBuildHistogram.esh
 Compute/LuminanceHistogramAverage.esh
 SDSMShadowAccumulation.esh
+Water.esh
+WaterDepth.esh

@@ -19,6 +19,7 @@ private:
 	
 	void SerializeMeshToFile(Mesh *mesh, char *fileName);
 	Mesh *DeserializeMeshFromFile(Direct3DManager *direct3DManager, char *fileName);
+    Mesh *GetGridMesh(Direct3DManager *direct3DManager, uint32 xTiles, uint32 yTiles, float texTileX, float texTileZ);
 
 	std::map<std::string, Mesh*> mMeshLookup;
 	DynamicArray<Mesh*> mMeshes;

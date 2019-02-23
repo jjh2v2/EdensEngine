@@ -127,6 +127,16 @@ struct SDSMAccumulationBuffer
     Vector2 bufferDimensions;
 };
 
+struct WaterBuffer
+{
+    D3DXMATRIX modelMatrix;
+    D3DXMATRIX viewMatrix;
+    D3DXMATRIX projectionMatrix;
+    Vector4 lightDirection;
+    float tessellationFactor;
+    float time;
+};
+
 struct MaterialConstants
 {
 	MaterialConstants()

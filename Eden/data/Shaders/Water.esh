@@ -1,0 +1,14 @@
+VertexShader
+[Water/Water.hlsl]
+[WaterVertexShader]
+HullShader
+[Water/Water.hlsl]
+[WaterHullShader]
+DomainShader
+[Water/Water.hlsl]
+[WaterDomainShader]
+PixelShader
+[Water/Water.hlsl]
+[WaterPixelShader]
+RootSignature
+[29]

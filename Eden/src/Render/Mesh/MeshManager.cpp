@@ -68,6 +68,10 @@ void MeshManager::LoadAllMeshes(Direct3DManager *direct3DManager)
 		mMeshLookup.insert(std::pair<std::string, Mesh*>(justFileName, newMesh));
 		mMeshes.Add(newMesh);
 	}
+
+    Mesh *gridMesh = GetGridMesh(direct3DManager, 10, 10, 1.0f, 1.0f);
+    mMeshLookup.insert(std::pair<std::string, Mesh*>("WaterPlane", gridMesh));
+    mMeshes.Add(gridMesh);
 }
 
 Mesh *MeshManager::LoadFBXMesh(Direct3DManager *direct3DManager, char *fileName, char *serializationFile)
@@ -212,4 +216,62 @@ Mesh *MeshManager::LoadFromAssimp(Direct3DManager *direct3DManager, char *fileNa
 	SerializeMeshToFile(mesh, serializationFile);
 
 	return mesh;
+}
+
+Mesh *MeshManager::GetGridMesh(Direct3DManager *direct3DManager, uint32 xTiles, uint32 zTiles, float texTileX, float texTileZ)
+{
+    uint32 vertexCount = xTiles * zTiles * 6;
+    uint32 indexCount = vertexCount;
+    DynamicArray<uint32> indexSplits;
+
+    MeshVertex *meshData = new MeshVertex[vertexCount];
+    uint32 *indices = new uint32[indexCount];
+
+    float oneOverXTiles = 1.0f / (float)xTiles;
+    float oneOverZTiles = 1.0f / (float)zTiles;
+
+    for (uint32 x = 0; x < xTiles; x++)
+    {
+        for (uint32 z = 0; z < zTiles; z++)
+        {
+            uint32 tileIndex = (x * zTiles + z) * 6;
+            float xBegin = (oneOverXTiles * (float)x) * texTileX;
+            float xEnd = (oneOverXTiles * (float)(x + 1)) * texTileX;
+            float zBegin = (oneOverZTiles * (float)z) * texTileZ;
+            float zEnd = (oneOverZTiles * (float)(z + 1)) * texTileZ;
+
+            meshData[tileIndex].Position = Vector4((float)x, 0.0f, (float)z, 1.0f);
+            meshData[tileIndex].TexCoord = Vector4(xBegin, zBegin, xBegin, zBegin);
+            indices[tileIndex] = tileIndex;
+            tileIndex++;
+
+            meshData[tileIndex].Position = Vector4((float)x, 0.0f, (float)z + 1.0f, 1.0f);
+            meshData[tileIndex].TexCoord = Vector4(xBegin, zEnd, xBegin, zEnd);
+            indices[tileIndex] = tileIndex;
+            tileIndex++;
+
+            meshData[tileIndex].Position = Vector4((float)x + 1.0f, 0.0f, (float)z, 1.0f);
+            meshData[tileIndex].TexCoord = Vector4(xEnd, zBegin, xEnd, zBegin);
+            indices[tileIndex] = tileIndex;
+            tileIndex++;
+
+            meshData[tileIndex].Position = Vector4((float)x, 0.0f, (float)z + 1.0f, 1.0f);
+            meshData[tileIndex].TexCoord = Vector4(xBegin, zEnd, xBegin, zEnd);
+            indices[tileIndex] = tileIndex;
+            tileIndex++;
+
+            meshData[tileIndex].Position = Vector4((float)x + 1.0f, 0.0f, (float)z + 1.0f, 1.0f);
+            meshData[tileIndex].TexCoord = Vector4(xEnd, zEnd, xEnd, zEnd);
+            indices[tileIndex] = tileIndex;
+            tileIndex++;
+
+            meshData[tileIndex].Position = Vector4((float)x + 1.0f, 0.0f, (float)z, 1.0f);
+            meshData[tileIndex].TexCoord = Vector4(xEnd, zBegin, xEnd, zBegin);
+            indices[tileIndex] = tileIndex;
+            tileIndex++;
+        }
+    }
+
+    Mesh *mesh = new Mesh(direct3DManager, vertexCount, indexCount, meshData, indexSplits, indices);
+    return mesh;
 }

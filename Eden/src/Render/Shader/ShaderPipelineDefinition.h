@@ -44,7 +44,8 @@ enum ShaderTargetStateType
 	Target_Single_16_NoDepth = 5,
     Target_Single_32_NoDepth = 6,
     Target_Depth_Stencil_Only_32_Sample_4 = 7,
-    Target_Single_R32_NoDepth = 8
+    Target_Single_R32_NoDepth = 8,
+    Target_Depth_Only = 9,
 };
 
 enum ShaderRenderStateType
@@ -53,7 +54,9 @@ enum ShaderRenderStateType
 	Render_Standard = 1,
 	Render_Standard_NoDepth = 2,
     Render_ShadowMap = 3,
-    Render_Sky = 4
+    Render_Sky = 4,
+    Render_Water = 5,
+    Render_Water_Depth = 6,
 };
 
 enum ShaderInputLayoutType

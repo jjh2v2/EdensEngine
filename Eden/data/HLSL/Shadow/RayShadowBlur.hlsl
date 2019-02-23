@@ -114,37 +114,15 @@ RayShadowBlurVertexOutput RayShadowBlurVertexShader(uint vertexID : SV_VertexID)
 
 float RayShadowBlurPixelShader(RayShadowBlurVertexOutput input) : SV_Target
 {
-    //float hardShadowResult = 0;
-    float softShadowResult = 0;
-    //float averageBlockerDistance = 0;
-    //float numBlockers = 0;
-    
-    //[unroll]
-    //for (uint x = 0; x < 16; x++)
-    //{
-    //    float blockerDistance = ShadowInput.Sample(ShadowSamplerLinear, input.texCoord0 + StandardSamples[x] * oneOverscreenSize);
-    //    hardShadowResult += blockerDistance > 0.0001 ? 1 : 0;
-        
-    //    if(blockerDistance > 0.0001)
-    //    {
-    //        averageBlockerDistance += blockerDistance;
-    //        numBlockers++;
-    //    }
-    //}
-    
-    //averageBlockerDistance /= numBlockers;
-    //float shadowTransitionFactor = pow(saturate(averageBlockerDistance / 8.0), 2.0);
+    float shadowResult = 0;
     
     [unroll]
     for (uint y = 0; y < 32; y++)
     {
-        softShadowResult += ShadowInput.Sample(ShadowSamplerLinear, input.texCoord0 + PoissonSamples[y] * oneOverscreenSize * 8).r;
+        shadowResult += ShadowInput.Sample(ShadowSamplerLinear, input.texCoord0 + PoissonSamples[y] * oneOverscreenSize * 8).r > 0 ? 1 : 0;
     }
     
-    //hardShadowResult /= 16;
-    softShadowResult /= 32;
+    shadowResult /= 32;
     
-    float shadowResult = softShadowResult;//lerp(hardShadowResult, softShadowResult, shadowTransitionFactor);
-    
-    return shadowResult;
+    return 1.0 - shadowResult;
 }
