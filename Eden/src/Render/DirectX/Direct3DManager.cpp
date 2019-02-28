@@ -51,7 +51,7 @@ void Direct3DManager::InitializeDeviceResources()
 {
 #if defined(_DEBUG)
     ID3D12Debug *debugController;
-	if (false && ENABLE_DEBUG_LAYER && SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
+	if (ENABLE_DEBUG_LAYER && SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
 	{
         debugController->EnableDebugLayer();
         debugController->Release();

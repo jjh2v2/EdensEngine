@@ -529,6 +529,11 @@ void GraphicsContext::Dispatch3D(uint32 threadCountX, uint32 threadCountY, uint3
     Dispatch(MathHelper::DivideByMultipleOf(threadCountX, groupSizeX), MathHelper::DivideByMultipleOf(threadCountY, groupSizeY), MathHelper::DivideByMultipleOf(threadCountZ, groupSizeZ));
 }
 
+void GraphicsContext::CopyResource(ID3D12Resource *destination, ID3D12Resource *source)
+{
+    mCommandList->CopyResource(destination, source);
+}
+
 void GraphicsContext::CopyResourceRegion(ID3D12Resource *destination, uint64 destOffset, ID3D12Resource *source, uint64 sourceOffset, uint64 numBytes)
 {
     mCommandList->CopyBufferRegion(destination, destOffset, source, sourceOffset, numBytes);

@@ -39,8 +39,9 @@ GBufferPixelOutput GBufferLitPixelShader(GBufferVertexOutput input)
 	{
 		float4 normalMap = (NormalMap.Sample(NormalMapSampler, modifiedTexCoord) * 2.0) - 1.0;
 		input.tangent = normalize(input.tangent);
-		float3 viewSpaceBinormal = normalize(cross(normal, input.tangent));
-		float3x3 texSpace = float3x3(input.tangent, viewSpaceBinormal, normal);
+        input.binormal = normalize(input.binormal);
+		//float3 viewSpaceBinormal = normalize(cross(normal, input.tangent));
+		float3x3 texSpace = float3x3(input.tangent, input.binormal, normal);
 		normal = normalize(mul(normalMap.xyz, texSpace));
 	}
 

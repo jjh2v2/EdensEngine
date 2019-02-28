@@ -59,9 +59,10 @@ private:
 
     ConstantBuffer *mWaterBuffer[FRAME_BUFFER_COUNT];
     Mesh *mWaterMesh;
-    Texture *mWaterHeightMap1;
-    Texture *mWaterHeightMap2;
     Texture *mWaterNormalMap;
+    Texture *mWaterNormalMap2;
+    DepthStencilTarget *mDepthCopy;
+    RenderTarget *mHDRCopy;
 
     Texture *mSkyTexture;
     Mesh *mSkyMesh;

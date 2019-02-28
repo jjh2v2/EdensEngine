@@ -588,7 +588,7 @@ RootSignatureManager::RootSignatureManager(ID3D12Device *device)
         //RootSignatureType_Water
         CD3DX12_DESCRIPTOR_RANGE ranges[3];
         ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0); //1 cbv at b0
-        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0); //3 textures at t0-t2
+        ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0); //1 textures at t0
         ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0); //1 sampler at s0
 
         CD3DX12_ROOT_PARAMETER rootParameters[3];
