@@ -27,6 +27,7 @@ struct PixelInput
     float4 positionView   : TEXCOORD0;
     float4 texCoord0      : TEXCOORD1;
     float4 screenPosition : TEXCOORD2;
+    float4 positionWorld  : TEXCOORD3;
 };
 
 struct TessellationPatch
@@ -40,6 +41,9 @@ cbuffer WaterBuffer : register(b0)
     matrix modelMatrix;
     matrix viewMatrix;
     matrix projectionMatrix;
+    matrix viewInverseMatrix;
+    matrix projectionInverseMatrix;
+    matrix viewProjInvMatrix;
     float4 lightDirection;
     float  tessellationFactor;
     float  time;
@@ -205,8 +209,8 @@ PixelInput WaterDomainShader(TessellationPatch input, float3 uvwCoord : SV_Domai
     
     output.position.xyz = finalWaveResult.position;
     output.position.w = 1.0f;
-    output.position = mul(output.position, modelMatrix);
-    output.positionView = mul(output.position, viewMatrix);
+    output.positionWorld = mul(output.position, modelMatrix);
+    output.positionView = mul(output.positionWorld, viewMatrix);
     output.position = mul(output.positionView, projectionMatrix);
     output.screenPosition = output.position;
     
@@ -237,8 +241,22 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
 	float3 finalNormal = normalize(mul(normalMap.xyz, texSpace));
     finalNormal += normalize(mul(normalMap2.xyz, texSpace));
     finalNormal = normalize(finalNormal);
-        
-    float3 resultColor = color * HDRMap.Sample(WaterSampler, hdrCoords + finalNormal.xz * 0.01).rgb; //Use different sampler, point //* saturate(dot(input.normal, -lightDirection.xyz));
+    
+    float2 distortedTexCoord = hdrCoords + finalNormal.xz * 0.04;
+    float distortedDepth = DepthMap.Sample(WaterSampler, distortedTexCoord).r;
+    float3 distortedPosition = GetWorldPositionFromDepth(distortedTexCoord, distortedDepth, viewProjInvMatrix);
+    
+    float3 waterColorFactor;
+    if(distortedPosition.y < input.positionWorld.y)
+    {
+        waterColorFactor = color * HDRMap.Sample(WaterSampler, hdrCoords + finalNormal.xz * 0.01).rgb; //Use different sampler, point
+    }
+    else
+    {
+        waterColorFactor = color * HDRMap.Sample(WaterSampler, hdrCoords).rgb; 
+    }
+    
+     //* saturate(dot(input.normal, -lightDirection.xyz));
     
     float3 viewDir = normalize(input.positionView.xyz);
     float3 half = normalize(viewDir + lightDirection.xyz);
@@ -251,5 +269,5 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
 			  CalculateNormalDistributionTrowReitz(roughness, finalNormal, half) *
 			  nDotL;
     
-    return float4(resultColor + specularFactor, 1.0);
+    return float4(waterColorFactor + specularFactor, 1.0);
 }

@@ -41,9 +41,6 @@ SamplerState ShadowLinearSampler : register(s1);
 
 LightingSurface GetLightingSurface(uint2 coords)
 {
-    float2 screenPixelOffset = float2(2.0f, -2.0f) / pfBufferDimensions;
-    float2 positionScreen = (float2(coords.xy) + 0.5f) * screenPixelOffset.xy + float2(-1.0f, 1.0f);
-    
     LightingSurface surface;
 	float4 normal    = GBufferTextures[1][coords];
 	surface.albedo   = GBufferTextures[0][coords];

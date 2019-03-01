@@ -701,6 +701,12 @@ void DeferredRenderer::RenderWater(float deltaTime)
     waterBuffer.projectionMatrix = mainCamera->GetReverseProjectionMatrix();
     waterBuffer.tessellationFactor = 7;
     waterBuffer.time = waterTime;
+    D3DXMatrixInverse(&waterBuffer.viewInvMatrix, NULL, &waterBuffer.viewMatrix);
+    D3DXMatrixInverse(&waterBuffer.projInvMatrix, NULL, &waterBuffer.projectionMatrix);
+
+    D3DXMATRIX viewProj = waterBuffer.viewMatrix * waterBuffer.projectionMatrix;
+    D3DXMatrixInverse(&waterBuffer.viewProjInvMatrix, NULL, &viewProj);
+
 
     waterTime += deltaTime * 0.1f;
 
@@ -712,6 +718,9 @@ void DeferredRenderer::RenderWater(float deltaTime)
     D3DXMatrixTranspose(&waterBuffer.modelMatrix, &waterBuffer.modelMatrix);
     D3DXMatrixTranspose(&waterBuffer.viewMatrix, &waterBuffer.viewMatrix);
     D3DXMatrixTranspose(&waterBuffer.projectionMatrix, &waterBuffer.projectionMatrix);
+    D3DXMatrixTranspose(&waterBuffer.viewInvMatrix, &waterBuffer.viewInvMatrix);
+    D3DXMatrixTranspose(&waterBuffer.projInvMatrix, &waterBuffer.projInvMatrix);
+    D3DXMatrixTranspose(&waterBuffer.viewProjInvMatrix, &waterBuffer.viewProjInvMatrix);
 
     DescriptorHeapHandle waterCBVHandle = waterSRVDescHeap->GetHeapHandleBlock(1);
     DescriptorHeapHandle waterSRVHandle = waterSRVDescHeap->GetHeapHandleBlock(4);

@@ -23,6 +23,26 @@ float3 DecodeSphereMap(float2 e)
     return n;
 }
 
+float3 GetWorldPositionFromDepth(float2 texCoord, float z, matrix viewProjInv)
+{
+    float x = texCoord.x * 2 - 1;
+    float y = (1 - texCoord.y) * 2 - 1;
+    float4 projPos = float4(x, y, z, 1.0f);
+    float4 worldPos = mul(projPos, viewProjInv);  
+
+    return worldPos.xyz / worldPos.w;  
+}
+
+float3 GetViewPositionFromDepth(float2 texCoord, float z, matrix projInv)
+{
+    float x = texCoord.x * 2 - 1;
+    float y = (1 - texCoord.y) * 2 - 1;
+    float4 projPos = float4(x, y, z, 1.0f);
+    float4 viewPos = mul(projPos, projInv);  
+
+    return viewPos.xyz / viewPos.w;   
+}
+
 float3 GetViewPosition(float2 screenPosition, float viewSpaceDepth, matrix cameraProj)
 {
     float3 viewPosition;
