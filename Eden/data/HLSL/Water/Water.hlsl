@@ -49,11 +49,15 @@ cbuffer WaterBuffer : register(b0)
     float  time;
 };
 
-Texture2D WaterNormalMap1 : register(t0);
-Texture2D WaterNormalMap2 : register(t1);
-Texture2D HDRMap          : register(t2);
-Texture2D DepthMap        : register(t3);
-SamplerState WaterSampler : register(s0);
+Texture2D WaterNormalMap1  : register(t0);
+Texture2D WaterNormalMap2  : register(t1);
+Texture2D HDRMap           : register(t2);
+Texture2D DepthMap         : register(t3);
+Texture2D NormalMap        : register(t4);
+TextureCube EnvironmentMap : register(t5);
+SamplerState LinearWrapSampler : register(s0);
+SamplerState PointSampler : register(s1);
+SamplerState LinearClampSampler : register(s2);
 
 HullInput WaterVertexShader(VertexInput input)
 {
@@ -173,13 +177,13 @@ PixelInput WaterDomainShader(TessellationPatch input, float3 uvwCoord : SV_Domai
     Wave waves[2];
     waves[0].direction = normalize(float3(0.3, 0, -0.7));
     waves[0].steepness = 0.99;
-    waves[0].waveLength = 8.75;
+    waves[0].waveLength = 12.75;
     waves[0].amplitude = 0.065;
     waves[0].speed = 1.0;
     
     waves[1].direction = normalize(float3(0.5, 0, -0.2));
     waves[1].steepness = 0.99;
-    waves[1].waveLength = 6.1;
+    waves[1].waveLength = 9.1;
     waves[1].amplitude = 0.12;
     waves[1].speed = 1.3;
     
@@ -235,28 +239,26 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
     float2 texCoords2 = input.texCoord0.xy + time * float2(0.0, 1.0) * 0.1;
     float2 hdrCoords = ((float2(input.screenPosition.x, -input.screenPosition.y) / input.screenPosition.w) * 0.5) + 0.5;
     
-    float4 normalMap = (WaterNormalMap1.Sample(WaterSampler, texCoords) * 2.0) - 1.0;
-    float4 normalMap2 = (WaterNormalMap2.Sample(WaterSampler, texCoords2) * 2.0) - 1.0;
+    float4 normalMap = (WaterNormalMap1.Sample(LinearWrapSampler, texCoords) * 2.0) - 1.0;
+    float4 normalMap2 = (WaterNormalMap2.Sample(LinearWrapSampler, texCoords2) * 2.0) - 1.0;
     float3x3 texSpace = float3x3(input.tangent, input.binormal, input.normal);
 	float3 finalNormal = normalize(mul(normalMap.xyz, texSpace));
     finalNormal += normalize(mul(normalMap2.xyz, texSpace));
     finalNormal = normalize(finalNormal);
     
     float2 distortedTexCoord = hdrCoords + finalNormal.xz * 0.04;
-    float distortedDepth = DepthMap.Sample(WaterSampler, distortedTexCoord).r;
+    float distortedDepth = DepthMap.Sample(PointSampler, distortedTexCoord).r;
     float3 distortedPosition = GetWorldPositionFromDepth(distortedTexCoord, distortedDepth, viewProjInvMatrix);
     
     float3 waterColorFactor;
     if(distortedPosition.y < input.positionWorld.y)
     {
-        waterColorFactor = color * HDRMap.Sample(WaterSampler, hdrCoords + finalNormal.xz * 0.01).rgb; //Use different sampler, point
+        waterColorFactor = color * HDRMap.Sample(PointSampler, hdrCoords + finalNormal.xz * 0.01).rgb; //Use different sampler, point
     }
     else
     {
-        waterColorFactor = color * HDRMap.Sample(WaterSampler, hdrCoords).rgb; 
+        waterColorFactor = color * HDRMap.Sample(PointSampler, hdrCoords).rgb; 
     }
-    
-     //* saturate(dot(input.normal, -lightDirection.xyz));
     
     float3 viewDir = normalize(input.positionView.xyz);
     float3 half = normalize(viewDir + lightDirection.xyz);
@@ -269,5 +271,90 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
 			  CalculateNormalDistributionTrowReitz(roughness, finalNormal, half) *
 			  nDotL;
     
-    return float4(waterColorFactor + specularFactor, 1.0);
+    float STEP_SIZE = 0.5;
+    float MAX_STEP = 20.0;
+    float MAX_STEP_BACK = 10.0;
+    float steps = 0;
+    float3 currentPos = input.positionView.xyz;
+    float4 texPos = float4(0,0,0,0);
+    float ScenePos = 0;
+    float real_step = MAX_STEP;
+    
+    float3 R = normalize(reflect(viewDir, finalNormal));
+    
+    while ( steps < MAX_STEP )
+    {	
+        currentPos += R.xyz*STEP_SIZE;
+        texPos = mul(float4(-currentPos, 1), projectionMatrix) ;
+        
+        if(abs(texPos.w) < 0.0001)
+        {
+            texPos.w = 0.0001;
+        }
+        
+        texPos.xy /= texPos.w;
+        texPos.xy =  float2(texPos.x, -texPos.y)*0.5+0.5; 
+
+        ScenePos = DepthMap.SampleLevel(PointSampler, texPos.xy, 0).r;
+        ScenePos = GetViewPositionFromDepth(texPos.xy, ScenePos, projectionInverseMatrix).z;
+        
+        if (ScenePos <= currentPos.z )
+        {
+            real_step = steps;
+            steps = MAX_STEP;				
+        }
+        else
+        {
+            steps ++ ;
+        }
+    }
+    
+    if (real_step < MAX_STEP)
+    {
+        steps = 0;		
+        while(steps < MAX_STEP_BACK)
+        {	
+            currentPos -= R.xyz*STEP_SIZE/MAX_STEP_BACK;
+                
+            texPos = mul(float4(-currentPos, 1), projectionMatrix);
+            
+            if(abs(texPos.w) < 0.0001)
+            {
+                texPos.w = 0.0001;
+            }
+            
+            texPos.xy /= texPos.w;
+            texPos.xy =  float2(texPos.x, -texPos.y)*0.5+0.5; 
+    
+            ScenePos = DepthMap.SampleLevel(PointSampler, texPos.xy, 0).r;
+            ScenePos = GetViewPositionFromDepth(texPos.xy, ScenePos, projectionInverseMatrix).z;
+            
+            if(ScenePos > currentPos.z)
+            {
+                steps = MAX_STEP_BACK;
+            }					
+            else
+            {
+                steps ++ ;
+            }
+        }
+    }
+    
+    float3 reflectionNormal = DecodeSphereMap(NormalMap.Sample(PointSampler, texPos.xy).xy);
+    
+    float Shin = 1.0 * pow ( 1.0-abs(nDotV), 1.0 )
+					* (1.0-real_step/MAX_STEP)
+					* (1.0 - saturate(distance(float2(0.5, 0.5), texPos.xy) / 0.5))
+					* (1.0/(1.0 + abs(ScenePos - currentPos.z ) * 20.0))				// AVOIDING REFLECTION OF OBJECTS IN FOREGROUND 
+					* (1.0 - saturate(dot(reflectionNormal, finalNormal)));
+    
+    float3 reflectionColor = HDRMap.Sample(PointSampler, texPos.xy).rgb * Shin;
+    
+	R = mul(R, (float3x3)viewInverseMatrix);
+    float3 skyboxColor = EnvironmentMap.Sample(LinearClampSampler, R).rgb;
+    
+    float3 finalReflectionColor = reflectionColor + skyboxColor;
+    float3 waterBaseColor = lerp(waterColorFactor, finalReflectionColor, 0.8);
+    
+    return float4(waterBaseColor + specularFactor, 1.0);
 }
