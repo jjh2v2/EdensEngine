@@ -687,7 +687,7 @@ void DeferredRenderer::RenderWater(float deltaTime)
     D3DXMATRIX scaleMatrix;
     D3DXMATRIX waterMatrix;
     D3DXMatrixIdentity(&waterMatrix);
-    D3DXMatrixTranslation(&positionMatrix, -5, 1, 15);
+    D3DXMatrixTranslation(&positionMatrix, -25, 2, -12);
     D3DXMatrixRotationYawPitchRoll(&rotationMatrix, 0, 0, 0);
     D3DXMatrixScaling(&scaleMatrix, 1, 1, 1);
     D3DXMatrixMultiply(&waterMatrix, &waterMatrix, &scaleMatrix);

@@ -69,7 +69,7 @@ void MeshManager::LoadAllMeshes(Direct3DManager *direct3DManager)
 		mMeshes.Add(newMesh);
 	}
 
-    Mesh *gridMesh = GetGridMesh(direct3DManager, 10, 10, 1.0f, 1.0f);
+    Mesh *gridMesh = GetGridMesh(direct3DManager, 50, 50, 5.0f, 5.0f);
     mMeshLookup.insert(std::pair<std::string, Mesh*>("WaterPlane", gridMesh));
     mMeshes.Add(gridMesh);
 }
