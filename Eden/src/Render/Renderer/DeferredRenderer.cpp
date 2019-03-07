@@ -134,6 +134,7 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
     mWaterMesh = mGraphicsManager->GetMeshManager()->GetMesh("WaterPlane");
     mWaterNormalMap = mGraphicsManager->GetTextureManager()->GetTexture("waterNM1");
     mWaterNormalMap2 = mGraphicsManager->GetTextureManager()->GetTexture("waterNM2");
+    mWaterFoamMap = mGraphicsManager->GetTextureManager()->GetTexture("waterFoam");
 
     ShaderPipelinePermutation emptyComputePermutation;
     ShaderPSO *envFilterShader = mGraphicsManager->GetShaderManager()->GetShader("FilterEnvironmentMap", emptyComputePermutation);
@@ -617,8 +618,8 @@ void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3
     lightBuffer.lightDir = lightDirView;
     lightBuffer.lightColor = Vector4(1.0f, 0.889f, 0.717f, 1.0f);
     lightBuffer.bufferDimensions = screenSize;
-    lightBuffer.lightIntensity = 2.0f;
-    lightBuffer.ambientIntensity = 0.2f;
+    lightBuffer.lightIntensity = 8.0f;
+    lightBuffer.ambientIntensity = 0.7f;
     lightBuffer.brdfSpecular = 1.0f;
     lightBuffer.specularIBLMipLevels = 11;
 
@@ -645,7 +646,7 @@ void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3
 
 void DeferredRenderer::RenderWater(float deltaTime)
 {
-    if (!mWaterMesh->IsReady() || !mWaterNormalMap->GetIsReady() || !mWaterNormalMap2->GetIsReady())
+    if (!mWaterMesh->IsReady() || !mWaterNormalMap->GetIsReady() || !mWaterNormalMap2->GetIsReady() || !mSkyTexture->GetIsReady() || !mWaterFoamMap->GetIsReady())
     {
         return;
     }
@@ -723,7 +724,7 @@ void DeferredRenderer::RenderWater(float deltaTime)
     D3DXMatrixTranspose(&waterBuffer.viewProjInvMatrix, &waterBuffer.viewProjInvMatrix);
 
     DescriptorHeapHandle waterCBVHandle = waterSRVDescHeap->GetHeapHandleBlock(1);
-    DescriptorHeapHandle waterSRVHandle = waterSRVDescHeap->GetHeapHandleBlock(5);
+    DescriptorHeapHandle waterSRVHandle = waterSRVDescHeap->GetHeapHandleBlock(7);
     D3D12_CPU_DESCRIPTOR_HANDLE waterIncHandle = waterSRVHandle.GetCPUHandle();
     DescriptorHeapHandle waterSamplerHandle = waterSamplerDescHeap->GetHeapHandleBlock(3);
     D3D12_CPU_DESCRIPTOR_HANDLE waterSamplerIncHandle = waterSamplerHandle.GetCPUHandle();
@@ -742,7 +743,9 @@ void DeferredRenderer::RenderWater(float deltaTime)
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterIncHandle, mGBufferTargets[1]->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     waterIncHandle.ptr += waterSRVDescHeap->GetDescriptorSize();
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterIncHandle, mSkyTexture->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    
+    waterIncHandle.ptr += waterSRVDescHeap->GetDescriptorSize();
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterIncHandle, mWaterFoamMap->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
     Sampler *linearSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_WRAP);
     Sampler *pointSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_POINT_CLAMP);
     Sampler *linearClampSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_CLAMP);

@@ -46,7 +46,7 @@ LightingSurface GetLightingSurface(uint2 coords)
 	surface.albedo   = GBufferTextures[0][coords];
 	surface.material = GBufferTextures[2][coords];
 	surface.zDepth   = GBufferTextures[3][coords].r;
-    surface.normal   = DecodeSphereMap(normal.xy);
+    surface.normal   = normalize(DecodeSphereMap(normal.xy));
     surface.positionView = GetViewPosition(coords, pfBufferDimensions, surface.zDepth, pfProjectionMatrix);
     
     return surface;
@@ -65,42 +65,52 @@ float4 LightingMainPixelShader(LightingMainVertexOutput input) : SV_Target
 {
 	LightingSurface surface = GetLightingSurface(uint2(input.position.xy));
     
-    if(surface.zDepth < 0.00001)
+    if(surface.zDepth < EPSILON)
     {
         discard; //skybox
     }
     
-	float3 viewDir = normalize(surface.positionView);
-	float3 reflection = reflect(viewDir, surface.normal);
-	reflection = mul(reflection, (float3x3)pfViewInvMatrix);
+    float metallic = surface.material.g;
+    float roughness = surface.material.r;
 	
-	float nDotL = saturate(dot(-pfLightDir.xyz, surface.normal));
+	float3 lightingOutput = float3(0.0f, 0.0f, 0.0f);
+    
+	float3 viewDir = -normalize(surface.positionView);
+	float3 reflection = reflect(-viewDir, surface.normal);
+	reflection = mul(reflection, (float3x3)pfViewInvMatrix);
+    
+    float3 lightDir = -pfLightDir.xyz;
+    float3 half = normalize(viewDir + lightDir);
+    float nDotL = saturate(dot(surface.normal, lightDir));
+    float nDotV = abs(dot(surface.normal, viewDir)) + EPSILON;
+    float nDotH = saturate(dot(surface.normal, half));
+    float lDotH = saturate(dot(lightDir, half));
+    float linearRoughness = roughness * roughness;
+    
     float nDotSky = (dot(surface.normal, float3(0.0f, 1.0f, 0.0f)) * 0.5f ) + 0.5f;
     float3 ambientLight = pfAmbientIntensity * lerp(pow(abs(pfGroundColor.rgb),2.2), pow(abs(pfSkyColor.rgb),2.2), nDotSky);
+   
+    lightingOutput += ambientLight * surface.albedo.rgb * (1.0 - metallic);
+    //not sure if sampling cube is worth it
+    //lightingOutput += CalculateDiffuseIBL(EnvironmentMap2, EnvironmentSampler, pfSpecularIBLMipLevels - 1, reflection) * (1.0 - metallic) * pfAmbientIntensity * 5 * surface.albedo.rgb;
+	lightingOutput += CalculateSpecularIBL(pfSpecularIBLMipLevels, lerp(float3(0.0f, 0.0f, 0.0f), surface.albedo.rgb, metallic), linearRoughness, nDotV, reflection, EnvironmentMap, EnvBRDFLookupTexture, EnvironmentSampler); 
 	
-	float roughness = surface.material.r;
-	float metallic = surface.material.g;
-	float3 lightingOutput = float3(0.0f, 0.0f, 0.0f);
-    lightingOutput += ambientLight.rgb * lerp(surface.albedo.rgb, float3(0.05, 0.05, 0.05), metallic);
-	lightingOutput += CalculateSpecularIBL(pfSpecularIBLMipLevels, lerp(float3(0.0f, 0.0f, 0.0f), surface.albedo.rgb, metallic), roughness, surface.normal, viewDir, reflection, EnvironmentMap, EnvBRDFLookupTexture, EnvironmentSampler); 
-	
+    float reflectance = 0.5;
+    float3 f0 = 0.16 * reflectance * reflectance * (1.0 - metallic) + surface.albedo.rgb * metallic;
+    float normalDistribution = CalculateNormalDistributionGGX(linearRoughness, nDotH);
+    float3 fresnelReflectance = CalculateSchlickFresnelReflectance(lDotH, f0);
+    float geometryTerm = CalculateSmithGGXGeometryTerm(linearRoughness, nDotL, nDotV);
+    
+    float3 specularFactor = (geometryTerm * normalDistribution) * fresnelReflectance;
+    float3 diffuseFactor = (surface.albedo.rgb * (1.0 - metallic)) * BurleyDiffuse(linearRoughness, nDotV, nDotL, lDotH); //LambertDiffuse();
+    
+    float shadowMultiplier = 1.0;
 	if(nDotL > 0.0f)
 	{
-		float3 half = normalize(viewDir + pfLightDir.xyz);
-		float3 surfaceSpec = lerp(float3(1.0, 1.0, 1.0), surface.albedo.rgb, metallic);
-		float specMetallic = max(metallic, 0.03);
-        float nDotV = saturate(dot(surface.normal, viewDir));
-		
-        float3 specularFactor = CalculateSchlickFresnelReflectance(viewDir, half, float3(specMetallic, specMetallic, specMetallic) * surfaceSpec) *
-			  CalculateSmithGGXGeometryTerm(roughness, nDotL, nDotV) *
-			  CalculateNormalDistributionTrowReitz(roughness, surface.normal, half) *
-			  nDotL * lerp(1.0f, pfBRDFspecular, metallic);
-        
-		float3 diffuseFactor = surface.albedo.rgb * nDotL * (1.0 - metallic);
-		float shadowMultiplier = ShadowTexture.Sample(ShadowLinearSampler, input.texCoord0);
-		
-		lightingOutput.rgb += (diffuseFactor + specularFactor) * pfLightIntensity * pfLightColor.rgb * shadowMultiplier;
+		shadowMultiplier = ShadowTexture.Sample(ShadowLinearSampler, input.texCoord0);
 	}
-	
+    
+	lightingOutput += (specularFactor + diffuseFactor) * pfLightIntensity * nDotL * shadowMultiplier;
+
     return float4(lightingOutput * surface.material.b, 1.0f);
 }

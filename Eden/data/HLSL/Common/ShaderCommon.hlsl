@@ -1,5 +1,5 @@
 static const float PI = 3.14159265;
-static const float EPSILON = 0.0001;
+static const float EPSILON = 0.00001;
 
 float2 EncodeSphereMap(float3 n)
 {
