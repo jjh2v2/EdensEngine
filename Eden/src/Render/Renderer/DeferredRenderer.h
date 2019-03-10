@@ -62,6 +62,7 @@ private:
     Texture *mWaterNormalMap;
     Texture *mWaterNormalMap2;
     Texture *mWaterFoamMap;
+    Texture *mWaterNoiseMap;
     DepthStencilTarget *mDepthCopy;
     RenderTarget *mHDRCopy;
 

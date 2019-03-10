@@ -235,38 +235,43 @@ Mesh *MeshManager::GetGridMesh(Direct3DManager *direct3DManager, uint32 xTiles, 
         for (uint32 z = 0; z < zTiles; z++)
         {
             uint32 tileIndex = (x * zTiles + z) * 6;
-            float xBegin = (oneOverXTiles * (float)x) * texTileX;
-            float xEnd = (oneOverXTiles * (float)(x + 1)) * texTileX;
-            float zBegin = (oneOverZTiles * (float)z) * texTileZ;
-            float zEnd = (oneOverZTiles * (float)(z + 1)) * texTileZ;
+            float xBeginTile = (oneOverXTiles * (float)x) * texTileX;
+            float xEndTile = (oneOverXTiles * (float)(x + 1)) * texTileX;
+            float zBeginTile = (oneOverZTiles * (float)z) * texTileZ;
+            float zEndTile = (oneOverZTiles * (float)(z + 1)) * texTileZ;
+
+            float xBegin = (oneOverXTiles * (float)x);
+            float xEnd = (oneOverXTiles * (float)(x + 1));
+            float zBegin = (oneOverZTiles * (float)z);
+            float zEnd = (oneOverZTiles * (float)(z + 1));
 
             meshData[tileIndex].Position = Vector4((float)x, 0.0f, (float)z, 1.0f);
-            meshData[tileIndex].TexCoord = Vector4(xBegin, zBegin, xBegin, zBegin);
+            meshData[tileIndex].TexCoord = Vector4(xBeginTile, zBeginTile, xBegin, zBegin);
             indices[tileIndex] = tileIndex;
             tileIndex++;
 
             meshData[tileIndex].Position = Vector4((float)x, 0.0f, (float)z + 1.0f, 1.0f);
-            meshData[tileIndex].TexCoord = Vector4(xBegin, zEnd, xBegin, zEnd);
+            meshData[tileIndex].TexCoord = Vector4(xBeginTile, zEndTile, xBegin, zEnd);
             indices[tileIndex] = tileIndex;
             tileIndex++;
 
             meshData[tileIndex].Position = Vector4((float)x + 1.0f, 0.0f, (float)z, 1.0f);
-            meshData[tileIndex].TexCoord = Vector4(xEnd, zBegin, xEnd, zBegin);
+            meshData[tileIndex].TexCoord = Vector4(xEndTile, zBeginTile, xEnd, zBegin);
             indices[tileIndex] = tileIndex;
             tileIndex++;
 
             meshData[tileIndex].Position = Vector4((float)x, 0.0f, (float)z + 1.0f, 1.0f);
-            meshData[tileIndex].TexCoord = Vector4(xBegin, zEnd, xBegin, zEnd);
+            meshData[tileIndex].TexCoord = Vector4(xBeginTile, zEndTile, xBegin, zEnd);
             indices[tileIndex] = tileIndex;
             tileIndex++;
 
             meshData[tileIndex].Position = Vector4((float)x + 1.0f, 0.0f, (float)z + 1.0f, 1.0f);
-            meshData[tileIndex].TexCoord = Vector4(xEnd, zEnd, xEnd, zEnd);
+            meshData[tileIndex].TexCoord = Vector4(xEndTile, zEndTile, xEnd, zEnd);
             indices[tileIndex] = tileIndex;
             tileIndex++;
 
             meshData[tileIndex].Position = Vector4((float)x + 1.0f, 0.0f, (float)z, 1.0f);
-            meshData[tileIndex].TexCoord = Vector4(xEnd, zBegin, xEnd, zBegin);
+            meshData[tileIndex].TexCoord = Vector4(xEndTile, zBeginTile, xEnd, zBegin);
             indices[tileIndex] = tileIndex;
             tileIndex++;
         }

@@ -136,6 +136,7 @@ struct WaterBuffer
     D3DXMATRIX projInvMatrix;
     D3DXMATRIX viewProjInvMatrix;
     Vector4 lightDirection;
+    Vector3 cameraDirection;
     float tessellationFactor;
     float time;
 };

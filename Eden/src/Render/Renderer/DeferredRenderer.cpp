@@ -123,6 +123,7 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
         newMaterial->SetTexture(MaterialTextureType_Diffuse, mGraphicsManager->GetTextureManager()->GetTexture("DefaultPurple"));
         newMaterial->GetMaterialBuffer()->SetUsesNormalMap(false);
         newMaterial->GetMaterialBuffer()->SetUsesRoughmetalMap(false);
+        newMaterial->GetMaterialBuffer()->SetDiffuseColor(Color(0.5f, 0.5f, 0.5f, 1.0f));
         mSceneEntity4 = new SceneEntity(mGraphicsManager->GetMeshManager()->GetMesh("Cube"), newMaterial, shadowMaterial);
         mSceneEntity4->SetPosition(Vector3(0.0f, -5.0f, 20.0f));
         mSceneEntity4->SetRotation(Vector3(0.0f, 0.0f, 0.0f));
@@ -135,6 +136,7 @@ DeferredRenderer::DeferredRenderer(GraphicsManager *graphicsManager)
     mWaterNormalMap = mGraphicsManager->GetTextureManager()->GetTexture("waterNM1");
     mWaterNormalMap2 = mGraphicsManager->GetTextureManager()->GetTexture("waterNM2");
     mWaterFoamMap = mGraphicsManager->GetTextureManager()->GetTexture("waterFoam");
+    mWaterNoiseMap = mGraphicsManager->GetTextureManager()->GetTexture("waterNoise");
 
     ShaderPipelinePermutation emptyComputePermutation;
     ShaderPSO *envFilterShader = mGraphicsManager->GetShaderManager()->GetShader("FilterEnvironmentMap", emptyComputePermutation);
@@ -234,6 +236,25 @@ DeferredRenderer::~DeferredRenderer()
     }
 }
 
+void DeferredRenderer::CreateTargets(Vector2 screenSize)
+{
+    Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
+
+    RenderTarget *gbufferAlbedoTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
+    RenderTarget *gbufferNormalsTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
+    RenderTarget *gbufferMaterialTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
+    mGBufferTargets.Add(gbufferAlbedoTarget);
+    mGBufferTargets.Add(gbufferNormalsTarget);
+    mGBufferTargets.Add(gbufferMaterialTarget);
+
+    mGBufferDepth = contextManager->CreateDepthStencilTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_D32_FLOAT_S8X24_UINT, 1, 1, 0);
+    mDepthCopy = contextManager->CreateDepthStencilTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_D32_FLOAT_S8X24_UINT, 1, 1, 0);
+
+    mHDRTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
+    mHDRCopy = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
+    mRayShadowBlurTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R32_FLOAT, false, 1, 1, 0);
+}
+
 void DeferredRenderer::FreeTargets()
 {
 	Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
@@ -256,6 +277,34 @@ void DeferredRenderer::FreeTargets()
     contextManager->FreeRenderTarget(mHDRTarget);
     contextManager->FreeRenderTarget(mHDRCopy);
     contextManager->FreeRenderTarget(mRayShadowBlurTarget);
+}
+
+void DeferredRenderer::OnScreenChanged(Vector2 screenSize)
+{
+    FreeTargets();
+    CreateTargets(screenSize);
+}
+
+void DeferredRenderer::ClearFrameBuffers()
+{
+    GraphicsContext *graphicsContext = mGraphicsManager->GetDirect3DManager()->GetContextManager()->GetGraphicsContext(1);
+    float blackColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+    graphicsContext->InsertPixBeginEvent(0xFFFFFFFF, "Clear Buffers");
+
+    graphicsContext->TransitionResource(mGBufferTargets[0], D3D12_RESOURCE_STATE_RENDER_TARGET, false);
+    graphicsContext->TransitionResource(mGBufferTargets[1], D3D12_RESOURCE_STATE_RENDER_TARGET, false);
+    graphicsContext->TransitionResource(mGBufferTargets[2], D3D12_RESOURCE_STATE_RENDER_TARGET, false);
+    graphicsContext->TransitionResource(mHDRTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, false);
+    graphicsContext->TransitionResource(mGBufferDepth, D3D12_RESOURCE_STATE_DEPTH_WRITE, true);
+
+    graphicsContext->ClearRenderTarget(mGBufferTargets[0]->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
+    graphicsContext->ClearRenderTarget(mGBufferTargets[1]->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
+    graphicsContext->ClearRenderTarget(mGBufferTargets[2]->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
+    graphicsContext->ClearRenderTarget(mHDRTarget->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
+    graphicsContext->ClearDepthStencilTarget(mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle(), 0.0f, 0);
+
+    graphicsContext->InsertPixEndEvent();
 }
 
 void DeferredRenderer::RenderRayTracing()
@@ -338,53 +387,6 @@ void DeferredRenderer::ProcessRayShadows()
 
         graphicsContext->InsertPixEndEvent();
     }
-}
-
-void DeferredRenderer::CreateTargets(Vector2 screenSize)
-{
-	Direct3DContextManager *contextManager = mGraphicsManager->GetDirect3DManager()->GetContextManager();
-
-	RenderTarget *gbufferAlbedoTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
-	RenderTarget *gbufferNormalsTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
-	RenderTarget *gbufferMaterialTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
-	mGBufferTargets.Add(gbufferAlbedoTarget);
-	mGBufferTargets.Add(gbufferNormalsTarget);
-	mGBufferTargets.Add(gbufferMaterialTarget);
-
-	mGBufferDepth = contextManager->CreateDepthStencilTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_D32_FLOAT_S8X24_UINT, 1, 1, 0);
-    mDepthCopy = contextManager->CreateDepthStencilTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_D32_FLOAT_S8X24_UINT, 1, 1, 0);
-
-    mHDRTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
-    mHDRCopy = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R16G16B16A16_FLOAT, false, 1, 1, 0);
-    mRayShadowBlurTarget = contextManager->CreateRenderTarget((uint32)screenSize.X, (uint32)screenSize.Y, DXGI_FORMAT_R32_FLOAT, false, 1, 1, 0);
-}
-
-void DeferredRenderer::OnScreenChanged(Vector2 screenSize)
-{
-	FreeTargets();
-	CreateTargets(screenSize);
-}
-
-void DeferredRenderer::ClearFrameBuffers()
-{
-	GraphicsContext *graphicsContext = mGraphicsManager->GetDirect3DManager()->GetContextManager()->GetGraphicsContext(1);
-	float blackColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-
-    graphicsContext->InsertPixBeginEvent(0xFFFFFFFF, "Clear Buffers");
-
-	graphicsContext->TransitionResource(mGBufferTargets[0], D3D12_RESOURCE_STATE_RENDER_TARGET, false);
-	graphicsContext->TransitionResource(mGBufferTargets[1], D3D12_RESOURCE_STATE_RENDER_TARGET, false);
-	graphicsContext->TransitionResource(mGBufferTargets[2], D3D12_RESOURCE_STATE_RENDER_TARGET, false);
-    graphicsContext->TransitionResource(mHDRTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, false);
-    graphicsContext->TransitionResource(mGBufferDepth, D3D12_RESOURCE_STATE_DEPTH_WRITE, true);
-
-	graphicsContext->ClearRenderTarget(mGBufferTargets[0]->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
-	graphicsContext->ClearRenderTarget(mGBufferTargets[1]->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
-	graphicsContext->ClearRenderTarget(mGBufferTargets[2]->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
-    graphicsContext->ClearRenderTarget(mHDRTarget->GetRenderTargetViewHandle().GetCPUHandle(), blackColor);
-	graphicsContext->ClearDepthStencilTarget(mGBufferDepth->GetDepthStencilViewHandle().GetCPUHandle(), 0.0f, 0);
-
-    graphicsContext->InsertPixEndEvent();
 }
 
 void DeferredRenderer::RenderGBuffer()
@@ -646,7 +648,7 @@ void DeferredRenderer::RenderLightingMain(const D3DXMATRIX &viewMatrix, const D3
 
 void DeferredRenderer::RenderWater(float deltaTime)
 {
-    if (!mWaterMesh->IsReady() || !mWaterNormalMap->GetIsReady() || !mWaterNormalMap2->GetIsReady() || !mSkyTexture->GetIsReady() || !mWaterFoamMap->GetIsReady())
+    if (!mWaterMesh->IsReady() || !mWaterNormalMap->GetIsReady() || !mWaterNormalMap2->GetIsReady() || !mSkyTexture->GetIsReady() || !mWaterFoamMap->GetIsReady() || !mWaterNoiseMap->GetIsReady())
     {
         return;
     }
@@ -688,7 +690,7 @@ void DeferredRenderer::RenderWater(float deltaTime)
     D3DXMATRIX scaleMatrix;
     D3DXMATRIX waterMatrix;
     D3DXMatrixIdentity(&waterMatrix);
-    D3DXMatrixTranslation(&positionMatrix, -25, 2, -12);
+    D3DXMatrixTranslation(&positionMatrix, -25, 3.2f, -12);
     D3DXMatrixRotationYawPitchRoll(&rotationMatrix, 0, 0, 0);
     D3DXMatrixScaling(&scaleMatrix, 1, 1, 1);
     D3DXMatrixMultiply(&waterMatrix, &waterMatrix, &scaleMatrix);
@@ -716,6 +718,12 @@ void DeferredRenderer::RenderWater(float deltaTime)
     Vector4 lightDirView = Vector4(lightDirectionView.x, lightDirectionView.y, lightDirectionView.z, 1.0f);
     waterBuffer.lightDirection = lightDirView;
 
+    D3DXVECTOR3 cameraDirectionView;
+    D3DXVec3TransformNormal(&cameraDirectionView, &mainCamera->GetDirection().AsD3DVector3(), &waterBuffer.viewMatrix);
+    waterBuffer.cameraDirection = Vector3(cameraDirectionView.x, cameraDirectionView.y, cameraDirectionView.z);
+
+     //= mainCamera->GetDirection();
+
     D3DXMatrixTranspose(&waterBuffer.modelMatrix, &waterBuffer.modelMatrix);
     D3DXMatrixTranspose(&waterBuffer.viewMatrix, &waterBuffer.viewMatrix);
     D3DXMatrixTranspose(&waterBuffer.projectionMatrix, &waterBuffer.projectionMatrix);
@@ -724,9 +732,9 @@ void DeferredRenderer::RenderWater(float deltaTime)
     D3DXMatrixTranspose(&waterBuffer.viewProjInvMatrix, &waterBuffer.viewProjInvMatrix);
 
     DescriptorHeapHandle waterCBVHandle = waterSRVDescHeap->GetHeapHandleBlock(1);
-    DescriptorHeapHandle waterSRVHandle = waterSRVDescHeap->GetHeapHandleBlock(7);
+    DescriptorHeapHandle waterSRVHandle = waterSRVDescHeap->GetHeapHandleBlock(8);
     D3D12_CPU_DESCRIPTOR_HANDLE waterIncHandle = waterSRVHandle.GetCPUHandle();
-    DescriptorHeapHandle waterSamplerHandle = waterSamplerDescHeap->GetHeapHandleBlock(3);
+    DescriptorHeapHandle waterSamplerHandle = waterSamplerDescHeap->GetHeapHandleBlock(4);
     D3D12_CPU_DESCRIPTOR_HANDLE waterSamplerIncHandle = waterSamplerHandle.GetCPUHandle();
 
     mWaterBuffer[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&waterBuffer, sizeof(WaterBuffer));
@@ -745,16 +753,21 @@ void DeferredRenderer::RenderWater(float deltaTime)
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterIncHandle, mSkyTexture->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     waterIncHandle.ptr += waterSRVDescHeap->GetDescriptorSize();
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterIncHandle, mWaterFoamMap->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    waterIncHandle.ptr += waterSRVDescHeap->GetDescriptorSize();
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterIncHandle, mWaterNoiseMap->GetTextureResource()->GetShaderResourceViewHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     Sampler *linearSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_WRAP);
     Sampler *pointSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_POINT_CLAMP);
     Sampler *linearClampSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_CLAMP);
+    Sampler *pointWrapSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_POINT_WRAP);
 
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterSamplerIncHandle, linearSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
     waterSamplerIncHandle.ptr += waterSamplerDescHeap->GetDescriptorSize();
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterSamplerIncHandle, pointSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
     waterSamplerIncHandle.ptr += waterSamplerDescHeap->GetDescriptorSize();
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterSamplerIncHandle, linearClampSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+    waterSamplerIncHandle.ptr += waterSamplerDescHeap->GetDescriptorSize();
+    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterSamplerIncHandle, pointWrapSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 
     ShaderPipelinePermutation waterShaderPermutation(Render_Water, Target_Single_16, InputLayout_Standard);
     ShaderPipelinePermutation waterShaderDepthPermutation(Render_Water_Depth, Target_Depth_Only, InputLayout_Standard);
