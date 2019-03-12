@@ -703,6 +703,15 @@ void DeferredRenderer::RenderWater(float deltaTime)
     waterBuffer.modelMatrix = waterMatrix;
     waterBuffer.viewMatrix = mainCamera->GetViewMatrix();
     waterBuffer.projectionMatrix = mainCamera->GetReverseProjectionMatrix();
+    waterBuffer.waterSurfaceColor = Vector4(0.465f, 0.797f, 0.991f, 1.0f);
+    waterBuffer.waterRefractionColor = Vector4(0.003f, 0.599f, 0.812f, 1.0f);
+    waterBuffer.ssrSettings = Vector4(0.5f, 20.0f, 10.0f, 20.0f);
+    waterBuffer.normalMapScroll = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
+    waterBuffer.normalMapScrollSpeed = Vector2(0.1f, 0.1f);
+    waterBuffer.refractionDistortionFactor = 0.04f;
+    waterBuffer.roughness = 0.08f;
+    waterBuffer.reflectance = 0.55f;
+    waterBuffer.specIntensity = 125.0f;
     waterBuffer.tessellationFactor = 7;
     waterBuffer.time = waterTime;
     D3DXMatrixInverse(&waterBuffer.viewInvMatrix, NULL, &waterBuffer.viewMatrix);
@@ -717,12 +726,6 @@ void DeferredRenderer::RenderWater(float deltaTime)
     D3DXVec3TransformNormal(&lightDirectionView, &mActiveScene->GetSunLight()->GetDirection().AsD3DVector3(), &waterBuffer.viewMatrix);
     Vector4 lightDirView = Vector4(lightDirectionView.x, lightDirectionView.y, lightDirectionView.z, 1.0f);
     waterBuffer.lightDirection = lightDirView;
-
-    D3DXVECTOR3 cameraDirectionView;
-    D3DXVec3TransformNormal(&cameraDirectionView, &mainCamera->GetDirection().AsD3DVector3(), &waterBuffer.viewMatrix);
-    waterBuffer.cameraDirection = Vector3(cameraDirectionView.x, cameraDirectionView.y, cameraDirectionView.z);
-
-     //= mainCamera->GetDirection();
 
     D3DXMatrixTranspose(&waterBuffer.modelMatrix, &waterBuffer.modelMatrix);
     D3DXMatrixTranspose(&waterBuffer.viewMatrix, &waterBuffer.viewMatrix);

@@ -136,7 +136,15 @@ struct WaterBuffer
     D3DXMATRIX projInvMatrix;
     D3DXMATRIX viewProjInvMatrix;
     Vector4 lightDirection;
-    Vector3 cameraDirection;
+    Vector4 waterSurfaceColor;
+    Vector4 waterRefractionColor;
+    Vector4 ssrSettings;
+    Vector4 normalMapScroll;
+    Vector2 normalMapScrollSpeed;
+    float refractionDistortionFactor;
+    float roughness;
+    float reflectance;
+    float specIntensity;
     float tessellationFactor;
     float time;
 };

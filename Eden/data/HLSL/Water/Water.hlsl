@@ -20,15 +20,15 @@ struct DomainInput
 
 struct PixelInput
 {
-    float4 position       : SV_POSITION;
-    float3 normal         : NORMAL;
-    float3 tangent        : TANGENT;
-    float3 binormal       : BINORMAL;
-    float4 positionView   : TEXCOORD0;
-    float4 texCoord0      : TEXCOORD1;
-    float4 screenPosition : TEXCOORD2;
-    float4 positionWorld  : TEXCOORD3;
-    float4 waterHeight    : TEXCOORD4;
+    float4 position             : SV_POSITION;
+    float3 normal               : NORMAL;
+    float3 tangent              : TANGENT;
+    float3 binormal             : BINORMAL;
+    float4 positionView         : TEXCOORD0;
+    float4 texCoord0            : TEXCOORD1;
+    float4 screenPosition       : TEXCOORD2;
+    float4 positionWorld        : TEXCOORD3;
+    float4 worldNormalAndHeight : TEXCOORD4;
 };
 
 struct TessellationPatch
@@ -46,7 +46,15 @@ cbuffer WaterBuffer : register(b0)
     matrix projectionInverseMatrix;
     matrix viewProjInvMatrix;
     float4 lightDirection;
-    float3 cameraDirection;
+    float4 waterSurfaceColor;
+    float4 waterRefractionColor;
+    float4 ssrSettings;              //step size, max steps forward, max steps back, foreground reduction factor
+    float4 normalMapScroll;
+    float2 normalMapScrollSpeed;
+    float  refractionDistortionFactor;
+    float  roughness;
+    float  reflectance;
+    float  specIntensity;
     float  tessellationFactor;
     float  time;
 };
@@ -65,6 +73,8 @@ SamplerState PointSampler       : register(s1);
 SamplerState LinearClampSampler : register(s2);
 SamplerState PointWrapSampler   : register(s3);
 
+static const uint numWaves = 2;
+
 HullInput WaterVertexShader(VertexInput input)
 {
     HullInput output;
@@ -77,7 +87,6 @@ HullInput WaterVertexShader(VertexInput input)
 TessellationPatch WaterTessellation(InputPatch<HullInput, 3> inputPatch, uint patchId : SV_PrimitiveID)
 {
     TessellationPatch output;
-	
 	output.edges[0] = output.edges[1] = output.edges[2] = tessellationFactor;
     output.inside = tessellationFactor;
                
@@ -93,7 +102,6 @@ TessellationPatch WaterTessellation(InputPatch<HullInput, 3> inputPatch, uint pa
 DomainInput WaterHullShader(InputPatch<HullInput, 3> patch, uint pointId : SV_OutputControlPointID, uint patchId : SV_PrimitiveID)
 {
     DomainInput output;
-
     output.position = patch[pointId].position;
     output.texCoord0 = patch[pointId].texCoord0;
 
@@ -117,7 +125,7 @@ struct Wave
     float speed;
 };
 
-WaveResult CalculateWave(Wave wave, float3 wavePosition, float edgeDampen, float numWaves)
+WaveResult CalculateWave(Wave wave, float3 wavePosition, float edgeDampen)
 {
     WaveResult result;
     
@@ -149,8 +157,6 @@ WaveResult CalculateWave(Wave wave, float3 wavePosition, float edgeDampen, float
     result.normal.z = -1 * (wave.direction.z * waFactor * cosN);
     result.normal.y = 1 - (qi * waFactor * sinN);
     
-    result.normal = lerp(result.normal, float3(0, 1, 0), 0);
-    
     result.binormal = normalize(result.binormal);
     result.tangent = normalize(result.tangent);
     result.normal = normalize(result.normal);
@@ -166,8 +172,7 @@ PixelInput WaterDomainShader(TessellationPatch input, float3 uvwCoord : SV_Domai
     output.position = uvwCoord.x * patch[0].position + uvwCoord.y * patch[1].position + uvwCoord.z * patch[2].position;
     output.texCoord0 = uvwCoord.x * patch[0].texCoord0 + uvwCoord.y * patch[1].texCoord0 + uvwCoord.z * patch[2].texCoord0;
     
-    uint numWaves = 2;
-    Wave waves[2];
+    Wave waves[numWaves];
     waves[0].direction = float3(0.3, 0, -0.7);
     waves[0].steepness = 1.79;
     waves[0].waveLength = 3.75;
@@ -191,7 +196,7 @@ PixelInput WaterDomainShader(TessellationPatch input, float3 uvwCoord : SV_Domai
     
     for(uint waveId = 0; waveId < numWaves; waveId++)
     {
-        WaveResult waveResult = CalculateWave(waves[waveId], output.position.xyz, dampening, numWaves);
+        WaveResult waveResult = CalculateWave(waves[waveId], output.position.xyz, dampening);
         finalWaveResult.position += waveResult.position;
         finalWaveResult.normal += waveResult.normal;
         finalWaveResult.tangent += waveResult.tangent;
@@ -203,10 +208,9 @@ PixelInput WaterDomainShader(TessellationPatch input, float3 uvwCoord : SV_Domai
     finalWaveResult.tangent = normalize(finalWaveResult.tangent);
     finalWaveResult.binormal = normalize(finalWaveResult.binormal);
     
-    output.waterHeight.w = finalWaveResult.position.y - output.position.y;
+    output.worldNormalAndHeight.w = finalWaveResult.position.y - output.position.y;
     
-    output.position.xyz = finalWaveResult.position;
-    output.position.w = 1.0f;
+    output.position = float4(finalWaveResult.position, 1.0);
     output.positionWorld = mul(output.position, modelMatrix);
     output.positionView = mul(output.positionWorld, viewMatrix);
     output.position = mul(output.positionView, projectionMatrix);
@@ -214,27 +218,25 @@ PixelInput WaterDomainShader(TessellationPatch input, float3 uvwCoord : SV_Domai
     
     output.normal = normalize(mul(finalWaveResult.normal, (float3x3)modelMatrix));
     
-    output.waterHeight.xyz = finalWaveResult.normal;
+    output.worldNormalAndHeight.xyz = finalWaveResult.normal;
     
-	output.normal = normalize(mul(float4(output.normal, 0.0f), viewMatrix).xyz);
+	output.normal = normalize(mul(float4(output.normal, 0.0), viewMatrix).xyz);
     output.tangent = normalize(mul(finalWaveResult.tangent, (float3x3)modelMatrix));
-	output.tangent = normalize(mul(float4(output.tangent, 0.0f), viewMatrix).xyz);
+	output.tangent = normalize(mul(float4(output.tangent, 0.0), viewMatrix).xyz);
     output.binormal = normalize(mul(finalWaveResult.binormal, (float3x3)modelMatrix));
-	output.binormal = normalize(mul(float4(output.binormal, 0.0f), viewMatrix).xyz);
+	output.binormal = normalize(mul(float4(output.binormal, 0.0), viewMatrix).xyz);
     
     return output;
 }
 
 float4 WaterPixelShader(PixelInput input) : SV_TARGET
 {
-    float3 waterSurfaceColor = float3(0.465, 0.797, 0.991);
-    float3 waterRefractionColor = float3(0.003, 0.599, 0.812);
     input.normal = normalize(input.normal);
     input.tangent = normalize(input.tangent);
     input.binormal = normalize(input.binormal);
     
-    float2 normalMapCoords1 = input.texCoord0.xy + time * float2(1.0, 0.0) * 0.1;
-    float2 normalMapCoords2 = input.texCoord0.xy + time * float2(0.0, 1.0) * 0.1;
+    float2 normalMapCoords1 = input.texCoord0.xy + time * normalMapScroll.xy * normalMapScrollSpeed.x;
+    float2 normalMapCoords2 = input.texCoord0.xy + time * normalMapScroll.zw * normalMapScrollSpeed.y;
     float2 hdrCoords = ((float2(input.screenPosition.x, -input.screenPosition.y) / input.screenPosition.w) * 0.5) + 0.5;
     
     float4 normalMap = (WaterNormalMap1.Sample(LinearWrapSampler, normalMapCoords1) * 2.0) - 1.0;
@@ -244,21 +246,20 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
     finalNormal += normalize(mul(normalMap2.xyz, texSpace));
     finalNormal = normalize(finalNormal);
     
-    float2 distortedTexCoord = hdrCoords + finalNormal.xz * 0.04;
+    float2 distortedTexCoord = hdrCoords + finalNormal.xz * refractionDistortionFactor;
     float distortedDepth = DepthMap.Sample(PointSampler, distortedTexCoord).r;
     float3 distortedPosition = GetWorldPositionFromDepth(distortedTexCoord, distortedDepth, viewProjInvMatrix);
     
     float3 waterColorFactor;
     if(distortedPosition.y < input.positionWorld.y)
     {
-        waterColorFactor = waterRefractionColor * HDRMap.Sample(PointSampler, distortedTexCoord).rgb;
+        waterColorFactor = waterRefractionColor.rgb * HDRMap.Sample(PointSampler, distortedTexCoord).rgb;
     }
     else
     {
-        waterColorFactor = waterRefractionColor * HDRMap.Sample(PointSampler, hdrCoords).rgb; 
+        waterColorFactor = waterRefractionColor.rgb * HDRMap.Sample(PointSampler, hdrCoords).rgb; 
     }
     
-    float roughness = 0.08;
     float linearRoughness = roughness * roughness;
     float3 viewDir = -normalize(input.positionView.xyz);
     float3 lightDir = -lightDirection.xyz;
@@ -268,29 +269,26 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
     float nDotH = saturate(dot(finalNormal, half));
     float lDotH = saturate(dot(lightDir, half));
     
-    float reflectance = 0.55;
     float3 f0 = 0.16 * reflectance * reflectance;
     float normalDistribution = CalculateNormalDistributionGGX(linearRoughness, nDotH);
     float3 fresnelReflectance = CalculateSchlickFresnelReflectance(lDotH, f0);
     float geometryTerm = CalculateSmithGGXGeometryTerm(linearRoughness, nDotL, nDotV);
     
-    float lightIntensity = 125;
-    float3 specularFactor = (geometryTerm * normalDistribution) * fresnelReflectance * lightIntensity * nDotL;
+    float3 specularFactor = (geometryTerm * normalDistribution) * fresnelReflectance * specIntensity * nDotL;
 
-    float stepSize = 0.5;
     float maxStep = 20.0;
     float maxStepBack = 10.0;
     float steps = 0;
     float3 currentPos = input.positionView.xyz;
     float4 texPos = float4(0,0,0,0);
     float sceneZ = 0;
-    float actualStep = maxStep;
+    float actualStep = ssrSettings.y;
     
     float3 reflection = normalize(reflect(-viewDir, finalNormal));
     
-    while(steps < maxStep)
+    while(steps < ssrSettings.y)
     {	
-        currentPos += reflection.xyz * stepSize;
+        currentPos += reflection.xyz * ssrSettings.x;
         texPos = mul(float4(-currentPos, 1), projectionMatrix);
         
         if(abs(texPos.w) < EPSILON)
@@ -307,7 +305,7 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
         if (sceneZ <= currentPos.z)
         {
             actualStep = steps;
-            steps = maxStep;				
+            steps = ssrSettings.y;				
         }
         else
         {
@@ -315,12 +313,12 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
         }
     }
     
-    if (actualStep < maxStep)
+    if (actualStep < ssrSettings.y)
     {
         steps = 0;		
-        while(steps < maxStepBack)
+        while(steps < ssrSettings.z)
         {	
-            currentPos -= reflection.xyz * stepSize / maxStepBack;
+            currentPos -= reflection.xyz * ssrSettings.x / ssrSettings.z;
             texPos = mul(float4(-currentPos, 1), projectionMatrix);
             
             if(abs(texPos.w) < EPSILON)
@@ -336,7 +334,7 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
             
             if(sceneZ > currentPos.z)
             {
-                steps = maxStepBack;
+                steps = ssrSettings.z;
             }					
             else
             {
@@ -349,15 +347,15 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
     float2 distanceFactor = float2(distance(0.5, hdrCoords.x), distance(0.5, hdrCoords.y)) * 2;
     
     float ssrFactor = 1.0 * pow( 1.0 - abs(nDotV), 1.0)
-					  * (1.0 - actualStep / maxStep)
+					  * (1.0 - actualStep / ssrSettings.y)
 					  * saturate(1.0 - distanceFactor.x - distanceFactor.y)
-					  * (1.0 / (1.0 + abs(sceneZ - currentPos.z) * 20.0))
+					  * (1.0 / (1.0 + abs(sceneZ - currentPos.z) * ssrSettings.w))
 					  * (1.0 - saturate(dot(reflectionNormal, finalNormal)));
     
     float3 reflectionColor = HDRMap.Sample(PointSampler, texPos.xy).rgb * ssrFactor;
     
 	float3 envReflection = mul(reflection, (float3x3)viewInverseMatrix);
-    float3 skyboxColor = EnvironmentMap.Sample(LinearClampSampler, envReflection).rgb * waterSurfaceColor;
+    float3 skyboxColor = EnvironmentMap.Sample(LinearClampSampler, envReflection).rgb * waterSurfaceColor.rgb;
     
     float3 finalReflectionColor = lerp(skyboxColor, reflectionColor, ssrFactor);
     
@@ -366,7 +364,7 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
     float depthSoftenedAlpha = saturate(distance(scenePosition, input.positionWorld.xyz) / 0.5);
     
     float3 waterColorDepthPosition = lerp(scenePosition, distortedPosition, distortedPosition.y < input.positionWorld.y ? 1.0 : 0);
-    waterColorFactor = lerp(waterColorFactor, waterRefractionColor, saturate((input.positionWorld.y - waterColorDepthPosition.y) / 2.5));
+    waterColorFactor = lerp(waterColorFactor, waterRefractionColor.rgb, saturate((input.positionWorld.y - waterColorDepthPosition.y) / 2.5));
     
     float waveTopReflection = pow(1.0 - saturate(dot(input.normal, viewDir)), 3);
     float3 waterBaseColor = lerp(waterColorFactor, finalReflectionColor, saturate(saturate(length(input.positionView.xyz) / 15.0) + waveTopReflection));
@@ -379,7 +377,7 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
     
     float3 foamColor = WaterFoamMap.Sample(LinearWrapSampler, (normalMapCoords1 + normalMapCoords2) / 0.5).rgb;
     float foamNoise = WaterNoiseMap.Sample(LinearWrapSampler, input.texCoord0.xy * 2).r;
-    float foamAmount = saturate((input.waterHeight.w - 0.8) / 0.4) * pow(saturate(dot(input.waterHeight.xyz, float3(0, 1, 0))), 80) * foamNoise;
+    float foamAmount = saturate((input.worldNormalAndHeight.w - 0.8) / 0.4) * pow(saturate(dot(input.worldNormalAndHeight.xyz, float3(0, 1, 0))), 80) * foamNoise;
     foamAmount += pow((1.0 - depthSoftenedAlpha), 3);
     finalWaterColor = lerp(finalWaterColor, foamColor * 4, saturate(foamAmount) * depthSoftenedAlpha);
     
