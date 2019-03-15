@@ -709,11 +709,21 @@ void DeferredRenderer::RenderWater(float deltaTime)
     waterBuffer.normalMapScroll = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
     waterBuffer.normalMapScrollSpeed = Vector2(0.1f, 0.1f);
     waterBuffer.refractionDistortionFactor = 0.04f;
+    waterBuffer.refractionHeightFactor = 2.5f;
+    waterBuffer.refractionDistanceFactor = 15.0f;
+    waterBuffer.depthSofteningDistance = 0.5f;
+    waterBuffer.foamHeightStart = 0.8f;
+    waterBuffer.foamFadeDistance = 0.4f;
+    waterBuffer.foamTiling = 2.0f;
+    waterBuffer.foamAngleExponent = 80.0f;
     waterBuffer.roughness = 0.08f;
     waterBuffer.reflectance = 0.55f;
     waterBuffer.specIntensity = 125.0f;
+    waterBuffer.foamBrightness = 4.0f;
     waterBuffer.tessellationFactor = 7;
+    waterBuffer.dampeningFactor = 5.0f;
     waterBuffer.time = waterTime;
+
     D3DXMatrixInverse(&waterBuffer.viewInvMatrix, NULL, &waterBuffer.viewMatrix);
     D3DXMatrixInverse(&waterBuffer.projInvMatrix, NULL, &waterBuffer.projectionMatrix);
 
@@ -737,7 +747,7 @@ void DeferredRenderer::RenderWater(float deltaTime)
     DescriptorHeapHandle waterCBVHandle = waterSRVDescHeap->GetHeapHandleBlock(1);
     DescriptorHeapHandle waterSRVHandle = waterSRVDescHeap->GetHeapHandleBlock(8);
     D3D12_CPU_DESCRIPTOR_HANDLE waterIncHandle = waterSRVHandle.GetCPUHandle();
-    DescriptorHeapHandle waterSamplerHandle = waterSamplerDescHeap->GetHeapHandleBlock(4);
+    DescriptorHeapHandle waterSamplerHandle = waterSamplerDescHeap->GetHeapHandleBlock(3);
     D3D12_CPU_DESCRIPTOR_HANDLE waterSamplerIncHandle = waterSamplerHandle.GetCPUHandle();
 
     mWaterBuffer[direct3DManager->GetFrameIndex()]->SetConstantBufferData(&waterBuffer, sizeof(WaterBuffer));
@@ -762,15 +772,12 @@ void DeferredRenderer::RenderWater(float deltaTime)
     Sampler *linearSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_WRAP);
     Sampler *pointSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_POINT_CLAMP);
     Sampler *linearClampSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_LINEAR_CLAMP);
-    Sampler *pointWrapSampler = mGraphicsManager->GetSamplerManager()->GetSampler(SAMPLER_DEFAULT_POINT_WRAP);
 
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterSamplerIncHandle, linearSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
     waterSamplerIncHandle.ptr += waterSamplerDescHeap->GetDescriptorSize();
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterSamplerIncHandle, pointSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
     waterSamplerIncHandle.ptr += waterSamplerDescHeap->GetDescriptorSize();
     direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterSamplerIncHandle, linearClampSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-    waterSamplerIncHandle.ptr += waterSamplerDescHeap->GetDescriptorSize();
-    direct3DManager->GetDevice()->CopyDescriptorsSimple(1, waterSamplerIncHandle, pointWrapSampler->GetSamplerHandle().GetCPUHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 
     ShaderPipelinePermutation waterShaderPermutation(Render_Water, Target_Single_16, InputLayout_Standard);
     ShaderPipelinePermutation waterShaderDepthPermutation(Render_Water_Depth, Target_Depth_Only, InputLayout_Standard);

@@ -142,10 +142,19 @@ struct WaterBuffer
     Vector4 normalMapScroll;
     Vector2 normalMapScrollSpeed;
     float refractionDistortionFactor;
+    float refractionHeightFactor;
+    float refractionDistanceFactor;
+    float depthSofteningDistance;
+    float foamHeightStart;
+    float foamFadeDistance;
+    float foamTiling;
+    float foamAngleExponent;
     float roughness;
     float reflectance;
     float specIntensity;
+    float foamBrightness;
     float tessellationFactor;
+    float dampeningFactor;
     float time;
 };
 
