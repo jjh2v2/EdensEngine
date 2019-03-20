@@ -14,7 +14,7 @@ struct HullInput
 
 struct DomainInput
 {
-	float4 position  : POSITION;
+    float4 position  : POSITION;
     float4 texCoord0 : TEXCOORD0;
 };
 
@@ -87,7 +87,7 @@ HullInput WaterVertexShader(VertexInput input)
 {
     HullInput output;
     output.position = input.position;
-	output.texCoord0 = input.texCoord0;
+    output.texCoord0 = input.texCoord0;
     
     return output;
 }
@@ -95,7 +95,7 @@ HullInput WaterVertexShader(VertexInput input)
 TessellationPatch WaterTessellation(InputPatch<HullInput, 3> inputPatch, uint patchId : SV_PrimitiveID)
 {
     TessellationPatch output;
-	output.edges[0] = output.edges[1] = output.edges[2] = tessellationFactor;
+    output.edges[0] = output.edges[1] = output.edges[2] = tessellationFactor;
     output.inside = tessellationFactor;
                
     return output;
@@ -185,13 +185,13 @@ PixelInput WaterDomainShader(TessellationPatch input, float3 uvwCoord : SV_Domai
     waves[0].steepness = 1.79;
     waves[0].waveLength = 3.75;
     waves[0].amplitude = 0.85;
-    waves[0].speed = 12.1;
+    waves[0].speed = 1.21;
     
     waves[1].direction = float3(0.5, 0, -0.2);
     waves[1].steepness = 1.79;
     waves[1].waveLength = 4.1;
     waves[1].amplitude = 0.52;
-    waves[1].speed = 10.3;
+    waves[1].speed = 1.03;
     
     float dampening = 1.0 - pow(saturate(abs(output.texCoord0.z - 0.5) / 0.5), dampeningFactor);
     dampening *= 1.0 - pow(saturate(abs(output.texCoord0.w - 0.5) / 0.5), dampeningFactor);
@@ -217,20 +217,16 @@ PixelInput WaterDomainShader(TessellationPatch input, float3 uvwCoord : SV_Domai
     finalWaveResult.binormal = normalize(finalWaveResult.binormal);
     
     output.worldNormalAndHeight.w = finalWaveResult.position.y - output.position.y;
-    
     output.position = float4(finalWaveResult.position, 1.0);
     output.positionWorld = mul(output.position, modelMatrix);
     output.positionView = mul(output.positionWorld, viewMatrix);
     output.position = mul(output.positionView, projectionMatrix);
     output.screenPosition = output.position;
-    
     output.normal = normalize(mul(finalWaveResult.normal, (float3x3)modelMatrix));
-    
-    output.worldNormalAndHeight.xyz = finalWaveResult.normal;
-    
-	output.normal = normalize(mul(float4(output.normal, 0.0), viewMatrix).xyz);
+    output.worldNormalAndHeight.xyz = output.normal;
+    output.normal = normalize(mul(float4(output.normal, 0.0), viewMatrix).xyz);
     output.tangent = normalize(mul(finalWaveResult.tangent, (float3x3)modelMatrix));
-	output.tangent = normalize(mul(float4(output.tangent, 0.0), viewMatrix).xyz);
+    output.tangent = normalize(mul(float4(output.tangent, 0.0), viewMatrix).xyz);
     output.binormal = normalize(mul(finalWaveResult.binormal, (float3x3)modelMatrix));
 	output.binormal = normalize(mul(float4(output.binormal, 0.0), viewMatrix).xyz);
     
@@ -250,7 +246,7 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
     float3 normalMap = (WaterNormalMap1.Sample(LinearWrapSampler, normalMapCoords1).rgb * 2.0) - 1.0;
     float3 normalMap2 = (WaterNormalMap2.Sample(LinearWrapSampler, normalMapCoords2).rgb * 2.0) - 1.0;
     float3x3 texSpace = float3x3(input.tangent, input.binormal, input.normal);
-	float3 finalNormal = normalize(mul(normalMap.xyz, texSpace));
+    float3 finalNormal = normalize(mul(normalMap.xyz, texSpace));
     finalNormal += normalize(mul(normalMap2.xyz, texSpace));
     finalNormal = normalize(finalNormal);
     
@@ -340,7 +336,7 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
     
     float3 ssrReflectionNormal = DecodeSphereMap(NormalMap.Sample(PointClampSampler, rayMarchTexPosition.xy).xy);
     float2 ssrDistanceFactor = float2(distance(0.5, hdrCoords.x), distance(0.5, hdrCoords.y)) * 2;
-    float ssrFactor = 1.0 * pow( 1.0 - abs(nDotV), 1.0)
+    float ssrFactor = (1.0 - abs(nDotV))
 					  * (1.0 - forwardStepCount / ssrSettings.y)
 					  * saturate(1.0 - ssrDistanceFactor.x - ssrDistanceFactor.y)
 					  * (1.0 / (1.0 + abs(sceneZ - rayMarchPosition.z) * ssrSettings.w))
@@ -351,7 +347,7 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
     float3 skyboxColor = EnvironmentMap.Sample(LinearClampSampler, envReflection).rgb * waterSurfaceColor.rgb;
     reflectionColor = lerp(skyboxColor, reflectionColor, ssrFactor);
     
-    float2 distortedTexCoord = hdrCoords + finalNormal.xz * refractionDistortionFactor;
+    float2 distortedTexCoord = (hdrCoords + ((finalNormal.xz + finalNormal.xy) * 0.5) * refractionDistortionFactor);
     float distortedDepth = DepthMap.Sample(PointClampSampler, distortedTexCoord).r;
     float3 distortedPosition = GetWorldPositionFromDepth(distortedTexCoord, distortedDepth, viewProjInvMatrix);
     

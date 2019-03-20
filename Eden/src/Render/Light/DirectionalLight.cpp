@@ -6,6 +6,9 @@ DirectionalLight::DirectionalLight(float startingAngle)
     mLightAngle = 0;
 
     SetLightAngle(MathHelper::Clamp(startingAngle, 0.0f, 360.0f));
+
+    float radians = mLightAngle * MathHelper::Radian();
+    SetDirection(Vector3(sinf(radians), cosf(radians), 0.0f));
 }
 
 DirectionalLight::~DirectionalLight()

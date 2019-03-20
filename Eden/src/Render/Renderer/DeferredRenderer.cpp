@@ -707,7 +707,7 @@ void DeferredRenderer::RenderWater(float deltaTime)
     waterBuffer.waterRefractionColor = Vector4(0.003f, 0.599f, 0.812f, 1.0f);
     waterBuffer.ssrSettings = Vector4(0.5f, 20.0f, 10.0f, 20.0f);
     waterBuffer.normalMapScroll = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
-    waterBuffer.normalMapScrollSpeed = Vector2(0.1f, 0.1f);
+    waterBuffer.normalMapScrollSpeed = Vector2(0.01f, 0.01f);
     waterBuffer.refractionDistortionFactor = 0.04f;
     waterBuffer.refractionHeightFactor = 2.5f;
     waterBuffer.refractionDistanceFactor = 15.0f;
@@ -730,7 +730,7 @@ void DeferredRenderer::RenderWater(float deltaTime)
     D3DXMATRIX viewProj = waterBuffer.viewMatrix * waterBuffer.projectionMatrix;
     D3DXMatrixInverse(&waterBuffer.viewProjInvMatrix, NULL, &viewProj);
 
-    waterTime += deltaTime * 0.1f;
+    waterTime += deltaTime;
 
     D3DXVECTOR3 lightDirectionView;
     D3DXVec3TransformNormal(&lightDirectionView, &mActiveScene->GetSunLight()->GetDirection().AsD3DVector3(), &waterBuffer.viewMatrix);

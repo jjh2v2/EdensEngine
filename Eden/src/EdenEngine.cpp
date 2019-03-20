@@ -55,7 +55,7 @@ void EdenEngine::Run()
 	while (!shouldExit)
 	{
 		mGameTimer->Frame();
-		int32 FPS = mGameTimer->GetFPS();
+		volatile int32 FPS = mGameTimer->GetFPS();
 		
 		if (mEngineWindow->DidScreenChange())
 		{
