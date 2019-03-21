@@ -342,10 +342,10 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
 					  * (1.0 / (1.0 + abs(sceneZ - rayMarchPosition.z) * ssrSettings.w))
 					  * (1.0 - saturate(dot(ssrReflectionNormal, finalNormal)));
     
-    float3 reflectionColor = HDRMap.Sample(PointClampSampler, rayMarchTexPosition.xy).rgb * ssrFactor;
+    float3 reflectionColor = HDRMap.Sample(PointClampSampler, rayMarchTexPosition.xy).rgb;
 	float3 envReflection = mul(reflectionVector, (float3x3)viewInverseMatrix);
-    float3 skyboxColor = EnvironmentMap.Sample(LinearClampSampler, envReflection).rgb * waterSurfaceColor.rgb;
-    reflectionColor = lerp(skyboxColor, reflectionColor, ssrFactor);
+    float3 skyboxColor = EnvironmentMap.Sample(LinearClampSampler, envReflection).rgb;
+    reflectionColor = lerp(skyboxColor, reflectionColor, ssrFactor) * waterSurfaceColor.rgb;
     
     float2 distortedTexCoord = (hdrCoords + ((finalNormal.xz + finalNormal.xy) * 0.5) * refractionDistortionFactor);
     float distortedDepth = DepthMap.Sample(PointClampSampler, distortedTexCoord).r;
