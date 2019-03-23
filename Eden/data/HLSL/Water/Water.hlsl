@@ -350,19 +350,18 @@ float4 WaterPixelShader(PixelInput input) : SV_TARGET
     float2 distortedTexCoord = (hdrCoords + ((finalNormal.xz + finalNormal.xy) * 0.5) * refractionDistortionFactor);
     float  distortedDepth = DepthMap.Sample(PointClampSampler, distortedTexCoord).r;
     float3 distortedPosition = GetWorldPositionFromDepth(distortedTexCoord, distortedDepth, viewProjInvMatrix);
-    float2 refractionTexCoord = lerp(hdrCoords, distortedTexCoord, max(sign(input.positionWorld.y - distortedPosition.y), 0.0));
+    float2 refractionTexCoord = (distortedPosition.y < input.positionWorld.y) ? distortedTexCoord : hdrCoords;
     float3 waterColor = HDRMap.Sample(PointClampSampler, refractionTexCoord).rgb * waterRefractionColor.rgb;
     
     float sceneDepth = DepthMap.Sample(PointClampSampler, hdrCoords).r;
     float3 scenePosition = GetWorldPositionFromDepth(hdrCoords, sceneDepth, viewProjInvMatrix);
     float depthSoftenedAlpha = saturate(distance(scenePosition, input.positionWorld.xyz) / depthSofteningDistance);
     
-    float3 waterSurfacePosition = lerp(scenePosition, distortedPosition, distortedPosition.y < input.positionWorld.y ? 1.0 : 0);
+    float3 waterSurfacePosition = (distortedPosition.y < input.positionWorld.y) ? distortedPosition : scenePosition;
     waterColor = lerp(waterColor, waterRefractionColor.rgb, saturate((input.positionWorld.y - waterSurfacePosition.y) / refractionHeightFactor));
     
-    float waveTopReflection = pow(1.0 - saturate(dot(input.normal, viewDir)), 3);
-    float3 waterBaseColor = lerp(waterColor, reflectionColor, saturate(saturate(length(input.positionView.xyz) / refractionDistanceFactor) + waveTopReflection));
-    
+    float waveTopReflectionFactor = pow(1.0 - saturate(dot(input.normal, viewDir)), 3);
+    float3 waterBaseColor = lerp(waterColor, reflectionColor, saturate(saturate(length(input.positionView.xyz) / refractionDistanceFactor) + waveTopReflectionFactor));
     float3 finalWaterColor = waterBaseColor + specularFactor;
     
     float3 foamColor = WaterFoamMap.Sample(LinearWrapSampler, (normalMapCoords1 + normalMapCoords2) * foamTiling).rgb;
